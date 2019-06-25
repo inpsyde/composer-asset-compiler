@@ -470,6 +470,6 @@ Via Composer, package name is `inpsyde/composer-assetscompiler`.
 
 Copyright (c) 2019 Inpsyde GmbH
 
-This code is licensed under the [GPLv2+ License](LICENSE).
+This code is licensed under the [MIT License](LICENSE).
 
 The team at [Inpsyde](https://inpsyde.com) is engineering the web since 2006.
