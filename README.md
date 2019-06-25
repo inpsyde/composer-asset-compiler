@@ -462,7 +462,9 @@ environment, then fallback to settings for `"default-no-dev"` environment if ava
 
 ### Installation
 
-Via Composer, package name is `inpsyde/composer-assets-compiler`.
+Via Composer, package name is `inpsyde/composer-assetscompiler`.
+
+---
 
 ## License
 
