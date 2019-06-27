@@ -195,29 +195,30 @@ An example that contains all the above could be:
 		"composer-asset-compiler": {
       
 			"packages": {
-        "my-company/some-package": {
-          "env": {
-            "$default": {
-              "dependencies": "update",
-              "script": "encore dev"
-            },
-            "$default-no-dev": {
-              "dependencies": "install",
-              "script": "encore prod"
+                "my-company/some-package": {
+                    "env": {
+                        "$default": {
+                            "dependencies": "update",
+                            "script": "encore dev"
+                        },
+                        "$default-no-dev": {
+                            "dependencies": "install",
+                            "script": "encore prod"
+                        }
+                    }
+                },
+                "my-company/some-plugin": {
+                    "dependencies": "install",
+                    "script": "gulp"
+                },
+                "my-company/client-*": true,
+                "my-company/client-foo-package": false,
+                "my-company/my-framework-*": "force-defaults"
             }
-          }
-        },
-        "my-company/some-plugin": {
-          "dependencies": "install",
-          "script": "gulp"
-        },
-        "my-company/client-*": true,
-        "my-company/client-foo-package": false,
-        "my-company/my-framework-*": "force-defaults"
-      }
       
-		}
-	}
+      
+        }
+    }
 }
 ```
 
@@ -255,25 +256,26 @@ An example:
 	"extra": {
 		"composer-asset-compiler": {
       
-      "packages": {
-        "my-company/client-*": true,
-        "my-company/my-framework-*": "force-defaults"
-      },
-      "defaults": {
-        "env": {
-          "$default": {
-            "dependencies": "update",
-            "script": "encore dev"
-          },
-          "$default-no-dev": {
-            "dependencies": "install",
-            "script": "encore prod"
-          }
-        }
-      }
+            "packages": {
+                "my-company/client-*": true,
+                "my-company/my-framework-*": "force-defaults"
+            },
+            
+            "defaults": {
+                "env": {
+                    "$default": {
+                        "dependencies": "update",
+                        "script": "encore dev"
+                    },
+                    "$default-no-dev": {
+                        "dependencies": "install",
+                        "script": "encore prod"
+                    }
+                }
+            }
       
+        }
     }
-	}
 }
 ```
 
@@ -328,10 +330,10 @@ For example the setting:
 	"extra": {
 		"composer-asset-compiler": {
       
-      "commands": "yarn"
+            "commands": "yarn"
       
+        }
     }
-  }
 }
 ```
 
@@ -342,16 +344,16 @@ is equivalent to:
 	"extra": {
 		"composer-asset-compiler": {
       
-      "commands": {
-        "dependencies": {
-          "install": "yarn",
-          "update": "yarn upgrade"
-        },
-        "script": "yarn %s"
-      }
+            "commands": {
+                "dependencies": {
+                    "install": "yarn",
+                    "update": "yarn upgrade"
+                },
+                "script": "yarn %s"
+            }
       
+        }
     }
-  }
 }
 ```
 
@@ -362,22 +364,22 @@ An interesting feature is the possibility to set commands by env:
 	"extra": {
 		"composer-asset-compiler": {
       
-      "commands": {
-        "env": {
-          "$default": "npm",
-          "local": "yarn",
-          "meh": {
-            "dependencies": {
-              "install": "yarn",
-              "update": "yarn upgrade"
-            },
-            "script": "npm run %s"
-          }
-        }
-      }
+            "commands": {
+                "env": {
+                    "$default": "npm",
+                    "local": "yarn",
+                    "meh": {
+                        "dependencies": {
+                            "install": "yarn",
+                            "update": "yarn upgrade"
+                        },
+                        "script": "npm run %s"
+                    }
+                }
+            }
       
+        }
     }
-  }
 }
 ```
 
@@ -400,16 +402,16 @@ By setting `wipe-node-modules` to the string `"force"` all `/node-modules` folde
 	"extra": {
 		"composer-asset-compiler": {
       
-      "wipe-node-modules": {
-        "env": {
-          "$default": true,
-          "local": false,
-          "prod": "force"
-        }
-      }
+            "wipe-node-modules": {
+                "env": {
+                    "$default": true,
+                    "local": false,
+                    "prod": "force"
+                }
+            }
       
+        }
     }
-  }
 }
 ```
 
@@ -425,16 +427,16 @@ Just like different other settings, this is also configurable by environment:
 {
 	"extra": {
 		"composer-asset-compiler": {
-      
-      "stop-on-failure": {
-        "env": {
-          "$default": true,
-          "local": false,
+
+            "stop-on-failure": {
+                "env": {
+                    "$default": true,
+                    "local": false
+                }
+            }
+            
         }
-      }
-      
     }
-  }
 }
 ```
 
