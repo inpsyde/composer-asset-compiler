@@ -85,19 +85,19 @@ When such configuration is used, the first thing the plugin does is to recognize
 
 That is done by looking into an environment variable named **`COMPOSER_ASSETS_COMPILER`.**
 
-If this variable is not found, or its value does not match any of the value in `"env"` object,
-the plugin fallback to either `"$default"` or `"$default-no-dev"`, based on the fact that Composer
-is running, respectively, without or with the `--no-dev` flag.
+If this variable is not found, or its value does not match any key of the value in `"env"` object,
+the plugin fallback to either `"$default-no-dev"`, only if Composer is running with `--no-dev` flag, and then to ``"$default"`.
 
-If `"$default"` and `"$default-no-dev"` entries are both missing, and no environment is found,
-the plugin will do nothing.
+Basically, if running as `--no-dev`, the plugin will look for, in order, a key that is:
 
-If only `"$default-no-dev"` is provided, and `"$default"` is not, the `"$default-no-dev"` operations
-and script are performed only if Composer is being ran using `--no-dev`, nothing will be done
-if that flag is not used and no environment is found.
+- the value of `COMPOSER_ASSETS_COMPILER`
+-  `"$default-no-dev"`
+-  `"$default"`
 
-If only `"$default"` is provided, and `"$default-no-dev"` is not, the `"$default"` operations
-and script are performed no matter if Composer is being ran using `--no-dev` or not.
+if Composer is running *without*  `--no-dev`, the plugin will look for, in order, a key that is:
+
+- the value of `COMPOSER_ASSETS_COMPILER`
+-  `"$default"`
 
 ### Where to place configuration
 
@@ -109,6 +109,7 @@ So for a package we can have a `composer.json` that contains:
 {
 	"extra": {
 		"composer-asset-compiler": {
+      
 			"env": {
 				"$default": {
 					"dependencies": "update",
@@ -119,12 +120,34 @@ So for a package we can have a `composer.json` that contains:
 					"script": "encore prod"
 				}
 			}
+      
 		}
 	}
 }
 ```
 
-The configuration discussed above has to be used at **package level**.
+or maybe just:
+
+```json
+{
+	"extra": {
+		"composer-asset-compiler": {
+      
+			"dependencies": "install",
+			"script": "gulp"
+      
+		}
+	}
+}
+```
+
+so:
+
+- `dependencies`
+- `script`
+- `env`
+
+are the only top-level keys that are took into account  at **package level**.
 
 ### Root configuration
 
@@ -133,10 +156,10 @@ Composer _dependencies_, otherwise Composer scripts would have probably be enoug
 
 At root level, we can define which Composer dependencies we want to process.
 
-That is done via a configuration object, that resides in the same `extra.composer-asset-compiler` 
-used at package level, but in the root `composer.json`.
+That is done via a configuration object, that resides in **the same `extra.composer-asset-compiler`** 
+**used at package level, but in the root `composer.json`.**
 
-There are a few top-level root configuration keys:
+There are a few top-level keys that are took into consideration only for root package:
 
 - `packages` (object, no default)
 - `defaults` (object, no default)
@@ -144,6 +167,7 @@ There are a few top-level root configuration keys:
 - `auto-run` (boolean, default `true`)
 - `commands` (string|object, no default)
 - `wipe-node-modules` (boolean|string|object, default `true`)
+- `stop-on-failure` (boolean, default `false`)
 
 **None of this is required**, the plugin can work without any configuration, assuming that
 dependencies have package-level configuration.
@@ -152,64 +176,65 @@ dependencies have package-level configuration.
 
 `packages` is what tells the plugin which Composer dependencies to process.
 
-It is an object where **keys** are packages names, e. g. `"some-vendor/some-package"`, but can make use
-of "wildcard" to actually refer to multiple packages, e.g. `"some-vendor/*"` or `"some-vendor/foo-*"`.
+It is an object where **keys** are packages names, e. g. `"some-vendor/some-package"`, but can make use of "wildcard" to actually refer to multiple packages, e. g. `"some-vendor/*"` or `"some-vendor/foo-*"`.
 
 The `packages` object **values** can contain different things. In fact, it can be:
 
-- a set of package-level setting (so either an object `"dependencies"` and `"script"` or an object
-  with `"env"` key and a series of objects in it with `dependencies` and `script`)
-- a boolean `true`, that means "process this dependency(ies) using its (their) package-level setting"
-  (will use defaults if no package-level setting is found)
-- a boolean `false`, that means "do not process this dependency(ies)"
-- the string `"force-defaults"`, that means "process this dependency(ies) using default setting"
-  (so ignoring any package-level setting)
-  
+- a set of package-level setting (so either an object with `"dependencies"` and `"script"` or an object with `"env"` key and a series of objects in it with `dependencies` and `script`)
+- a boolean `true`, that means *"process this dependencies using their package-level setting"*
+  (will use defaults, if provided, if no package-level setting is found)
+- a boolean `false`, that means *"do not process this dependencies"*
+- the string `"force-defaults"`, that means *"process this dependencies using default setting"*,
+  so ignoring any package-level setting. Will make plugin fail if no defaults are provided.
+
 An example that contains all the above could be:
 
 ```json
 {
-	"packages": {
-		"my-company/some-package": {
-			"env": {
-				"$default": {
-					"dependencies": "update",
-					"script": "encore dev"
-				},
-				"$default-no-dev": {
-					"dependencies": "install",
-					"script": "encore prod"
-				}
-			}
-		},
-		"my-company/some-plugin": {
-			"dependencies": "install",
-			"script": "gulp"
-		},
-		"my-company/client-*": true,
-		"my-company/client-foopackage": false,
-		"my-company/my-framework-*": "force-defaults"
+	"extra": {
+		"composer-asset-compiler": {
+      
+			"packages": {
+        "my-company/some-package": {
+          "env": {
+            "$default": {
+              "dependencies": "update",
+              "script": "encore dev"
+            },
+            "$default-no-dev": {
+              "dependencies": "install",
+              "script": "encore prod"
+            }
+          }
+        },
+        "my-company/some-plugin": {
+          "dependencies": "install",
+          "script": "gulp"
+        },
+        "my-company/client-*": true,
+        "my-company/client-foo-package": false,
+        "my-company/my-framework-*": "force-defaults"
+      }
+      
+		}
 	}
 }
 ```
 
-Please note that besides the configuration is of course required that a `package.json` file is
-available for the dependencies to process, if that file is missing, the package is skipped.
+Please note that a `package.json` file is required for the dependencies to be processed, if that file is missing, the package is skipped.
 
 #### Why `false`
 
-It probably worth expand the reason why the `false` value is important.
+It probably worth to expand on the reason why the `false` value is important.
 
-First of all, it takes precedence over other values. In the example aboce, there's `"my-company/client-*": true`
-meaning that all packages whose name starts with _"my-company/client-*"_ will be processed.
+First of all, it takes precedence over other values. In the example above, there's: `"my-company/client-*": true` meaning that all packages whose name starts with _"my-company/client-*"_ will be processed.
 
-However, for the specific package _"my-company/client-foopackage"_ we are using `false`, meaning that
-this package will be an exception and will not be processed.
+However, for the specific package _"my-company/client-foo-package"_ we are using `false`, meaning that this package will be an exception and will not be processed.
 
 Please note that it is also possible to use `false` with wildcard keys, and not only with exact names.
 
-Another reason for the `false` value, is tha,t by default, the plugin processes all dependencies that
-have a package-level configuration (more on this below). Using `false` it possible to instruct the
+Another reason for the `false` value, is that by default, the plugin processes all dependencies that
+have a package-level configuration (more on this below). Using `false` it is possible to instruct the
 plugin to skip some packages even if they have package-level configuration.
 
 
@@ -218,42 +243,45 @@ plugin to skip some packages even if they have package-level configuration.
 A set of package-level setting, so either an object `"dependencies"` and `"script"` or an object
 with `"env"` key and a series of objects in it with `dependencies` and `script`.
 
-This is used for packages listed in `packages` with a value of either `"force-defaults"` or `true`,
-but don't have any package level-configuration.
+This is used for packages where defaults are needed, that is packages listed in `packages` config 
 
-When defaults are needed (a package is included with `"force-defaults"` or a package without
-package-level configuration is included with `true`) and `defaults` config is not provided
-than nothing will be done for that package.
+- with a value of `"force-defaults"`
+- with a value of `true`, but don't have any package level-configuration
 
 An example:
 
 ```json
 {
-	"packages": {
-		"my-company/client-*": true,
-		"my-company/my-framework-*": "force-defaults"
-	},
-	"defaults": {
-		"env": {
-			"$default": {
-				"dependencies": "update",
-				"script": "encore dev"
-			},
-			"$default-no-dev": {
-				"dependencies": "install",
-				"script": "encore prod"
-			}
-		}
+	"extra": {
+		"composer-asset-compiler": {
+      
+      "packages": {
+        "my-company/client-*": true,
+        "my-company/my-framework-*": "force-defaults"
+      },
+      "defaults": {
+        "env": {
+          "$default": {
+            "dependencies": "update",
+            "script": "encore dev"
+          },
+          "$default-no-dev": {
+            "dependencies": "install",
+            "script": "encore prod"
+          }
+        }
+      }
+      
+    }
 	}
 }
 ```
 
 In the snippet above, all the package whose name starts with `my-company/client-` will be processed,
-and if they define package-level configuration, that will be used, otherwise what's defined in
+and if they define package-level configuration, that will be used, otherwise what is defined in
 `"defaults"` will be used.
 
-For all the package whose name starts with `my-company/my-framework-`, no matter what package-level
-configuration contains, what's defined in `"defaults"` will be used.
+For all the package whose name starts with `my-company/my-framework-`, no matter what package-level configuration contains, what is defined in `"defaults"` will be used.
 
 ### Root configuration: `auto-discover`
 
@@ -265,19 +293,18 @@ The plugin is capable of "scanning" all the required dependencies as see which a
 
 and just process them, even if they are not listed in `packages`.
 
-This means that if settings are provided at package level, it is possible to have completely no
-configuration at root level, and still have dependencies processed.
+This means that **if settings are provided at package level, it is possible to have completely no**
+**configuration at root level**, and still have dependencies processed.
 
 In case this is not a desired behavior, `auto-discover` can be set to `false` and in that case only
-packages listed in `included` (and not listed in `excluded`) will be processed.
+packages listed in `packages` will be processed.
 
 ### Root configuration: `auto-run`
 
 By default this plugin starts its job right after either `composer install` or `composer update`
 have been executed.
 
-However, the plugin work can be triggered manually via command (more on this below) and it might
-be desirable to _only_ run manually.
+However, the plugin work can be triggered manually via command (more on this below) and it might be desirable to _only_ run manually.
 
 If that's the case, by setting `auto-run` to `false` the plugin will do nothing when either 
 `composer install` or `composer update` have been executed, and will run only if manually called.
@@ -292,14 +319,19 @@ them.
 
 The `commands` configuration allows to enforce which one to use, by setting it to `"yarn"` or `"npm"`.
 
-For very deep customization, `commands` allows to customize what should be executed, allowing in theory
-to use a custom dependency management tool (or, more likely, to set special flags on the commands being run).
+For very deep customization, `commands` allows to customize what should be executed, allowing in theory, to use a custom dependency management tool (or, more likely, to set special flags on the commands being run).
 
 For example the setting:
 
 ```json
 {
-	"commands": "yarn"
+	"extra": {
+		"composer-asset-compiler": {
+      
+      "commands": "yarn"
+      
+    }
+  }
 }
 ```
 
@@ -307,13 +339,19 @@ is equivalent to:
 
 ```json
 {
-	"commands": {
-		"dependencies": {
-			"install": "yarn",
-			"update": "yarn upgrade"
-		},
-		"script": "yarn %s"
-	}
+	"extra": {
+		"composer-asset-compiler": {
+      
+      "commands": {
+        "dependencies": {
+          "install": "yarn",
+          "update": "yarn upgrade"
+        },
+        "script": "yarn %s"
+      }
+      
+    }
+  }
 }
 ```
 
@@ -321,64 +359,94 @@ An interesting feature is the possibility to set commands by env:
 
 ```json
 {
-	"commands": {
-		"env": {
-			"$default": "npm",
-			"local": "yarn",
-			"meh": {
-				"dependencies": {
-            			"install": "yarn",
-            			"update": "yarn upgrade"
-				},
-				"script": "npm run %s"
-			}
-		}
-	}
+	"extra": {
+		"composer-asset-compiler": {
+      
+      "commands": {
+        "env": {
+          "$default": "npm",
+          "local": "yarn",
+          "meh": {
+            "dependencies": {
+              "install": "yarn",
+              "update": "yarn upgrade"
+            },
+            "script": "npm run %s"
+          }
+        }
+      }
+      
+    }
+  }
 }
 ```
 
 ### Root configuration: `wipe-node-modules`
 
-With a lot of packages to install, and frontend dependencies installed for each of them, it means that
-a `/node-modules` folder will be created for each processed dependency, meaning that the possible
-impact on disk space can be quite huge.
+The plugin install frontend dependencies for each of the processed Composer packages, which means a `/node-modules` folder will be created for each processed Composer  package, so the possible impact on disk space can be quite huge.
 
-It is also true that after assets have been compiled `/node-modules` folder is very likely not necessary anymore,
-and so could be deleted, and this is exactly what the plugin does by default.
+However, is true that after assets have been compiled `/node-modules` folder is very likely not necessary anymore, and so could be deleted, and this is exactly what the plugin does by default.
 
 By setting `wipe-node-modules` to `false` this is not done, and all `/node-modules` folder will be kept.
 
-When `wipe-node-modules` is set to `true` (which is the default) `/node-modules` folder is deleted
-whn it is created by the plugin, but if it was already existing when the plugin started its work, then
-it is kept.
+When `wipe-node-modules` is set to `true` (which is the default) `/node-modules` folder is deleted, but only if it is created by the plugin: in the case the folder was already there when the plugin started its work, then it is not deleted.
 
-By setting `wipe-node-modules` to the string `"force"` all `/node-modules` folders for processed packages
-are always deleted, no matter if they existed when plugin started its work.
+By setting `wipe-node-modules` to the string `"force"` all `/node-modules` folders for processed packages are always deleted, no matter if they existed when plugin started its work.
 
 `wipe-node-modules` can also be configured per environment, as already seen in for other settings:
 
 ```json
 {
-	"wipe-node-modules": {
-		"env": {
-			"$default": true,
-			"local": false,
-			"prod": "force"
-		}
-	}
+	"extra": {
+		"composer-asset-compiler": {
+      
+      "wipe-node-modules": {
+        "env": {
+          "$default": true,
+          "local": false,
+          "prod": "force"
+        }
+      }
+      
+    }
+  }
 }
 ```
 
+### Root configuration: `stop-on-failure`
+
+Packages are processed one by one, and if something fails for one of them, the plugin is very often capable to continue its work for other packages.
+
+By setting `stop-on-failure` to `true` it is possible to instruct the plugin to stop processing when the first fail happen.
+
+Just like different other settings, this is also configurable by environment:
+
+```json
+{
+	"extra": {
+		"composer-asset-compiler": {
+      
+      "stop-on-failure": {
+        "env": {
+          "$default": true,
+          "local": false,
+        }
+      }
+      
+    }
+  }
+}
+```
 
 ### Package level configuration for root
 
 Root package is still a package. Which means that the configuration that usually go at package level,
-(`dependencies`, `scripts` or `env`) can also be set at root level and it will be used as expected.
+(`"dependencies"`, `"script"` or `"env"`) can also be set at root level and it will be used as expected.
 
 
 ### Root configuration at package level
 
-Dependencies can be installed at root level, e.g. when running unit tests.
+Dependencies can be installed at root level, e. g. when running unit tests.
 
 Which means that is possible to use root configuration at package level.
 
@@ -389,8 +457,7 @@ it makes sense in most cases to set `auto-discover` to `false` for packages.
 
 ## Processed lock file
 
-After a dependency has been successfully processed by the plugin, a file named `.composer_compiled_assets`
-is created in dependency root folder.
+After a package has been successfully processed by the plugin, a file named `.composer_compiled_assets` is created in package root folder.
 
 This file contains an hash calculated from:
 
@@ -459,7 +526,7 @@ environment, then fallback to settings for `"$default-no-dev"` environment if av
 
 ### Installation
 
-Via Composer, package name is `inpsyde/composer-assetscompiler`.
+Via Composer, package name is `inpsyde/composer-assets-compiler`.
 
 ---
 

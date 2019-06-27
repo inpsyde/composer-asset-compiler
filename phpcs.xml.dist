@@ -7,7 +7,12 @@
 
     <arg value="sp"/>
 
-    <rule ref="Inpsyde" />
+    <rule ref="Inpsyde">
+        <exclude name="WordPress.VIP.SuperGlobalInputUsage" />
+        <exclude name="WordPress.VIP.ValidatedSanitizedInput" />
+        <exclude name="WordPress.XSS.EscapeOutput" />
+        <exclude name="WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler" />
+    </rule>
 
     <rule ref="Inpsyde.CodeQuality.Psr4">
         <properties>
@@ -15,6 +20,12 @@
                     name="psr4"
                     type="array"
                     value="Inpsyde\AssetsCompiler=>src,Inpsyde\AssetsCompiler\Tests=>tests/src,Inpsyde\AssetsCompiler\Tests\Unit=>tests/unit"/>
+        </properties>
+    </rule>
+
+    <rule ref="Inpsyde.CodeQuality.ElementNameMinimalLength">
+        <properties>
+            <property name="allowedShortNames" type="array" value="io" />
         </properties>
     </rule>
 
