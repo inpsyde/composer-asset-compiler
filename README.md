@@ -54,30 +54,30 @@ This plugin has support to that via an environment-based configuration, which co
 
 ```json
 {
-	"env": {
-		"ci": {
-			"dependencies": "install",
-			"script": [
-				"setup",
-				"tests"
-			]
-		},
-		"local": {
-			"dependencies": "update",
-			"script": "setup"
-		},
-		"$default": {
-			"dependencies": "install",
-			"script": "setup"
-		},
-		"$default-no-dev": {
-			"dependencies": "install",
-			"script": [
-				"setup",
-				"optimize"
-			]
-		}
-	}
+    "env": {
+        "ci": {
+            "dependencies": "install",
+            "script": [
+                "setup",
+                "tests"
+            ]
+        },
+        "local": {
+            "dependencies": "update",
+            "script": "setup"
+        },
+        "$default": {
+            "dependencies": "install",
+            "script": "setup"
+        },
+        "$default-no-dev": {
+            "dependencies": "install",
+            "script": [
+                "setup",
+                "optimize"
+            ]
+        }
+    }
 }
 ```
 
@@ -107,22 +107,20 @@ So for a package we can have a `composer.json` that contains:
 
 ```json
 {
-	"extra": {
-		"composer-asset-compiler": {
-      
-			"env": {
-				"$default": {
-					"dependencies": "update",
-					"script": "encore dev"
-				},
-				"$default-no-dev": {
-					"dependencies": "install",
-					"script": "encore prod"
-				}
-			}
-      
-		}
-	}
+    "extra": {
+        "composer-asset-compiler": {
+            "env": {
+                "$default": {
+                    "dependencies": "update",
+                    "script": "encore dev"
+                },
+                "$default-no-dev": {
+                    "dependencies": "install",
+                    "script": "encore prod"
+                }
+            }
+        }
+    }
 }
 ```
 
@@ -130,14 +128,12 @@ or maybe just:
 
 ```json
 {
-	"extra": {
-		"composer-asset-compiler": {
-      
-			"dependencies": "install",
-			"script": "gulp"
-      
-		}
-	}
+    "extra": {
+        "composer-asset-compiler": {
+            "dependencies": "install",
+            "script": "gulp"
+        }
+    }
 }
 ```
 
@@ -191,10 +187,9 @@ An example that contains all the above could be:
 
 ```json
 {
-	"extra": {
-		"composer-asset-compiler": {
-      
-			"packages": {
+    "extra": {
+        "composer-asset-compiler": {
+            "packages": {
                 "my-company/some-package": {
                     "env": {
                         "$default": {
@@ -215,8 +210,6 @@ An example that contains all the above could be:
                 "my-company/client-foo-package": false,
                 "my-company/my-framework-*": "force-defaults"
             }
-      
-      
         }
     }
 }
@@ -253,14 +246,12 @@ An example:
 
 ```json
 {
-	"extra": {
-		"composer-asset-compiler": {
-      
+    "extra": {
+        "composer-asset-compiler": {
             "packages": {
                 "my-company/client-*": true,
                 "my-company/my-framework-*": "force-defaults"
             },
-            
             "defaults": {
                 "env": {
                     "$default": {
@@ -273,7 +264,6 @@ An example:
                     }
                 }
             }
-      
         }
     }
 }
@@ -327,11 +317,9 @@ For example the setting:
 
 ```json
 {
-	"extra": {
-		"composer-asset-compiler": {
-      
+    "extra": {
+        "composer-asset-compiler": {
             "commands": "yarn"
-      
         }
     }
 }
@@ -341,9 +329,8 @@ is equivalent to:
 
 ```json
 {
-	"extra": {
-		"composer-asset-compiler": {
-      
+    "extra": {
+        "composer-asset-compiler": {
             "commands": {
                 "dependencies": {
                     "install": "yarn",
@@ -351,7 +338,6 @@ is equivalent to:
                 },
                 "script": "yarn %s"
             }
-      
         }
     }
 }
@@ -361,9 +347,8 @@ An interesting feature is the possibility to set commands by env:
 
 ```json
 {
-	"extra": {
-		"composer-asset-compiler": {
-      
+    "extra": {
+        "composer-asset-compiler": {
             "commands": {
                 "env": {
                     "$default": "npm",
@@ -377,7 +362,6 @@ An interesting feature is the possibility to set commands by env:
                     }
                 }
             }
-      
         }
     }
 }
@@ -399,9 +383,8 @@ By setting `wipe-node-modules` to the string `"force"` all `/node-modules` folde
 
 ```json
 {
-	"extra": {
-		"composer-asset-compiler": {
-      
+    "extra": {
+        "composer-asset-compiler": {
             "wipe-node-modules": {
                 "env": {
                     "$default": true,
@@ -409,7 +392,6 @@ By setting `wipe-node-modules` to the string `"force"` all `/node-modules` folde
                     "prod": "force"
                 }
             }
-      
         }
     }
 }
@@ -425,16 +407,14 @@ Just like different other settings, this is also configurable by environment:
 
 ```json
 {
-	"extra": {
-		"composer-asset-compiler": {
-
+    "extra": {
+        "composer-asset-compiler": {
             "stop-on-failure": {
                 "env": {
                     "$default": true,
                     "local": false
                 }
             }
-            
         }
     }
 }
