@@ -86,7 +86,7 @@ class PackageFinder
                 continue;
             }
 
-            // if package was included with `true` we allow looking in package config
+            // if package was included with `true` (config is `[]`), we allow look in package config
             $packageConfigAllowed = $autoDiscover || ($config === []);
 
             $package = $packageFactory->factory(
@@ -220,7 +220,7 @@ class PackageFinder
      */
     private function assertValidPackage(Package $package): bool
     {
-        if ($package->isDefault()) {
+        if ($package->isValid()) {
             return true;
         }
 
