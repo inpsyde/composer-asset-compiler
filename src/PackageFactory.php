@@ -84,8 +84,10 @@ class PackageFactory
 
         /** @var string $installPath */
         $installPath = $this->installationManager->getInstallPath($package);
+
         /** @var string $path */
         $path = $this->filesystem->normalizePath($installPath);
+
         /** @var string $name */
         $name = $package->getName();
 
