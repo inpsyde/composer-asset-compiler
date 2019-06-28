@@ -15,6 +15,7 @@ class Commands
     private const DEPENDENCIES = 'dependencies';
     private const DEPENDENCIES_INSTALL = 'install';
     private const DEPENDENCIES_UPDATE = 'update';
+    private const DISCOVER = 'discover';
     private const SCRIPT = 'script';
 
     private const YARN = 'yarn';
@@ -27,6 +28,7 @@ class Commands
                 self::DEPENDENCIES_UPDATE => 'yarn upgrade',
             ],
             self::SCRIPT => 'yarn %s',
+            self::DISCOVER => 'yarn --version',
         ],
         self::NPM => [
             self::DEPENDENCIES => [
@@ -34,6 +36,7 @@ class Commands
                 self::DEPENDENCIES_UPDATE => 'npm update --no-save',
             ],
             self::SCRIPT => 'npm run %s',
+            self::DISCOVER => 'npm --version',
         ],
     ];
 
@@ -70,12 +73,12 @@ class Commands
      */
     public static function discover(ProcessExecutor $executor, string $workingDir): Commands
     {
-        if ($executor->execute('yarn --version', $out, $workingDir) === 0) {
-            return static::fromDefault(self::YARN);
-        }
+        foreach (self::SUPPORTED_DEFAULTS as $name => $data) {
+            $discover = (string)($data[self::DISCOVER] ?? '');
 
-        if ($executor->execute('npm --version', $out, $workingDir) === 0) {
-            return static::fromDefault(self::NPM);
+            if ($discover && $executor->execute($discover, $out, $workingDir) === 0) {
+                return static::fromDefault($name);
+            }
         }
 
         return new static([]);
