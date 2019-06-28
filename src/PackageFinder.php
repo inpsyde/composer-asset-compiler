@@ -29,7 +29,7 @@ class PackageFinder
     /**
      * @var bool
      */
-    private $failOnFailure;
+    private $stopOnFailure;
 
     /**
      * @param array $packageData
@@ -40,7 +40,7 @@ class PackageFinder
     {
         $this->packageData = $packageData;
         $this->defaults = $defaults;
-        $this->failOnFailure = $stopOnFailure;
+        $this->stopOnFailure = $stopOnFailure;
     }
 
     /**
@@ -96,12 +96,7 @@ class PackageFinder
                 $packageConfigAllowed
             );
 
-            if ($package->isDefault()) {
-                continue;
-            }
-
-            if (!$package->isValid()) {
-                $this->assertValidPackage($name);
+            if ($package->isDefault() || !$this->assertValidPackage($package)) {
                 continue;
             }
 
@@ -206,7 +201,7 @@ class PackageFinder
      */
     private function assertDefaults(): void
     {
-        if ($this->failOnFailure && !$this->defaults) {
+        if ($this->stopOnFailure && !$this->defaults) {
             throw new \Exception(
                 sprintf(
                     '"%s" is used in %s settings, however %s configuration is missing.',
@@ -219,14 +214,21 @@ class PackageFinder
     }
 
     /**
-     * @param string $name
-     * @return void
+     * @param Package $package
+     * @return bool
      * @throws \Exception
      */
-    private function assertValidPackage(string $name): void
+    private function assertValidPackage(Package $package): bool
     {
-        if ($this->failOnFailure) {
+        if ($package->isDefault()) {
+            return true;
+        }
+
+        if ($this->stopOnFailure) {
+            $name = $package->name();
             throw new \Exception("Could not find valid configuration for '{$name}'.");
         }
+
+        return false;
     }
 }
