@@ -54,7 +54,7 @@ class Lock
 
         $hash = $this->hashForPackage($package);
 
-        return !$hash || trim($content) !== $hash;
+        return $hash && trim($content) === $hash;
     }
 
     /**
@@ -71,6 +71,12 @@ class Lock
     }
 
     /**
+     * The hash depends on:
+     *
+     *  - content of package `package.json`
+     *  - package settings
+     *  - current environment
+     *
      * @param Package $package
      * @return string
      */
@@ -80,7 +86,7 @@ class Lock
         $content = @file_get_contents($file);
 
         if (!$content) {
-            $this->io->writeVerboseError("Could not read content of lock file {$file}.");
+            $this->io->writeVerboseError("Could not read content of {$file}.");
 
             return '';
         }

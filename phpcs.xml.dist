@@ -12,6 +12,7 @@
         <exclude name="WordPress.VIP.ValidatedSanitizedInput" />
         <exclude name="WordPress.XSS.EscapeOutput" />
         <exclude name="WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler" />
+        <exclude name="WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize" />
     </rule>
 
     <rule ref="Inpsyde.CodeQuality.Psr4">

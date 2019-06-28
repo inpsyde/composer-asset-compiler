@@ -419,7 +419,7 @@ final class ComposerPlugin implements
 
         $all = 0;
         $done = 0;
-        foreach ($scripts as $script)  {
+        foreach ($scripts as $script) {
             $command = $commands->scriptCmd($script);
             $this->io->writeVerboseComment("  - executing '{$command}'...");
             $all++;
