@@ -8,7 +8,7 @@
 
 namespace Inpsyde\AssetsCompiler;
 
-class Lock
+class Locker
 {
     private const LOCK_FILE = '.composer_compiled_assets';
 
