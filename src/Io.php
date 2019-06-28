@@ -28,6 +28,14 @@ class Io
     }
 
     /**
+     * @return IOInterface
+     */
+    public function io(): IOInterface
+    {
+        return $this->io;
+    }
+
+    /**
      * @param string[] $messages
      */
     public function write(string ...$messages): void
@@ -126,7 +134,11 @@ class Io
     {
         // phpcs:disable
         $logo = <<<LOGO
-<fg=magenta> Composer </> <fg=yellow> Assets </> <fg=magenta> Compiler </>
+    <fg=green>                        </>
+    <fg=green>        Inpsyde         </>
+    <fg=green>                        </>
+
+    <fg=magenta>Composer</> <fg=yellow>Assets</> <fg=magenta>Compiler</>
 LOGO;
         // phpcs:enable
 
