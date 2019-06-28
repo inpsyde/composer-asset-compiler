@@ -10,9 +10,10 @@ namespace Inpsyde\AssetsCompiler;
 
 class EnvResolver
 {
+    public const ENV_DEFAULT = '$default';
+    public const ENV_DEFAULT_NO_DEV = '$default-no-dev';
+
     private const ENV_KEY = 'env';
-    private const ENV_DEFAULT = '$default';
-    private const ENV_DEFAULT_NO_DEV = '$default-no-dev';
 
     /**
      * @var string|null
@@ -43,7 +44,7 @@ class EnvResolver
             return $this->env;
         }
 
-        return $this->isDev ? self::ENV_DEFAULT_NO_DEV : self::ENV_DEFAULT;
+        return $this->isDev ? self::ENV_DEFAULT : self::ENV_DEFAULT_NO_DEV;
     }
 
     /**
