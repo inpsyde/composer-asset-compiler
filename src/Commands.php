@@ -59,6 +59,8 @@ class Commands
      */
     public static function fromDefault(string $manager): Commands
     {
+        $manager = strtolower($manager);
+
         if (!array_key_exists($manager, self::SUPPORTED_DEFAULTS)) {
             return new static([]);
         }
@@ -103,8 +105,8 @@ class Commands
         /** @var string|null $update */
 
         $this->dependencies = [
-            self::DEPENDENCIES_UPDATE => is_string($install) ? $install : null,
-            self::DEPENDENCIES_INSTALL => is_string($update) ? $update : null,
+            self::DEPENDENCIES_INSTALL => is_string($install) ? $install : null,
+            self::DEPENDENCIES_UPDATE => is_string($update) ? $update : null,
         ];
 
         $script = $config[self::SCRIPT] ?? null;
