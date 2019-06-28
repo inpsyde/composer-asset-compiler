@@ -146,7 +146,7 @@ final class ComposerPlugin implements
                 ?? null;
         }
 
-        /** @var \Composer\Package\RootPackageInterface $rootPackage */
+        /** @var RootPackageInterface $rootPackage */
         $rootPackage =  $this->composer->getPackage();
 
         return new Config(
@@ -176,8 +176,10 @@ final class ComposerPlugin implements
             }
 
             $exec = new ProcessExecutor();
+
             /** @var Package $firstPackage */
             $firstPackage = reset($packages);
+
             /** @var string $path */
             $path = $firstPackage->path();
 
@@ -191,8 +193,7 @@ final class ComposerPlugin implements
             }
 
             if (!$this->processPackages($commands, $exec, ...$packages)) {
-                $exit = 1;
-                $this->io->writeVerboseComment("Assets compilation stopped due to failure.");
+                throw new \Exception("Assets compilation stopped due to failure.");
             }
         } catch (\Throwable $throwable) {
             $exit = 1;
@@ -261,21 +262,10 @@ final class ComposerPlugin implements
         Package ...$packages
     ): bool {
 
-        $lock = new Lock($this->io, $this->config->envResolver()->env());
+        $locker = new Locker($this->io, $this->config->envResolver()->env());
 
         foreach ($packages as $package) {
-            if ($package->isDefault()) {
-                continue;
-            }
-
-            $name = $package->name();
-
-            if (!$package->isValid()) {
-                $this->io->writeError("Skipping '{$name}' because invalid config.");
-                continue;
-            }
-
-            if (!$this->processPackage($package, $commands, $exec, $lock)) {
+            if (!$this->processPackage($package, $commands, $exec, $locker)) {
                 return false;
             }
         }
@@ -287,14 +277,14 @@ final class ComposerPlugin implements
      * @param Package $package
      * @param Commands $commands
      * @param ProcessExecutor $executor
-     * @param Lock $lock
+     * @param Locker $locker
      * @return bool
      */
     private function processPackage(
         Package $package,
         Commands $commands,
         ProcessExecutor $executor,
-        Lock $lock
+        Locker $locker
     ): bool {
 
         $name = $package->name();
@@ -303,7 +293,7 @@ final class ComposerPlugin implements
         $path = $package->path();
 
         try {
-            if ($lock->isLocked($package)) {
+            if ($locker->isLocked($package)) {
                 $this->io->writeVerboseComment("Skipping '{$name}' because already compiled.");
 
                 return true;
@@ -332,7 +322,7 @@ final class ComposerPlugin implements
 
             if (!$failedDeps && !$failedScript && !$failedWipe) {
                 $this->io->writeComment("  Processing of '{$name}' done.");
-                $lock->lock($package);
+                $locker->lock($package);
 
                 return true;
             }
@@ -351,7 +341,7 @@ final class ComposerPlugin implements
         }
 
         if (!($failure ?? false)) {
-            $lock->lock($package);
+            $locker->lock($package);
 
             return true;
         }
