@@ -94,7 +94,7 @@ JSON;
         static::assertSame(["setup"], $package->script());
     }
 
-    public function testPackageIsNotValidIfMissingPackagesJson()
+    public function testJsonSerialization()
     {
         $json = <<<JSON
 {
@@ -104,7 +104,7 @@ JSON;
 JSON;
         $package = new Package('test/test-package', json_decode($json, true), __DIR__);
 
-        static::assertFalse($package->isValid());
+        static::assertJsonStringEqualsJsonString($json, json_encode($package));
     }
 
     /**

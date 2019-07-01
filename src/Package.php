@@ -63,14 +63,6 @@ class Package implements \JsonSerializable
     }
 
     /**
-     * @return Package
-     */
-    public static function createInvalid(): Package
-    {
-        return new static('', [], null);
-    }
-
-    /**
      * @return string
      */
     private static function defaultName(): string
@@ -109,21 +101,13 @@ class Package implements \JsonSerializable
             return $this->isValid;
         }
 
-        if (!$this->name || (!$this->install() && !$this->update() && !$this->script)) {
+        if (!$this->install() && !$this->update() && !$this->script()) {
             $this->isValid = false;
 
             return false;
         }
 
-        if ($this->isDefault()) {
-            $this->isValid = true;
-
-            return true;
-        }
-
-        $this->isValid = $this->folder
-            && is_dir($this->folder)
-            && file_exists("{$this->folder}/package.json");
+        $this->isValid = ($this->name && $this->folder) || $this->isDefault();
 
         return $this->isValid;
     }
@@ -181,16 +165,25 @@ class Package implements \JsonSerializable
      */
     public function toArray(): array
     {
+        $dependencies = null;
         if ($this->update()) {
             $dependencies = self::DEPENDENCIES_UPDATE;
         } elseif ($this->install()) {
             $dependencies = self::DEPENDENCIES_INSTALL;
         }
 
-        return [
+        $scripts = $this->script();
+
+        if (count($scripts) === 1) {
+            $scripts = reset($scripts);
+        }
+
+        $data = [
             self::DEPENDENCIES => $dependencies ?? null,
-            self::SCRIPT => $this->script(),
+            self::SCRIPT => $scripts ?: null,
         ];
+
+        return array_filter($data);
     }
 
     /**

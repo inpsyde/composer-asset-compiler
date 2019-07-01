@@ -130,18 +130,25 @@ class Config
             return $cached;
         }
 
-        $rawConfig = $this->raw[self::COMMANDS] ?? null;
-        if (!$rawConfig || !is_string($rawConfig) && !is_array($rawConfig)) {
+        $config = $this->raw[self::COMMANDS] ?? null;
+        if (!$config || !is_string($config) && !is_array($config)) {
             $commands =  Commands::discover($executor, $workingDir);
             $this->cache[Commands::class] = $commands;
 
             return $commands;
         }
 
-        if (is_string($rawConfig)) {
-            $commands = Commands::fromDefault($rawConfig);
+        if (is_array($config)) {
+            $envConfig = $this->envResolver->resolve($config);
+            if ($envConfig && (is_string($envConfig) || is_array($envConfig))) {
+                $config = $envConfig;
+            }
+        }
+
+        if (is_string($config)) {
+            $commands = Commands::fromDefault($config);
             if (!$commands->isValid()) {
-                $this->io->writeError("'{$rawConfig}' is not valid, trying to auto-discover.");
+                $this->io->writeError("'{$config}' is not valid, trying to auto-discover.");
                 $commands = Commands::discover($executor, $workingDir);
                 $this->cache[Commands::class] = $commands;
 
@@ -152,9 +159,6 @@ class Config
 
             return $commands;
         }
-
-        $envConfig = $this->envResolver->resolve($rawConfig);
-        $config = $envConfig && is_array($envConfig) ? $envConfig : $rawConfig;
 
         $commands = new Commands($config);
         $this->cache[Commands::class] = $commands;
@@ -185,6 +189,7 @@ class Config
         ($byEnv && is_array($byEnv)) and $config = $byEnv;
 
         $defaults = Package::defaults($config);
+
         if (!$defaults->isValid()) {
             $this->cache[__METHOD__] = null;
 

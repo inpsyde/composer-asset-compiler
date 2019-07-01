@@ -78,19 +78,10 @@ class PackageFactory
             $config = $defaults->toArray();
         }
 
-        if (!$config) {
-            return Package::createInvalid();
-        }
-
-        /** @var string $installPath */
         $installPath = $this->installationManager->getInstallPath($package);
-
-        /** @var string $path */
         $path = $this->filesystem->normalizePath($installPath);
-
-        /** @var string $name */
         $name = $package->getName();
 
-        return new Package($name, $config, $path);
+        return new Package((string)$name, $config ?? [], (string)$path);
     }
 }

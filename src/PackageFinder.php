@@ -45,14 +45,14 @@ class PackageFinder
 
     /**
      * @param RepositoryInterface $repository
-     * @param RootPackageInterface $package
+     * @param RootPackageInterface $root
      * @param PackageFactory $packageFactory
      * @param bool $autoDiscover
      * @return array<string, Package>
      */
     public function find(
         RepositoryInterface $repository,
-        RootPackageInterface $package,
+        RootPackageInterface $root,
         PackageFactory $packageFactory,
         bool $autoDiscover = true
     ): array {
@@ -71,7 +71,7 @@ class PackageFinder
 
         /** @var PackageInterface[] $composerPackages */
         $composerPackages = $repository->getPackages();
-        array_unshift($composerPackages, $package);
+        array_unshift($composerPackages, $root);
 
         foreach ($composerPackages as $composerPackage) {
             /** @var string $name */
@@ -96,7 +96,10 @@ class PackageFinder
                 $packageConfigAllowed
             );
 
-            if ($package->isDefault() || !$this->assertValidPackage($package)) {
+            if ($package->isDefault()
+                || !file_exists($package->path() . '/package.json')
+                || !$this->assertValidPackage($package, $root, $config)
+            ) {
                 continue;
             }
 
@@ -215,16 +218,21 @@ class PackageFinder
 
     /**
      * @param Package $package
+     * @param RootPackageInterface $root
+     * @param array|null $config
      * @return bool
-     * @throws \Exception
      */
-    private function assertValidPackage(Package $package): bool
-    {
+    private function assertValidPackage(
+        Package $package,
+        RootPackageInterface $root,
+        ?array $config
+    ): bool {
+
         if ($package->isValid()) {
             return true;
         }
 
-        if ($this->stopOnFailure) {
+        if ($this->stopOnFailure && ($config !== null || ($package !== $root))) {
             $name = $package->name();
             throw new \Exception("Could not find valid configuration for '{$name}'.");
         }
