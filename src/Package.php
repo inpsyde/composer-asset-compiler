@@ -10,10 +10,10 @@ namespace Inpsyde\AssetsCompiler;
 
 class Package
 {
-    private const DEPENDENCIES = 'dependencies';
-    private const DEPENDENCIES_INSTALL = 'install';
-    private const DEPENDENCIES_UPDATE = 'update';
-    private const SCRIPT = 'script';
+    public const DEPENDENCIES = 'dependencies';
+    public const DEPENDENCIES_INSTALL = 'install';
+    public const DEPENDENCIES_UPDATE = 'update';
+    public const SCRIPT = 'script';
     private const DEFAULTS_NAME = '~~defaults~~';
 
     /**

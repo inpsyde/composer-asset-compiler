@@ -49,7 +49,7 @@ class Locker
 
             @unlink($file);
 
-            return true;
+            return false;
         }
 
         $hash = $this->hashForPackage($package);
