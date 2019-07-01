@@ -134,9 +134,9 @@ class Io
     {
         // phpcs:disable
         $logo = <<<LOGO
-    <fg=green>                        </>
-    <fg=green>        Inpsyde         </>
-    <fg=green>                        </>
+    <fg=white;bg=green>                        </>
+    <fg=white;bg=green>        Inpsyde         </>
+    <fg=white;bg=green>                        </>
 
     <fg=magenta>Composer</> <fg=yellow>Assets</> <fg=magenta>Compiler</>
 LOGO;
