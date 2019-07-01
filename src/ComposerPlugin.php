@@ -265,7 +265,18 @@ final class ComposerPlugin implements
         $locker = new Locker($this->io, $this->config->envResolver()->env());
 
         foreach ($packages as $package) {
-            if (!$this->processPackage($package, $commands, $exec, $locker)) {
+            if ($locker->isLocked($package)) {
+                $name = $package->name();
+                $this->io->writeVerboseComment("Skipping '{$name}' because already compiled.");
+                continue;
+            }
+
+            if ($this->processPackage($package, $commands, $exec)) {
+                $locker->lock($package);
+                continue;
+            }
+
+            if ($this->config->stopOnFailure()) {
                 return false;
             }
         }
@@ -277,14 +288,12 @@ final class ComposerPlugin implements
      * @param Package $package
      * @param Commands $commands
      * @param ProcessExecutor $executor
-     * @param Locker $locker
      * @return bool
      */
     private function processPackage(
         Package $package,
         Commands $commands,
-        ProcessExecutor $executor,
-        Locker $locker
+        ProcessExecutor $executor
     ): bool {
 
         $name = $package->name();
@@ -293,22 +302,16 @@ final class ComposerPlugin implements
         $path = $package->path();
 
         try {
-            if ($locker->isLocked($package)) {
-                $this->io->writeVerboseComment("Skipping '{$name}' because already compiled.");
-
-                return true;
-            }
-
             $this->io->writeComment("Start processing '{$name}'...");
             $shouldWipe = $this->config->wipeAllowed($path);
 
             $doneDeps = $this->doDependencies($package, $commands, $executor);
-            $doneDeps or $failure = true;
+            $success = $doneDeps !== false;
 
             $doneScript = null;
-            if (($doneDeps === null || $doneDeps === true)) {
-                $doneScript = $this->doScript($package, $commands, $executor);
-                $doneScript or $failure = true;
+            if ($success) {
+                $doneScript = $this->doScript($package, $commands, $executor) !== false;
+                $success = $doneDeps !== false;
             }
 
             $doneWipe = null;
@@ -316,16 +319,17 @@ final class ComposerPlugin implements
                 $doneWipe = $this->wipeNodeModules($path);
             }
 
-            $failedDeps = is_bool($doneDeps) && !$doneDeps ? 'failed dependency installation' : '';
-            $failedScript = is_bool($doneScript) && !$doneScript ? 'failed script execution' : '';
-            $failedWipe = is_bool($doneWipe) && !$doneWipe ? 'failed node_modules wiping' : '';
+            $failedDeps = $doneDeps === false ? 'failed dependency installation' : '';
+            $failedScript = $doneScript === false ? 'failed script execution' : '';
+            $failedWipe = $doneWipe === false ? 'failed node_modules wiping' : '';
 
             if (!$failedDeps && !$failedScript && !$failedWipe) {
                 $this->io->writeComment("  Processing of '{$name}' done.");
-                $locker->lock($package);
 
                 return true;
             }
+
+            // If `wipeNodeModules` fails, we show an error message, but we'll still return true
 
             $messages = ["  Processing of '{$name}' terminated with errors:"];
             $failedDeps and $messages[] = "   - {$failedDeps}";
@@ -334,19 +338,13 @@ final class ComposerPlugin implements
 
             $this->io->writeError(...$messages);
         } catch (\Throwable $throwable) {
-            $failure = true;
+            $success = false;
             $this->io->writeError("  Processing of '{$name}' terminated with errors.");
             $this->io->writeVerboseError($throwable->getMessage());
             $this->io->writeVerboseError(...explode("\n", $throwable->getTraceAsString()));
         }
 
-        if (!($failure ?? false)) {
-            $locker->lock($package);
-
-            return true;
-        }
-
-        return !$this->config->stopOnFailure();
+        return $success;
     }
 
     /**
@@ -365,19 +363,18 @@ final class ComposerPlugin implements
         $out = null;
         $cwd = $package->path();
 
-        if ($package->update()) {
-            $this->io->writeVerboseComment("  - updating...");
-            $doneDeps = $executor->execute($commands->updateCmd(), $out, $cwd) === 0;
-        } elseif ($package->install()) {
-            $this->io->writeVerboseComment("  - installing...");
-            $doneDeps = $executor->execute($commands->installCmd(), $out, $cwd) === 0;
-        }
+        $update = $package->update();
+        $install = $package->install();
 
-        if (!is_bool($doneDeps)) {
+        if (!$update && !$install) {
             return null;
         }
 
-        if ($doneDeps) {
+        $this->io->writeVerboseComment($update ? '  - updating...' : '  - installing...');
+
+        $command = $update ? $commands->updateCmd() : $commands->installCmd();
+
+        if ($executor->execute($command, $out, $cwd) === 0) {
             $this->io->writeVerboseInfo('    success!');
 
             return true;
@@ -386,7 +383,7 @@ final class ComposerPlugin implements
         $this->io->writeVerboseError('    failed!');
         $out and $this->io->writeVerboseError("    {$out}");
 
-        return $doneDeps;
+        return false;
     }
 
     /**
