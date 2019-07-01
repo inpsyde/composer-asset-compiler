@@ -15,6 +15,9 @@ class Package implements \JsonSerializable
     public const DEPENDENCIES_UPDATE = 'update';
     public const SCRIPT = 'script';
 
+    /**
+     * @var string|null
+     */
     private static $defaultName;
 
     /**
@@ -67,7 +70,9 @@ class Package implements \JsonSerializable
      */
     private static function defaultName(): string
     {
-        self::$defaultName or self::$defaultName = uniqid('~~defaults~~');
+        if (self::$defaultName === null) {
+            self::$defaultName = uniqid('~~defaults~~');
+        }
 
         return self::$defaultName;
     }

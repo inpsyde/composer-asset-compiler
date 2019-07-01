@@ -97,8 +97,8 @@ class PackageFinder
             );
 
             if ($package->isDefault()
-                || !file_exists($package->path() . '/package.json')
-                || !$this->assertValidPackage($package, $root, $config)
+                || !file_exists(($package->path() ?? '.') . '/package.json')
+                || !$this->assertValidPackage($package, $composerPackage === $root, $config)
             ) {
                 continue;
             }
@@ -218,13 +218,14 @@ class PackageFinder
 
     /**
      * @param Package $package
-     * @param RootPackageInterface $root
+     * @param bool $isRoot
      * @param array|null $config
      * @return bool
+     * @throws \Exception
      */
     private function assertValidPackage(
         Package $package,
-        RootPackageInterface $root,
+        bool $isRoot,
         ?array $config
     ): bool {
 
@@ -232,7 +233,7 @@ class PackageFinder
             return true;
         }
 
-        if ($this->stopOnFailure && ($config !== null || ($package !== $root))) {
+        if ($this->stopOnFailure && (!$isRoot || $config !== null)) {
             $name = $package->name();
             throw new \Exception("Could not find valid configuration for '{$name}'.");
         }
