@@ -8,13 +8,14 @@
 
 namespace Inpsyde\AssetsCompiler;
 
-class Package
+class Package implements \JsonSerializable
 {
     public const DEPENDENCIES = 'dependencies';
     public const DEPENDENCIES_INSTALL = 'install';
     public const DEPENDENCIES_UPDATE = 'update';
     public const SCRIPT = 'script';
-    private const DEFAULTS_NAME = '~~defaults~~';
+
+    private static $defaultName;
 
     /**
      * @var string
@@ -58,7 +59,7 @@ class Package
      */
     public static function defaults(array $config): Package
     {
-        return new static(self::DEFAULTS_NAME, $config, null);
+        return new static(self::defaultName(), $config, null);
     }
 
     /**
@@ -67,6 +68,16 @@ class Package
     public static function createInvalid(): Package
     {
         return new static('', [], null);
+    }
+
+    /**
+     * @return string
+     */
+    private static function defaultName(): string
+    {
+        self::$defaultName or self::$defaultName = uniqid('~~defaults~~');
+
+        return self::$defaultName;
     }
 
     /**
@@ -86,7 +97,7 @@ class Package
         $script = array_filter((array)($config[self::SCRIPT] ?? []), 'is_string');
 
         $this->dependencies = $dependencies;
-        $this->script = array_filter($script);
+        $this->script = array_values(array_filter($script));
     }
 
     /**
@@ -122,7 +133,7 @@ class Package
      */
     public function isDefault(): bool
     {
-        return $this->name === self::DEFAULTS_NAME;
+        return $this->name === self::defaultName();
     }
 
     /**
@@ -138,7 +149,7 @@ class Package
      */
     public function path(): ?string
     {
-        return $this->name === self::DEFAULTS_NAME ? null : $this->folder;
+        return $this->isDefault() ? null : $this->folder;
     }
 
     /**
@@ -180,5 +191,13 @@ class Package
             self::DEPENDENCIES => $dependencies ?? null,
             self::SCRIPT => $this->script(),
         ];
+    }
+
+    /**
+     * @return array
+     */
+    public function jsonSerialize()
+    {
+        return $this->toArray();
     }
 }
