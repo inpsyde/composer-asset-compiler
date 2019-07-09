@@ -44,5 +44,8 @@
             "sh ./vendor/bin/psalm",
             "sh ./vendor/bin/phpunit"
         ]
+    },
+    "extra": {
+        "class": "Inpsyde\\AssetsCompiler\\ComposerPlugin"
     }
 }
