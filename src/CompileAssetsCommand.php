@@ -67,8 +67,11 @@ final class CompileAssetsCommand extends BaseCommand
             $plugin = new ComposerPlugin();
             $plugin->activate($composer, $io);
 
-            $noDev = $input->hasOption('no-dev') && $input->getOption('skip');
-
+            // TODO: "skip" is not added as option in CompileAssetsCommand::configure
+            // TODO: document "skip" option.
+            //$noDev = $input->hasOption('no-dev') && $input->getOption('skip');
+            $noDev = $input->hasOption('no-dev');
+                
             $env = $input->hasOption('env') ? $input->getOption('env') : null;
 
             $plugin->runByCommand(is_string($env) ? $env : null, $noDev);
