@@ -16,6 +16,7 @@
     "minimum-stability": "stable",
     "require": {
         "php": ">= 7.2",
+        "composer-plugin-api": "^1.1",
         "ext-json": "*"
     },
     "autoload": {
