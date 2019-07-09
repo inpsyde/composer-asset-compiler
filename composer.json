@@ -1,7 +1,7 @@
 {
     "name": "inpsyde/composer-assets-compiler",
     "description": "Composer plugin that install dependencies and compile assets based on configuration.",
-    "type": "library",
+    "type": "composer-plugin",
     "license": "MIT",
     "authors": [
         {
