@@ -65,8 +65,12 @@ final class ComposerPlugin implements
     public static function getSubscribedEvents(): array
     {
         return [
-            'post-install-cmd' => 'run',
-            'post-update-cmd' => 'run',
+            'post-install-cmd' => [
+                ['onAutorunBecauseInstall', 0]
+            ],
+            'post-update-cmd' =>  [
+                ['onAutorunBecauseUpdate', 0]
+            ],
         ];
     }
 
@@ -160,7 +164,7 @@ final class ComposerPlugin implements
     /**
      * @return void
      */
-    public function run(): void
+    private function run(): void
     {
         $this->convertErrorsToExceptions();
         $exit = 0;
