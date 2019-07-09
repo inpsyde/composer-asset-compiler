@@ -160,7 +160,7 @@ final class ComposerPlugin implements
     /**
      * @return void
      */
-    private function run(): void
+    public function run(): void
     {
         $this->convertErrorsToExceptions();
         $exit = 0;
