@@ -309,7 +309,13 @@ final class ComposerPlugin implements
             $this->io->writeComment("Start processing '{$name}'...");
             $shouldWipe = $this->config->wipeAllowed($path);
 
-            $doneDeps = $this->doDependencies($package, $commands, $executor);
+            $doneDeps = $this->doDependencies(
+                $package,
+                $commands,
+                $executor,
+                $this->config->filesystem()
+            );
+
             $success = $doneDeps !== false;
 
             $doneScript = null;
@@ -355,12 +361,14 @@ final class ComposerPlugin implements
      * @param Package $package
      * @param Commands $commands
      * @param ProcessExecutor $executor
+     * @param Filesystem $filesystem
      * @return bool|null
      */
     private function doDependencies(
         Package $package,
         Commands $commands,
-        ProcessExecutor $executor
+        ProcessExecutor $executor,
+        Filesystem $filesystem
     ): ?bool {
 
         $doneDeps = null;
@@ -378,14 +386,29 @@ final class ComposerPlugin implements
 
         $command = $update ? $commands->updateCmd() : $commands->installCmd();
 
+        $isYarn = stripos($command, 'yarn') !== false;
+        $lockName = "{$cwd}/package-json.lock";
+        $lockNewName = "{$cwd}/package-json.lock." . uniqid('bck');
+
+        if ($isYarn && file_exists($lockName)) {
+            $this->io->writeVerboseComment("    renaming {$lockName} because using Yarn...");
+            $filesystem->rename($lockName, $lockNewName);
+        }
+
         if ($executor->execute($command, $out, $cwd) === 0) {
             $this->io->writeVerboseInfo('    success!');
+            if ($isYarn && file_exists($lockNewName)) {
+                $filesystem->rename($lockNewName, $lockName);
+            }
 
             return true;
         }
 
         $this->io->writeVerboseError('    failed!');
         $out and $this->io->writeVerboseError("    {$out}");
+        if ($isYarn && file_exists($lockNewName)) {
+            $filesystem->rename($lockNewName, $lockName);
+        }
 
         return false;
     }
