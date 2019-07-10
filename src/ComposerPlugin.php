@@ -66,10 +66,10 @@ final class ComposerPlugin implements
     {
         return [
             'post-install-cmd' => [
-                ['onAutorunBecauseInstall', 0]
+                ['onAutorunBecauseInstall', 0],
             ],
             'post-update-cmd' =>  [
-                ['onAutorunBecauseUpdate', 0]
+                ['onAutorunBecauseUpdate', 0],
             ],
         ];
     }
