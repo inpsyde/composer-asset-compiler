@@ -6,10 +6,9 @@
 
 ## What is this
 
-This is a Composer plugin, that once part of the dependencies will look into a set of packages that 
-have frontend dependencies to install and compile and will do just that.
+This is a Composer plugin that, once part of the dependencies, will look into all installed packages to find those who have frontend assets to install and "compile".
 
-It works with both npm and yarn.
+It works with both *npm* and *Yarn*.
 
 ---
 
@@ -50,11 +49,11 @@ For each Composer package which is not the root, it is supported a configuration
 
 The value of **`dependencies`** can be:
 
-- `"install"`, which means *"install frontend dependencies"*, i. e. run `npm install` or `yarn`
-- `"update"`, which means *"update frontend dependencies"*, i. e. run `npm update --no-save` or `yarn upgrade`
+- `"install"`, which means *"install frontend dependencies"*, i. e. run either `npm install` or `yarn`
+- `"update"`, which means *"update frontend dependencies"*, i. e. run either  `npm update --no-save` or `yarn upgrade`
 - anything else, means *"do not install nor update frontend dependencies"*
 
-The value of **`script`** tells what to do _after_ dependencies are installed (or updated) and anything set in the config will be passed to either `npm run` or `yarn`.
+The value of **`script`** tells what to do _after_ dependencies are installed (or updated) and anything written down in the configuration will be passed to either `npm run` or `yarn`.
 
 For example, the configuration snippet above tells the plugin to run either
 
@@ -144,13 +143,13 @@ At root level, we can define some configuration for the plugin and we can also t
 
 The top-level keys that are took into consideration only for root package are:
 
-- `packages` (object, no default)
-- `defaults` (object, no default)
-- `auto-discover` (boolean, default `true`)
-- `auto-run` (boolean, default `true`)
-- `commands` (string|object, no default)
-- `wipe-node-modules` (boolean|string|object, default `true`)
-- `stop-on-failure` (boolean, default `false`)
+- `packages` (`object`, no default)
+- `defaults` (`object`, no default)
+- `auto-discover` (`boolean`, default `true`)
+- `auto-run` (`boolean`, default `true`)
+- `commands` (`string|object`, no default)
+- `wipe-node-modules` (`boolean|string|object`, default `true`)
+- `stop-on-failure` (`boolean`, default `false`)
 
 **None of this is required**, the plugin can work without any configuration, assuming that
 dependencies have package-level configuration.
@@ -161,7 +160,7 @@ dependencies have package-level configuration.
 
 It is an object where **keys** are packages names, e. g. `"some-vendor/some-package"`, but can make use of "wildcard" to actually refer to multiple packages, e. g. `"some-vendor/*"` or `"some-vendor/foo-*"`.
 
-The `packages` object **values** can contain different things. In fact, it can be:
+The `packages` object **values** can contain different kind of data. In fact, they can be:
 
 - a set of package-level setting (so either an object with `"dependencies"` and `"script"` or an object with `"env"` key and a series of objects in it with `dependencies` and `script`). This will explicitly tell the plugin which setting to use for which package, overriding any eventual package-level configuration that package has.
 - a boolean `true`, that means *"process this dependencies using their package-level setting or defaults if they don't have package-level settings"*
