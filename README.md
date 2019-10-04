@@ -149,7 +149,7 @@ The top-level keys that are took into consideration only for root package are:
 - `auto-run` (`boolean`, default `true`)
 - `commands` (`string|object`, no default)
 - `wipe-node-modules` (`boolean|string|object`, default `true`)
-- `stop-on-failure` (`boolean`, default `false`)
+- `stop-on-failure` (`boolean`, default `true`)
 
 **None of this is required**, the plugin can work without any configuration, assuming that
 dependencies have package-level configuration.

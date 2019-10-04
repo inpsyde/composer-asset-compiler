@@ -205,7 +205,7 @@ final class ComposerPlugin implements
             $this->io->writeVerboseError(...explode("\n", $throwable->getTraceAsString()));
         } finally {
             restore_error_handler();
-            if ($this->mode === self::MODE_COMMAND) {
+            if ($exit || $this->mode === self::MODE_COMMAND) {
                 exit($exit);
             }
         }

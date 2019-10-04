@@ -210,7 +210,7 @@ class Config
             return (bool)$this->cache[__METHOD__];
         }
 
-        $config = $this->raw[self::STOP_ON_FAILURE] ?? false;
+        $config = $this->raw[self::STOP_ON_FAILURE] ?? true;
         if (is_array($config)) {
             $byEnv = $this->envResolver->resolve($config);
             ($byEnv === null) or $config = $byEnv;
