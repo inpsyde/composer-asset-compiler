@@ -68,7 +68,7 @@ final class ComposerPlugin implements
             'post-install-cmd' => [
                 ['onAutorunBecauseInstall', 0],
             ],
-            'post-update-cmd' =>  [
+            'post-update-cmd' => [
                 ['onAutorunBecauseUpdate', 0],
             ],
         ];
@@ -151,7 +151,7 @@ final class ComposerPlugin implements
         }
 
         /** @var RootPackageInterface $rootPackage */
-        $rootPackage =  $this->composer->getPackage();
+        $rootPackage = $this->composer->getPackage();
 
         return new Config(
             $rootPackage,
@@ -226,7 +226,7 @@ final class ComposerPlugin implements
         $installationManager = $this->composer->getInstallationManager();
 
         /** @var RootPackageInterface $root */
-        $root =  $this->composer->getPackage();
+        $root = $this->composer->getPackage();
 
         $factory = new PackageFactory(
             $this->config->envResolver(),
