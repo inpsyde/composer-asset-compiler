@@ -433,6 +433,14 @@ For example, imagine following scenario:
 
 In this scenario only one Composer dependency have changed, but without `.composer_compiled_assets` file all the dependencies would be processed again.
 
+
+
+### Version control
+
+In a common scenario in which package `script` is used to "compile" assets and compiled assets are not under version control, lock file should also **not be versioned**, otherwise the risk is that package compilation is skipped due to the presence of lock file, but compiled assets are not there because not in version control.
+
+In short, unless very special cases, **`.composer_compiled_assets` should be git-ignored** (or ignored in whichever is the VCS in use).
+
 ---
 
 ## Plugin command
