@@ -46,6 +46,11 @@ class Package implements \JsonSerializable
     private $isValid;
 
     /**
+     * @var bool
+     */
+    private $isEmpty;
+
+    /**
      * @return array
      */
     public static function emptyConfig(): array
@@ -95,6 +100,15 @@ class Package implements \JsonSerializable
 
         $this->dependencies = $dependencies;
         $this->script = array_values(array_filter($script));
+        $this->isEmpty = $config === [];
+    }
+
+    /**
+     * @return bool
+     */
+    public function isEmpty(): bool
+    {
+        return $this->isEmpty;
     }
 
     /**

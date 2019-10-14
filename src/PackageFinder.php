@@ -97,6 +97,7 @@ class PackageFinder
             );
 
             if ($package->isDefault()
+                || $package->isEmpty()
                 || !file_exists(($package->path() ?? '.') . '/package.json')
                 || !$this->assertValidPackage($package, $composerPackage === $root, $config)
             ) {
