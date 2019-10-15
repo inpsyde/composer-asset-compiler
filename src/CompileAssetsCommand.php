@@ -67,7 +67,7 @@ final class CompileAssetsCommand extends BaseCommand
             $plugin = new ComposerPlugin();
             $plugin->activate($composer, $io);
 
-            $noDev = $input->hasOption('no-dev');
+            $noDev = (bool)$input->hasOption('no-dev');
             $env = $input->hasOption('env') ? $input->getOption('env') : null;
 
             $plugin->runByCommand(is_string($env) ? $env : null, $noDev);
