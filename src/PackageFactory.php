@@ -50,14 +50,14 @@ class PackageFactory
      * @param array|null $config
      * @param Package|null $defaults
      * @param bool $packageConfigAllowed
-     * @return Package
+     * @return Package|null
      */
-    public function factory(
+    public function attemptFactory(
         PackageInterface $package,
         ?array $config,
         ?Package $defaults,
         bool $packageConfigAllowed
-    ): Package {
+    ): ?Package {
 
         if ($config) {
             $configByEnv = $this->envResolver->resolve($config);
@@ -66,18 +66,25 @@ class PackageFactory
 
         if (!$config && $packageConfigAllowed) {
             $packageConfig = Config::configFromPackage($package);
+            // If config is null, package wasn't required in root, and if it also has no package-level
+            // config, there's no place we can look for config.
+            if ($config === null && !$packageConfig) {
+                return null;
+            }
+
             if ($packageConfig) {
                 $packageByEnv = $this->envResolver->resolve($packageConfig);
                 ($packageByEnv && is_array($packageByEnv)) and $packageConfig = $packageByEnv;
+                $packageConfig and $config = $packageConfig;
             }
-
-            $packageConfig and $config = $packageConfig;
         }
 
-        if (!$config && $defaults) {
-            $config = $defaults->toArray();
+        // If we have no config and no default, no way we can create a valid package.
+        if (!$config && !$defaults) {
+            return null;
         }
 
+        $config or $config = $defaults->toArray();
         $installPath = $this->installationManager->getInstallPath($package);
         $path = $this->filesystem->normalizePath($installPath);
         $name = $package->getName();

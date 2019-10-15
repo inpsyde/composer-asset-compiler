@@ -82,25 +82,24 @@ class PackageFinder
 
             $config = $this->includeData($name, $include);
 
-            if (($config === null && !$autoDiscover)) {
+            $isRoot = $composerPackage === $root;
+            $rootRequired = !$isRoot && ($config !== null);
+
+            if (!$rootRequired && !$autoDiscover) {
                 continue;
             }
 
             // if package was included with `true` (config is `[]`), we allow look in package config
             $packageConfigAllowed = $autoDiscover || ($config === []);
 
-            $package = $packageFactory->factory(
+            $package = $packageFactory->attemptFactory(
                 $composerPackage,
-                $config ?: null, // we pass either non-empty array or null
+                $config,
                 $this->defaults,
                 $packageConfigAllowed
             );
 
-            if ($package->isDefault()
-                || $package->isEmpty()
-                || !file_exists(($package->path() ?? '.') . '/package.json')
-                || !$this->assertValidPackage($package, $composerPackage === $root, $config)
-            ) {
+            if (!$this->assertValidPackage($package, $name, $rootRequired)) {
                 continue;
             }
 
@@ -219,24 +218,39 @@ class PackageFinder
 
     /**
      * @param Package $package
-     * @param bool $isRoot
-     * @param array|null $config
+     * @param string $name
+     * @param bool $rootRequired
      * @return bool
-     * @throws \Exception
      */
     private function assertValidPackage(
-        Package $package,
-        bool $isRoot,
-        ?array $config
+        ?Package $package,
+        string $name,
+        bool $rootRequired
     ): bool {
+
+        $errorMessage = "Could not find valid configuration for '{$name}'.";
+
+        if (!$package && $rootRequired) {
+            if ($this->stopOnFailure) {
+                throw new \Exception($errorMessage);
+            }
+
+            return false;
+        }
+
+        if (!$package
+            || $package->isDefault()
+            || !file_exists(($package->path() ?? '.') . '/package.json')
+        ) {
+            return false;
+        }
 
         if ($package->isValid()) {
             return true;
         }
 
-        if ($this->stopOnFailure && (!$isRoot || $config !== null)) {
-            $name = $package->name();
-            throw new \Exception("Could not find valid configuration for '{$name}'.");
+        if ($this->stopOnFailure && $rootRequired) {
+            throw new \Exception($errorMessage);
         }
 
         return false;

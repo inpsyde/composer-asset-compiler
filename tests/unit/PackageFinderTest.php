@@ -59,6 +59,7 @@ class PackageFinderTest extends TestCase
                     'me/baz-*' => true,
                 ],
                 'auto-discover' => false,
+                'stop-on-failure' => false,
             ],
             'test',
             true

@@ -41,7 +41,7 @@ JSON;
 
         $defaults = Package::defaults(self::DEFAULTS);
 
-        $package = $factory->factory($composerPackage, json_decode($json, true), $defaults, true);
+        $package = $factory->attemptFactory($composerPackage, json_decode($json, true), $defaults, true);
 
         static::assertTrue($package->isValid());
         static::assertTrue($package->update());
@@ -73,7 +73,7 @@ JSON;
 
         $defaults = Package::defaults(self::DEFAULTS);
 
-        $package = $factory->factory($composerPackage, json_decode($json, true), $defaults, true);
+        $package = $factory->attemptFactory($composerPackage, json_decode($json, true), $defaults, true);
 
         static::assertTrue($package->isValid());
         static::assertFalse($package->update());
@@ -97,7 +97,7 @@ JSON;
 
         $defaults = Package::defaults(self::DEFAULTS);
 
-        $package = $factory->factory($composerPackage, json_decode($json, true), $defaults, false);
+        $package = $factory->attemptFactory($composerPackage, json_decode($json, true), $defaults, false);
 
         static::assertTrue($package->isValid());
         static::assertTrue($package->update());
@@ -119,7 +119,7 @@ JSON;
         $composerPackage = \Mockery::mock(PackageInterface::class);
         $composerPackage->shouldReceive('getName')->andReturn('test/test-package');
 
-        $package = $factory->factory($composerPackage, json_decode($json, true), null, true);
+        $package = $factory->attemptFactory($composerPackage, json_decode($json, true), null, true);
 
         static::assertTrue($package->isValid());
         static::assertTrue($package->update());
@@ -143,7 +143,7 @@ JSON;
 
         $defaults = Package::defaults(self::DEFAULTS);
 
-        $package = $factory->factory($composerPackage, json_decode($json, true), null, false);
+        $package = $factory->attemptFactory($composerPackage, json_decode($json, true), null, false);
 
         static::assertTrue($package->isValid());
         static::assertTrue($package->update());
@@ -168,7 +168,7 @@ JSON;
 
         $defaults = Package::defaults(self::DEFAULTS);
 
-        $package = $factory->factory($composerPackage, null, $defaults, true);
+        $package = $factory->attemptFactory($composerPackage, null, $defaults, true);
 
         static::assertTrue($package->isValid());
         static::assertSame(['this_is_nice'], $package->script());
@@ -189,7 +189,7 @@ JSON;
             ]
         );
 
-        $package = $factory->factory($composerPackage, null, null, true);
+        $package = $factory->attemptFactory($composerPackage, null, null, true);
 
         static::assertTrue($package->isValid());
         static::assertSame(['this_is_nice'], $package->script());
@@ -216,7 +216,7 @@ JSON;
 
         $defaults = Package::defaults(self::DEFAULTS);
 
-        $package = $factory->factory($composerPackage, null, $defaults, true);
+        $package = $factory->attemptFactory($composerPackage, null, $defaults, true);
 
         static::assertTrue($package->isValid());
         static::assertSame(['this_is_very_nice'], $package->script());
@@ -240,7 +240,7 @@ JSON;
 
         $defaults = Package::defaults(self::DEFAULTS);
 
-        $package = $factory->factory($composerPackage, null, $defaults, false);
+        $package = $factory->attemptFactory($composerPackage, null, $defaults, false);
 
         static::assertTrue($package->isValid());
         static::assertSame(['encore prod'], $package->script());
@@ -262,9 +262,9 @@ JSON;
             ]
         );
 
-        $package = $factory->factory($composerPackage, null, null, false);
+        $package = $factory->attemptFactory($composerPackage, null, null, false);
 
-        static::assertFalse($package->isValid());
+        static::assertNull($package);
     }
 
     public function testCreateWithoutConfigAllowedPackageLevelButNoPackageConfigAndDefaults()
@@ -279,10 +279,9 @@ JSON;
 
         $defaults = Package::defaults(self::DEFAULTS);
 
-        $package = $factory->factory($composerPackage, null, $defaults, true);
+        $package = $factory->attemptFactory($composerPackage, null, $defaults, true);
 
-        static::assertTrue($package->isValid());
-        static::assertSame(['encore prod'], $package->script());
+        static::assertNull($package);
     }
 
     public function testCreateWithoutConfigAllowedPackageLevelButNoPackageConfigAndNoDefaults()
@@ -294,9 +293,9 @@ JSON;
         $composerPackage->shouldReceive('getName')->andReturn('test/test-package');
         $composerPackage->shouldReceive('getExtra')->andReturn([]);
 
-        $package = $factory->factory($composerPackage, null, null, true);
+        $package = $factory->attemptFactory($composerPackage, null, null, true);
 
-        static::assertFalse($package->isValid());
+        static::assertNull($package);
     }
 
     /**
