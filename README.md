@@ -44,7 +44,9 @@ For each Composer package which is not the root, it is supported a configuration
 {
 	"dependencies": "install",
 	"script": "setup",
-  "default-env": {}
+	"default-env": {
+		"SOME_NAME": "some value"
+	}
 }
 ```
 
@@ -115,8 +117,8 @@ For example:
 
 ```json
 {
-  	"default-env": {
-				"ENCORE_ENV": "dev"
+    "default-env": {
+        "ENCORE_ENV": "dev"
     },
     "env": {
         "staging": {
@@ -214,8 +216,8 @@ An example that contains all the above could be:
     "extra": {
         "composer-asset-compiler": {
           	"default-env": {
-								"ENCORE_ENV": "dev"
-    				},
+                "ENCORE_ENV": "dev"
+            },
             "packages": {
                 "my-company/some-package": {
                     "env": {
