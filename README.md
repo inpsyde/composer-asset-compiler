@@ -38,12 +38,13 @@ in `composer.json`:
 
 ### Package level configuration
 
-For each Composer package which is not the root, it is supported a configuration object with two keys: `dependencies` and `script`:
+For each Composer package which is not the root, it is supported a configuration object with thre keys: `dependencies`, `script`, and `default-env`:
 
 ```json
 {
 	"dependencies": "install",
-	"script": "setup"
+	"script": "setup",
+  "default-env": {}
 }
 ```
 
@@ -71,35 +72,72 @@ which also means that `"setup"` must be a script named like that in `package.jso
 
 **`script` can also contain an array of commands**, which will be run one after the other in the same order they are written.
 
+**`default-env`** can contain an object whose keys will be used as default for environment variables not set.
 
-#### Environments
+In fact, the value of **`script`** can contain placeholders that will be replaced with environment variables or, if missing, from this default environment.
 
-Very often we want to perform different operations based on the environment (local, staging, production...).
-
-This plugin has support for environment-based configuration, which could look like this:
+For example, assuming this configuration:
 
 ```json
 {
+    "dependencies": "install",
+    "script": "encore ${ENCORE_ENV}",
+    "default-env": {
+        "ENCORE_ENV": "dev"
+    }
+}
+```
+
+after dependencies are installed, the package will execute (assuming yarn is found in the system):
+
+```shell
+yarn encore dev
+```
+
+if the environment variable `ENCORE_ENV` is not found. But if the value of that environment variable is for example `prod` the executed command will be:
+
+```shell
+yarn encore prod
+```
+
+
+
+
+#### Environment-based setup
+
+Thanks to the usage of environment variables it is possible to be quite flexible in the execution of commands in different environment. But sometimes even that is not enough.
+
+For example, imagine that when used on a production we want just to compile assets, but on a staging system we also want to execute some tests.
+
+Usage of env variables will not help, because we need to add conditionals. For these use cases, this package support a _series_ of configuration, to be setup per environment. 
+
+For example:
+
+```json
+{
+  	"default-env": {
+				"ENCORE_ENV": "dev"
+    },
     "env": {
-        "ci": {
+        "staging": {
             "dependencies": "install",
             "script": [
-                "setup",
+                "encore ${ENCORE_ENV}",
                 "tests"
             ]
         },
-        "local": {
+        "production": {
             "dependencies": "update",
-            "script": "setup"
+            "script" : "encore ${ENCORE_ENV}"
         },
         "$default": {
             "dependencies": "install",
-            "script": "setup"
+            "script": "encore ${ENCORE_ENV}"
         },
         "$default-no-dev": {
             "dependencies": "install",
             "script": [
-                "setup",
+                "encore ${ENCORE_ENV}",
                 "optimize"
             ]
         }
@@ -107,9 +145,9 @@ This plugin has support for environment-based configuration, which could look li
 }
 ```
 
-When such configuration is used, the first thing the plugin does is to recognize the environment.
+When such configuration is used, the first thing the plugin does is to recognize the target environment.
 
-That is done by looking into an environment variable named **`COMPOSER_ASSETS_COMPILER`.**
+That is done by looking into an environment variable named **`COMPOSER_ASSETS_COMPILER`.** Note that unlike other variables, this **can't** be set via `default-env` config.
 
 If this variable is not found, or its value does not match any key of the value in `"env"` object,
 the plugin fallback to either `"$default-no-dev"`, only if Composer is running with `--no-dev` flag,
@@ -129,11 +167,12 @@ if Composer is running *without*  `--no-dev`, the plugin will look for, in order
 
 ### Root configuration
 
-The 3 keys:
+The 4 keys:
 
 - `dependencies`
 - `script`
 - `env`
+- `default-env`
 
 are the only top-level keys that are took into account  at **package level**.
 
@@ -150,6 +189,7 @@ The top-level keys that are took into consideration only for root package are:
 - `commands` (`string|object`, no default)
 - `wipe-node-modules` (`boolean|string|object`, default `true`)
 - `stop-on-failure` (`boolean`, default `true`)
+- `default-env`  (`object`, no default)
 
 **None of this is required**, the plugin can work without any configuration, assuming that
 dependencies have package-level configuration.
@@ -173,16 +213,19 @@ An example that contains all the above could be:
 {
     "extra": {
         "composer-asset-compiler": {
+          	"default-env": {
+								"ENCORE_ENV": "dev"
+    				},
             "packages": {
                 "my-company/some-package": {
                     "env": {
                         "$default": {
                             "dependencies": "update",
-                            "script": "encore dev"
+                            "script": "encore ${ENCORE_ENV}"
                         },
                         "$default-no-dev": {
                             "dependencies": "install",
-                            "script": "encore prod"
+                            "script": "encore ${ENCORE_ENV}"
                         }
                     }
                 },
@@ -407,6 +450,14 @@ Libraries that are written to be used as dependencies can be installed at root l
 Which means that is possible to use root configuration at package level.
 
 Considering that development and unit tests is most likely the reason why a package is installed as root, it makes sense in most cases to set `auto-discover` to `false` fro libraries.
+
+### Root configuration: `default-env`
+
+The setting `default-env` is allowed at root level, just like at package level.
+
+When resolving the script to be run for a package, and this package settings has been "auto-discovered", the default environment variables are obtained merging the values provided at package level with those provided at root level.
+
+
 
 ---
 
