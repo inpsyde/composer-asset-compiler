@@ -150,10 +150,10 @@ class Commands
         }
 
         if (strpos($command, '${') !== false) {
-            $command = preg_replace_callback(
+            $command = (string)preg_replace_callback(
                 '~\$\{([a-z0-9_]+)\}~i',
                 static function (array $var): string {
-                    return $var[1] ?? '' ? EnvResolver::readEnv($var[1]) : ($var[0] ?? '');
+                    return (string)EnvResolver::readEnv((string)$var[1]);
                 },
                 $command
             );

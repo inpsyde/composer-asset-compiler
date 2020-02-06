@@ -22,8 +22,8 @@ class EnvResolverTest extends TestCase
         $_SERVER['HTTP_ACCEPT'] = 'text/plain';
         $_ENV['x'] = 'X!';
         $_ENV['y'] = 'Y!';
-        putenv('foo=I WIN'); // phpcs:ignore
-        putenv('meh=MEH'); // phpcs:ignore
+        putenv('foo=I WIN');
+        putenv('meh=MEH');
 
         static::assertSame('I WIN', EnvResolver::readEnv('foo'));
         static::assertSame('MEH', EnvResolver::readEnv('meh'));
@@ -35,8 +35,8 @@ class EnvResolverTest extends TestCase
 
         $_SERVER = $backup[0];
         $_ENV = $backup[1];
-        putenv('foo'); // phpcs:ignore
-        putenv('meh'); // phpcs:ignore
+        putenv('foo');
+        putenv('meh');
     }
 
     public function testEnvReturnedWhenSet()
