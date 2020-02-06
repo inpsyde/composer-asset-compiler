@@ -55,6 +55,26 @@ class EnvResolver
     }
 
     /**
+     * @param array $vars
+     * @return array<string, string>
+     */
+    public static function sanitizeEnvVars(array $vars): array
+    {
+        $sanitized = [];
+        foreach ((array)$vars as $key => $value) {
+            if ($key
+                && is_string($key)
+                && is_string($value)
+                && preg_match('/^[a-z_][a-z0-9_]*$/i', $key)
+            ) {
+                $sanitized[$key] = $value;
+            }
+        }
+
+        return $sanitized;
+    }
+
+    /**
      * @param string|null $env
      * @param bool $isDev
      */

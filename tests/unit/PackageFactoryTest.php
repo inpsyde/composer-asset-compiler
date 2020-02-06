@@ -11,6 +11,7 @@ namespace Inpsyde\AssetsCompiler\Tests\Unit;
 use Composer\Installer\InstallationManager;
 use Composer\Package\PackageInterface;
 use Composer\Util\Filesystem;
+use Inpsyde\AssetsCompiler\Commands;
 use Inpsyde\AssetsCompiler\EnvResolver;
 use Inpsyde\AssetsCompiler\Package;
 use Inpsyde\AssetsCompiler\PackageFactory;
@@ -296,6 +297,47 @@ JSON;
         $package = $factory->attemptFactory($composerPackage, null, null, true);
 
         static::assertNull($package);
+    }
+
+    public function testCreateWithoutConfigAllowedPackageLevelByEnvAndPackageEnv()
+    {
+        $factory = $this->factoryFactory('develop');
+
+        /** @var PackageInterface|\Mockery\MockInterface $composerPackage */
+        $composerPackage = \Mockery::mock(PackageInterface::class);
+        $composerPackage->shouldReceive('getName')->andReturn('test/test-package');
+        $composerPackage->shouldReceive('getExtra')->andReturn(
+            [
+                'composer-asset-compiler' => [
+                    'default-env' => [
+                        'ENCORE_ENV' => 'prod',
+                    ],
+                    'env' => [
+                        'develop' => [
+                            'script' => 'encore ${ENCORE_ENV}',
+                        ],
+                        'prod' => [
+                            'script' => 'my-script',
+                        ],
+                    ],
+                ],
+            ]
+        );
+
+        $package = $factory->attemptFactory($composerPackage, null, null, true);
+
+        static::assertTrue($package->isValid());
+        static::assertSame('prod', $package->env()['ENCORE_ENV']);
+
+        $scripts = $package->script();
+        static::assertSame(['encore ${ENCORE_ENV}'], $scripts);
+        $script = array_pop($scripts);
+
+        $commandsNoEnv = Commands::fromDefault('yarn', []);
+        static::assertSame('yarn encore prod', $commandsNoEnv->scriptCmd($script, $package->env()));
+
+        $commandsWithEnv = Commands::fromDefault('yarn', ['ENCORE_ENV' => 'dev']);
+        static::assertSame('yarn encore dev', $commandsWithEnv->scriptCmd($script, $package->env()));
     }
 
     /**

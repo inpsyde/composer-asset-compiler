@@ -73,9 +73,13 @@ class PackageFactory
             }
 
             if ($packageConfig) {
+                $packageEnv = $packageConfig[Config::DEF_ENV] ?? null;
+                unset($packageConfig[Config::DEF_ENV]);
+
                 $packageByEnv = $this->envResolver->resolve($packageConfig);
                 ($packageByEnv && is_array($packageByEnv)) and $packageConfig = $packageByEnv;
                 $packageConfig and $config = $packageConfig;
+                $config and $config[Config::DEF_ENV] = $packageEnv;
             }
         }
 

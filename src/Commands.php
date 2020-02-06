@@ -155,20 +155,21 @@ class Commands
 
     /**
      * @param string $command
+     * @param array $env
      * @return string|null
      */
-    public function scriptCmd(string $command): ?string
+    public function scriptCmd(string $command, array $env = []): ?string
     {
         if (!$this->script) {
             return null;
         }
 
         if (strpos($command, '${') !== false) {
-            $env = $this->defaultEnvironment;
+            $allEnv = array_merge($env, $this->defaultEnvironment);
             $command = (string)preg_replace_callback(
                 '~\$\{([a-z0-9_]+)\}~i',
-                static function (array $var) use ($env): string {
-                    return (string)EnvResolver::readEnv((string)$var[1], $env);
+                static function (array $var) use ($allEnv): string {
+                    return (string)EnvResolver::readEnv((string)$var[1], $allEnv);
                 },
                 $command
             );

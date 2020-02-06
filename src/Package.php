@@ -46,6 +46,11 @@ class Package implements \JsonSerializable
     private $isValid;
 
     /**
+     * @var array<string, string>
+     */
+    private $env;
+
+    /**
      * @return array
      */
     public static function emptyConfig(): array
@@ -93,8 +98,14 @@ class Package implements \JsonSerializable
         /** @var string[] $script */
         $script = array_filter((array)($config[self::SCRIPT] ?? []), 'is_string');
 
+        $envRaw = $config[Config::DEF_ENV] ?? null;
+        if ($envRaw && (is_array($envRaw) || $envRaw instanceof \stdClass)) {
+            $env = EnvResolver::sanitizeEnvVars((array)$envRaw);
+        }
+
         $this->dependencies = $dependencies;
         $this->script = array_values(array_filter($script));
+        $this->env = $env ?? [];
     }
 
     /**
@@ -163,6 +174,14 @@ class Package implements \JsonSerializable
     public function script(): array
     {
         return $this->script;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function env(): array
+    {
+        return $this->env;
     }
 
     /**

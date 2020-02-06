@@ -407,8 +407,9 @@ final class ComposerPlugin implements
 
         $all = 0;
         $done = 0;
+        $packageEnv = $package->env();
         foreach ($scripts as $script) {
-            $command = $commands->scriptCmd($script);
+            $command = $commands->scriptCmd($script, $packageEnv);
             $this->io->writeVerboseComment("  - executing '{$command}'...");
             $all++;
             if ($executor->execute($command, $out, $package->path()) === 0) {

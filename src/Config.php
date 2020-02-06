@@ -290,17 +290,7 @@ class Config
             return [];
         }
 
-        $sanitized = [];
-        foreach ((array)$config as $key => $value) {
-            if ($key
-                && is_string($key)
-                && is_string($value)
-                && preg_match('/^[a-z_][a-z0-9_]*$/i', $key)
-            ) {
-                $sanitized[$key] = $value;
-            }
-        }
-
+        $sanitized = EnvResolver::sanitizeEnvVars((array)$config);
         $this->cache[self::DEF_ENV] = $sanitized;
 
         return $sanitized;
