@@ -122,15 +122,35 @@ class PackageFinderTest extends TestCase
         static::assertArrayHasKey('last/with-env', $found);
 
         $bar = $found['me/bar'];
-        $last = $found['last/with-env'];
 
         static::assertSame(['my-name-is-bar --default'], $bar->script());
+    }
 
-        $backup = $_ENV;
-        $commands = Commands::fromDefault('yarn');
+    public function testReplaceEnv()
+    {
+        $settings = [
+            'default-env' => [
+                'ENV_NAME' => 'production',
+            ],
+        ];
+
+        /** @var Config $config */
+        [, $config] = $this->factoryRootAndConfig($settings, 'test', true);
+
+        $found = $this->findPackages($settings, 'production', true);
+
+        static::assertArrayHasKey('last/with-env', $found);
+
+        $commands = Commands::fromDefault('yarn', $config->defaultEnv());
+
+        $last = $found['last/with-env'];
         $scripts = $last->script();
 
+        $backup = $_ENV;
+
         foreach ($scripts as $script) {
+            static::assertSame('yarn encore production', $commands->scriptCmd($script));
+
             $_ENV['ENV_NAME'] = 'prod';
             static::assertSame('yarn encore prod', $commands->scriptCmd($script));
 
@@ -171,12 +191,12 @@ class PackageFinderTest extends TestCase
     }
 
     /**
-     * @param array $settings
+     * @param array|null $settings
      * @param string $env
      * @param bool $isDev
-     * @return array
+     * @return array{0:RootPackage, 1:Config}
      */
-    private function findPackages(?array $settings, string $env, bool $isDev): array
+    private function factoryRootAndConfig(?array $settings, string $env, bool $isDev): array
     {
         $root = new RootPackage('company/my-root-package', '1.0', '1.0.0.0');
         if ($settings) {
@@ -189,6 +209,20 @@ class PackageFinderTest extends TestCase
             new Filesystem(),
             new Io(new NullIO())
         );
+
+        return [$root, $config];
+    }
+
+    /**
+     * @param array $settings
+     * @param string $env
+     * @param bool $isDev
+     * @param Config|null $config
+     * @return array
+     */
+    private function findPackages(?array $settings, string $env, bool $isDev): array
+    {
+        [$root, $config] = $this->factoryRootAndConfig($settings, $env, $isDev);
 
         $packagesJson = (new vfsStreamFile('package.json'))->withContent('{}');
         $dir = vfsStream::setup('exampleDir');

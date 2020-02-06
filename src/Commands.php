@@ -54,43 +54,57 @@ class Commands
     private $script;
 
     /**
+     * @var array
+     */
+    private $defaultEnvironment;
+
+    /**
      * @param string $manager
+     * @param array $defaultEnvironment
      * @return Commands
      */
-    public static function fromDefault(string $manager): Commands
+    public static function fromDefault(string $manager, array $defaultEnvironment = []): Commands
     {
         $manager = strtolower($manager);
 
         if (!array_key_exists($manager, self::SUPPORTED_DEFAULTS)) {
-            return new static([]);
+            return new static([], $defaultEnvironment);
         }
 
-        return new static(self::SUPPORTED_DEFAULTS[$manager]);
+        return new static(self::SUPPORTED_DEFAULTS[$manager], $defaultEnvironment);
     }
 
     /**
      * @param ProcessExecutor $executor
      * @param string $workingDir
+     * @param array $defaultEnvironment
      * @return Commands
      */
-    public static function discover(ProcessExecutor $executor, string $workingDir): Commands
-    {
+    public static function discover(
+        ProcessExecutor $executor,
+        string $workingDir,
+        array $defaultEnvironment = []
+    ): Commands {
+
         foreach (self::SUPPORTED_DEFAULTS as $name => $data) {
             $discover = (string)($data[self::DISCOVER] ?? '');
 
             if ($discover && $executor->execute($discover, $out, $workingDir) === 0) {
-                return static::fromDefault($name);
+                return static::fromDefault($name, $defaultEnvironment);
             }
         }
 
-        return new static([]);
+        return new static([], $defaultEnvironment);
     }
 
     /**
      * @param array $config
+     * @param array $defaultEnvironment
      */
-    public function __construct(array $config)
+    public function __construct(array $config, array $defaultEnvironment = [])
     {
+        $this->defaultEnvironment = $defaultEnvironment;
+
         $dependencies = $config[self::DEPENDENCIES] ?? null;
 
         $install = null;
@@ -150,10 +164,11 @@ class Commands
         }
 
         if (strpos($command, '${') !== false) {
+            $env = $this->defaultEnvironment;
             $command = (string)preg_replace_callback(
                 '~\$\{([a-z0-9_]+)\}~i',
-                static function (array $var): string {
-                    return (string)EnvResolver::readEnv((string)$var[1]);
+                static function (array $var) use ($env): string {
+                    return (string)EnvResolver::readEnv((string)$var[1], $env);
                 },
                 $command
             );

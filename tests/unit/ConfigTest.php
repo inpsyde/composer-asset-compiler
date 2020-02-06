@@ -314,6 +314,34 @@ JSON;
         static::assertFalse($configStaging->wipeAllowed($dir->url() . '/foo'));
     }
 
+    public function testDefaultEnv()
+    {
+        $json = <<<'JSON'
+{
+    "composer-asset-compiler": {
+        "packages": [],
+        "default-env": {
+            "FOO": "FOO",
+            "BAR_2": "BAR_2",
+            " bad": "bad",
+            "1no1": "no",
+            "OK": "this_is_ok",
+            "n-o": "this_is_not"
+        }
+    }
+}
+JSON;
+        $env =  $this->factoryConfig($json)->defaultEnv();
+
+        static::assertSame('FOO', $env['FOO']);
+        static::assertSame('BAR_2', $env['BAR_2']);
+        static::assertSame('this_is_ok', $env['OK']);
+        static::assertArrayNotHasKey(' bad', $env);
+        static::assertArrayNotHasKey('bad', $env);
+        static::assertArrayNotHasKey('1no1', $env);
+        static::assertArrayNotHasKey('n-o', $env);
+    }
+
     /**
      * @param string $json
      * @param string|null $env

@@ -27,9 +27,10 @@ class EnvResolver
 
     /**
      * @param string $name
+     * @param array $defaults
      * @return string|null
      */
-    public static function readEnv(string $name): ?string
+    public static function readEnv(string $name, array $defaults = []): ?string
     {
         $env = getenv($name);
         if ($env) {
@@ -40,6 +41,8 @@ class EnvResolver
         if (stripos($name, 'HTTP_') !== 0) {
             $toCheck[] = $_SERVER;
         }
+
+        $toCheck[] = $defaults;
 
         foreach ($toCheck as $data) {
             $env = $data[$name] ?? null;

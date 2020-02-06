@@ -22,6 +22,7 @@ class Config
     public const STOP_ON_FAILURE = 'stop-on-failure';
     public const WIPE_NODE_MODULES = 'wipe-node-modules';
     public const AUTO_DISCOVER = 'auto-discover';
+    public const DEF_ENV = 'default-env';
 
     private const EXTRA_KEY = 'composer-asset-compiler';
     private const WIPE_FORCE = 'force';
@@ -132,7 +133,7 @@ class Config
 
         $config = $this->raw[self::COMMANDS] ?? null;
         if (!$config || !is_string($config) && !is_array($config)) {
-            $commands = Commands::discover($executor, $workingDir);
+            $commands = Commands::discover($executor, $workingDir, $this->defaultEnv());
             $this->cache[Commands::class] = $commands;
 
             return $commands;
@@ -146,7 +147,7 @@ class Config
         }
 
         if (is_string($config)) {
-            $commands = Commands::fromDefault($config);
+            $commands = Commands::fromDefault($config, $this->defaultEnv());
             if (!$commands->isValid()) {
                 $this->io->writeError("'{$config}' is not valid, trying to auto-discover.");
                 $commands = Commands::discover($executor, $workingDir);
@@ -160,7 +161,7 @@ class Config
             return $commands;
         }
 
-        $commands = new Commands($config);
+        $commands = new Commands($config, $this->defaultEnv());
         $this->cache[Commands::class] = $commands;
 
         return $commands;
@@ -271,5 +272,37 @@ class Config
         }
 
         return !is_dir("{$packageFolder}/node_modules");
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function defaultEnv(): array
+    {
+        /** @var array<string, string>|null $cached */
+        $cached = $this->cache[self::DEF_ENV] ?? null;
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $config = $this->raw[self::DEF_ENV] ?? null;
+        if (!is_array($config) && !$config instanceof \stdClass) {
+            return [];
+        }
+
+        $sanitized = [];
+        foreach ((array)$config as $key => $value) {
+            if ($key
+                && is_string($key)
+                && is_string($value)
+                && preg_match('/^[a-z_][a-z0-9_]*$/i', $key)
+            ) {
+                $sanitized[$key] = $value;
+            }
+        }
+
+        $this->cache[self::DEF_ENV] = $sanitized;
+
+        return $sanitized;
     }
 }
