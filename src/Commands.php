@@ -145,10 +145,20 @@ class Commands
      */
     public function scriptCmd(string $command): ?string
     {
-        if ($this->script) {
-            return sprintf($this->script, $command);
+        if (!$this->script) {
+            return null;
         }
 
-        return null;
+        if (strpos($command, '${') !== false) {
+            $command = preg_replace_callback(
+                '~\$\{([a-z0-9_]+)\}~i',
+                static function (array $var): string {
+                    return $var[1] ?? '' ? EnvResolver::readEnv($var[1]) : ($var[0] ?? '');
+                },
+                $command
+            );
+        }
+
+        return sprintf($this->script, $command);
     }
 }

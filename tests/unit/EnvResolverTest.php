@@ -13,6 +13,32 @@ use Inpsyde\AssetsCompiler\Tests\TestCase;
 
 class EnvResolverTest extends TestCase
 {
+    public function testEnvVarResolution()
+    {
+        $backup = [$_SERVER, $_ENV];
+
+        $_SERVER['foo'] = 'FOO';
+        $_SERVER['bar'] = 'BAR';
+        $_SERVER['HTTP_ACCEPT'] = 'text/plain';
+        $_ENV['x'] = 'X!';
+        $_ENV['y'] = 'Y!';
+        putenv('foo=I WIN'); // phpcs:ignore
+        putenv('meh=MEH'); // phpcs:ignore
+
+        static::assertSame('I WIN', EnvResolver::readEnv('foo'));
+        static::assertSame('MEH', EnvResolver::readEnv('meh'));
+        static::assertSame('X!', EnvResolver::readEnv('x'));
+        static::assertSame('Y!', EnvResolver::readEnv('y'));
+        static::assertSame('BAR', EnvResolver::readEnv('bar'));
+        static::assertSame(null, EnvResolver::readEnv('HTTP_ACCEPT'));
+        static::assertSame(null, EnvResolver::readEnv('xyz'));
+
+        $_SERVER = $backup[0];
+        $_ENV = $backup[1];
+        putenv('foo'); // phpcs:ignore
+        putenv('meh'); // phpcs:ignore
+    }
+
     public function testEnvReturnedWhenSet()
     {
         $resolver = new EnvResolver('foo', false);

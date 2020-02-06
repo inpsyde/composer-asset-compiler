@@ -144,10 +144,7 @@ final class ComposerPlugin implements
     private function initConfig(?string $env, bool $isDev): Config
     {
         if ($env === null) {
-            $env = getenv('COMPOSER_ASSETS_COMPILER')
-                ?: $_SERVER['COMPOSER_ASSETS_COMPILER']
-                ?? $_ENV['COMPOSER_ASSETS_COMPILER']
-                ?? null;
+            $env = EnvResolver::readEnv('COMPOSER_ASSETS_COMPILER');
         }
 
         /** @var RootPackageInterface $rootPackage */
@@ -155,7 +152,7 @@ final class ComposerPlugin implements
 
         return new Config(
             $rootPackage,
-            new EnvResolver(is_string($env) ? $env : null, $isDev),
+            new EnvResolver($env, $isDev),
             new Filesystem(),
             $this->io
         );

@@ -16,6 +16,7 @@ use Composer\Package\RootPackage;
 use Composer\Repository\ArrayRepository;
 use Composer\Repository\RepositoryInterface;
 use Composer\Util\Filesystem;
+use Inpsyde\AssetsCompiler\Commands;
 use Inpsyde\AssetsCompiler\Config;
 use Inpsyde\AssetsCompiler\EnvResolver;
 use Inpsyde\AssetsCompiler\Io;
@@ -31,7 +32,7 @@ class PackageFinderTest extends TestCase
     {
         $found = $this->findPackages(null, 'test', true);
 
-        static::assertCount(2, $found);
+        static::assertCount(3, $found);
         static::assertArrayHasKey('me/foo', $found);
         static::assertArrayHasKey('me/bar', $found);
 
@@ -116,12 +117,28 @@ class PackageFinderTest extends TestCase
             true
         );
 
-        static::assertCount(1, $found);
+        static::assertCount(2, $found);
         static::assertArrayHasKey('me/bar', $found);
+        static::assertArrayHasKey('last/with-env', $found);
 
         $bar = $found['me/bar'];
+        $last = $found['last/with-env'];
 
         static::assertSame(['my-name-is-bar --default'], $bar->script());
+
+        $backup = $_ENV;
+        $commands = Commands::fromDefault('yarn');
+        $scripts = $last->script();
+
+        foreach ($scripts as $script) {
+            $_ENV['ENV_NAME'] = 'prod';
+            static::assertSame('yarn encore prod', $commands->scriptCmd($script));
+
+            $_ENV['ENV_NAME'] = 'dev';
+            static::assertSame('yarn encore dev', $commands->scriptCmd($script));
+        }
+
+        $_ENV = $backup;
     }
 
     public function testForceDefaults()
@@ -228,6 +245,15 @@ class PackageFinderTest extends TestCase
 
         $baz = new ComposerPackage('me/baz-package', '1.0', '1.0.0.0');
 
-        return new ArrayRepository([$foo, $bar, $baz]);
+        $last = new ComposerPackage('last/with-env', '1.0', '1.0.0.0');
+        $last->setExtra(
+            [
+                'composer-asset-compiler' => [
+                    'script' => 'encore ${ENV_NAME}',
+                ],
+            ]
+        );
+
+        return new ArrayRepository([$foo, $bar, $baz, $last]);
     }
 }

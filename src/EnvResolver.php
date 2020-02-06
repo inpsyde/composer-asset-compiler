@@ -26,6 +26,32 @@ class EnvResolver
     private $isDev;
 
     /**
+     * @param string $name
+     * @return string|null
+     */
+    public static function readEnv(string $name): ?string
+    {
+        $env = getenv($name);
+        if ($env) {
+            return $env;
+        }
+
+        $toCheck = [$_ENV];
+        if (stripos($name, 'HTTP_') !== 0) {
+            $toCheck[] = $_SERVER;
+        }
+
+        foreach ($toCheck as $data) {
+            $env = $data[$name] ?? null;
+            if ($env && is_string($env)) {
+                return $env;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @param string|null $env
      * @param bool $isDev
      */

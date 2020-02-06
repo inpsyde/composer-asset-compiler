@@ -132,7 +132,7 @@ class Config
 
         $config = $this->raw[self::COMMANDS] ?? null;
         if (!$config || !is_string($config) && !is_array($config)) {
-            $commands =  Commands::discover($executor, $workingDir);
+            $commands = Commands::discover($executor, $workingDir);
             $this->cache[Commands::class] = $commands;
 
             return $commands;
