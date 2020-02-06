@@ -215,7 +215,7 @@ An example that contains all the above could be:
 {
     "extra": {
         "composer-asset-compiler": {
-          	"default-env": {
+            "default-env": {
                 "ENCORE_ENV": "dev"
             },
             "packages": {
