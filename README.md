@@ -1,14 +1,14 @@
 # Composer Asset Compiler
 
-> Composer plugin that install dependencies and compile assets based on configuration.
-
 ---
 
 ## What is this
 
-This is a Composer plugin that, once part of the dependencies, will look into all installed packages to find those who have frontend assets to install and "compile".
+This is a Composer plugin that, once part of the dependencies, will look into all installed Composer packages to "find" which of them contain frontend assets to install and "compile".
 
 It works with both *npm* and *Yarn*.
+
+Note that this plugin will not do anything in the regard of installing *npm* or *Yarn*, at least one of these two is required ot be _already_ available in the system when Composer install/update is executed.
 
 ---
 
@@ -38,7 +38,7 @@ in `composer.json`:
 
 ### Package level configuration
 
-For each Composer package which is not the root, it is supported a configuration object with thre keys: `dependencies`, `script`, and `default-env`:
+For each Composer package which is not the root, it is supported a configuration object with three keys: `dependencies`, `script`, and `default-env`:
 
 ```json
 {
@@ -90,7 +90,7 @@ For example, assuming this configuration:
 }
 ```
 
-after dependencies are installed, the package will execute (assuming yarn is found in the system):
+after dependencies are installed, the package will execute (assuming Yarn is found in the system):
 
 ```shell
 yarn encore dev
@@ -109,7 +109,7 @@ yarn encore prod
 
 Thanks to the usage of environment variables it is possible to be quite flexible in the execution of commands in different environment. But sometimes even that is not enough.
 
-For example, imagine that when used on a production we want just to compile assets, but on a staging system we also want to execute some tests.
+For example, imagine that in production we want just to compile assets, but on staging we also want to execute some tests.
 
 Usage of env variables will not help, because we need to add conditionals. For these use cases, this package support a _series_ of configuration, to be setup per environment. 
 
@@ -545,7 +545,7 @@ Via Composer, package name is `inpsyde/composer-assets-compiler`.
 
 ## License
 
-Copyright (c) 2019 Inpsyde GmbH
+Copyright (c) 2020 Inpsyde GmbH
 
 This code is licensed under the [MIT License](LICENSE).
 
