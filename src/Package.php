@@ -117,7 +117,7 @@ class Package implements \JsonSerializable
             return $this->isValid;
         }
 
-        if (!$this->install() && !$this->update() && !$this->script()) {
+        if (!$this->isInstall() && !$this->isUpdate() && !$this->script()) {
             $this->isValid = false;
 
             return false;
@@ -137,6 +137,22 @@ class Package implements \JsonSerializable
     }
 
     /**
+     * @return bool
+     */
+    public function isInstall(): bool
+    {
+        return $this->dependencies === self::DEPENDENCIES_INSTALL;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isUpdate(): bool
+    {
+        return $this->dependencies === self::DEPENDENCIES_UPDATE;
+    }
+
+    /**
      * @return string
      */
     public function name(): string
@@ -150,22 +166,6 @@ class Package implements \JsonSerializable
     public function path(): ?string
     {
         return $this->isDefault() ? null : $this->folder;
-    }
-
-    /**
-     * @return bool
-     */
-    public function install(): bool
-    {
-        return $this->dependencies === self::DEPENDENCIES_INSTALL;
-    }
-
-    /**
-     * @return bool
-     */
-    public function update(): bool
-    {
-        return $this->dependencies === self::DEPENDENCIES_UPDATE;
     }
 
     /**
@@ -190,9 +190,9 @@ class Package implements \JsonSerializable
     public function toArray(): array
     {
         $dependencies = null;
-        if ($this->update()) {
+        if ($this->isUpdate()) {
             $dependencies = self::DEPENDENCIES_UPDATE;
-        } elseif ($this->install()) {
+        } elseif ($this->isInstall()) {
             $dependencies = self::DEPENDENCIES_INSTALL;
         }
 

@@ -26,8 +26,8 @@ JSON;
         $package = $this->factoryPackage($json);
 
         static::assertTrue($package->isValid());
-        static::assertTrue($package->install());
-        static::assertFalse($package->update());
+        static::assertTrue($package->isInstall());
+        static::assertFalse($package->isUpdate());
         static::assertSame(["setup"], $package->script());
         static::assertSame('test/test-package', $package->name());
     }
@@ -42,8 +42,8 @@ JSON;
         $package = $this->factoryPackage($json);
 
         static::assertTrue($package->isValid());
-        static::assertFalse($package->install());
-        static::assertTrue($package->update());
+        static::assertFalse($package->isInstall());
+        static::assertTrue($package->isUpdate());
         static::assertSame([], $package->script());
     }
 
@@ -57,8 +57,8 @@ JSON;
         $package = $this->factoryPackage($json);
 
         static::assertTrue($package->isValid());
-        static::assertFalse($package->install());
-        static::assertFalse($package->update());
+        static::assertFalse($package->isInstall());
+        static::assertFalse($package->isUpdate());
         static::assertSame(["foo", "bar"], $package->script());
     }
 
@@ -72,8 +72,8 @@ JSON;
         $package = $this->factoryPackage($json);
 
         static::assertTrue($package->isValid());
-        static::assertFalse($package->install());
-        static::assertFalse($package->update());
+        static::assertFalse($package->isInstall());
+        static::assertFalse($package->isUpdate());
         static::assertSame(["foo", "bar", "baz"], $package->script());
     }
 
@@ -89,8 +89,8 @@ JSON;
 
         static::assertTrue($package->isValid());
         static::assertTrue($package->isDefault());
-        static::assertTrue($package->install());
-        static::assertFalse($package->update());
+        static::assertTrue($package->isInstall());
+        static::assertFalse($package->isUpdate());
         static::assertSame(["setup"], $package->script());
     }
 

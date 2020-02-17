@@ -184,8 +184,8 @@ class PackageFinderTest extends TestCase
         /** @var Package $package */
         foreach ($found as $name => $package) {
             static::assertSame($name, $package->name());
-            static::assertFalse($package->install());
-            static::assertTrue($package->update());
+            static::assertFalse($package->isInstall());
+            static::assertTrue($package->isUpdate());
             static::assertSame(['foo', 'bar'], $package->script());
         }
     }

@@ -99,7 +99,7 @@ JSON;
 
         $exec = \Mockery::mock(ProcessExecutor::class);
 
-        static::assertSame('yarn', $config->commands($exec, __DIR__)->installCmd());
+        static::assertSame('yarn', $config->commands($exec, __DIR__)->installCmd($this->factoryIo()));
     }
 
     public function testCommandsCreatesNpmFromDefault()
@@ -117,7 +117,8 @@ JSON;
 
         $exec = \Mockery::mock(ProcessExecutor::class);
 
-        static::assertSame('npm install', $config->commands($exec, __DIR__)->installCmd());
+        $io = $this->factoryIo();
+        static::assertSame('npm install', $config->commands($exec, __DIR__)->installCmd($io));
     }
 
     public function testCommandsAdvanced()
@@ -149,13 +150,13 @@ JSON;
         $configForProd = $this->factoryConfig($json, 'production')->commands($exec, __DIR__);
         $configForLocal = $this->factoryConfig($json, 'local')->commands($exec, __DIR__);
 
-        static::assertSame('foo --install', $configForTest->installCmd());
-        static::assertSame('bar --update', $configForTest->updateCmd());
+        static::assertSame('foo --install', $configForTest->installCmd($this->factoryIo()));
+        static::assertSame('bar --update', $configForTest->updateCmd($this->factoryIo()));
         static::assertSame('baz x --run', $configForTest->scriptCmd('x'));
 
-        static::assertSame('npm install', $configForProd->installCmd());
+        static::assertSame('npm install', $configForProd->installCmd($this->factoryIo()));
 
-        static::assertSame('yarn', $configForLocal->installCmd());
+        static::assertSame('yarn', $configForLocal->installCmd($this->factoryIo()));
     }
 
     public function testCommandsFromBadDefaults()
@@ -213,8 +214,8 @@ JSON;
         $defaultsForProd = $this->factoryConfig($json, 'production')->defaults();
         $defaultsInvalid = $this->factoryConfig($json, 'invalid')->defaults();
 
-        static::assertTrue($defaultsForTest->install());
-        static::assertTrue($defaultsForProd->update());
+        static::assertTrue($defaultsForTest->isInstall());
+        static::assertTrue($defaultsForProd->isUpdate());
         static::assertNull($defaultsInvalid);
     }
 

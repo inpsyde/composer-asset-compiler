@@ -364,16 +364,18 @@ final class ComposerPlugin implements
         $out = null;
         $cwd = $package->path();
 
-        $update = $package->update();
-        $install = $package->install();
+        $isUpdate = $package->isUpdate();
+        $isInstall = $package->isInstall();
 
-        if (!$update && !$install) {
+        if (!$isUpdate && !$isInstall) {
             return null;
         }
 
-        $this->io->writeVerboseComment($update ? '  - updating...' : '  - installing...');
+        $this->io->writeVerboseComment($isUpdate ? '  - updating...' : '  - installing...');
 
-        $command = $update ? $commands->updateCmd() : $commands->installCmd();
+        $command = $isUpdate
+            ? $commands->updateCmd($this->io)
+            : $commands->installCmd($this->io);
 
         if ($executor->execute($command, $out, $cwd) === 0) {
             $this->io->writeVerboseInfo('    success!');

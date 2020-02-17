@@ -8,7 +8,9 @@
 
 namespace Inpsyde\AssetsCompiler;
 
+use Composer\IO\ConsoleIO;
 use Composer\IO\IOInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class Io
 {
@@ -20,6 +22,11 @@ class Io
     private $io;
 
     /**
+     * @var bool|null
+     */
+    private $quiet;
+
+    /**
      * @param IOInterface $io
      */
     public function __construct(IOInterface $io)
@@ -28,11 +35,76 @@ class Io
     }
 
     /**
-     * @return IOInterface
+     * @return bool
      */
-    public function io(): IOInterface
+    public function isVerbose(): bool
     {
-        return $this->io;
+        return $this->io->isVerbose();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isVeryVerbose(): bool
+    {
+        return $this->io->isVeryVerbose();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isVeryVeryVerbose(): bool
+    {
+        return $this->io->isDebug();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isQuiet(): bool
+    {
+        if (is_bool($this->quiet)) {
+            return $this->quiet;
+        }
+
+        if (!($this->io instanceof ConsoleIO)) {
+            $this->quiet = false;
+
+            return false;
+        }
+
+        $isQuiet = \Closure::bind(
+            function (): bool {
+                $output = $this->output ?? null;
+                if ($output instanceof OutputInterface) {
+                    return $output->isQuiet();
+                }
+
+                return false;
+            },
+            $this->io,
+            ConsoleIO::class
+        );
+
+        $this->quiet = $isQuiet();
+
+        return $this->quiet;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isNormalVerbosity(): bool
+    {
+        return !$this->isVerbose() && !$this->isQuiet();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isInteractive(): bool
+    {
+        return $this->io->isInteractive();
     }
 
     /**

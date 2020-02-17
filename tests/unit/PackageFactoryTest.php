@@ -45,8 +45,8 @@ JSON;
         $package = $factory->attemptFactory($composerPackage, json_decode($json, true), $defaults, true);
 
         static::assertTrue($package->isValid());
-        static::assertTrue($package->update());
-        static::assertFalse($package->install());
+        static::assertTrue($package->isUpdate());
+        static::assertFalse($package->isInstall());
         static::assertSame(['destroy'], $package->script());
     }
 
@@ -77,8 +77,8 @@ JSON;
         $package = $factory->attemptFactory($composerPackage, json_decode($json, true), $defaults, true);
 
         static::assertTrue($package->isValid());
-        static::assertFalse($package->update());
-        static::assertFalse($package->install());
+        static::assertFalse($package->isUpdate());
+        static::assertFalse($package->isInstall());
         static::assertSame(["hello", "world"], $package->script());
     }
 
@@ -101,8 +101,8 @@ JSON;
         $package = $factory->attemptFactory($composerPackage, json_decode($json, true), $defaults, false);
 
         static::assertTrue($package->isValid());
-        static::assertTrue($package->update());
-        static::assertFalse($package->install());
+        static::assertTrue($package->isUpdate());
+        static::assertFalse($package->isInstall());
         static::assertSame(['destroy'], $package->script());
     }
 
@@ -123,8 +123,8 @@ JSON;
         $package = $factory->attemptFactory($composerPackage, json_decode($json, true), null, true);
 
         static::assertTrue($package->isValid());
-        static::assertTrue($package->update());
-        static::assertFalse($package->install());
+        static::assertTrue($package->isUpdate());
+        static::assertFalse($package->isInstall());
         static::assertSame(['destroy'], $package->script());
     }
 
@@ -147,8 +147,8 @@ JSON;
         $package = $factory->attemptFactory($composerPackage, json_decode($json, true), null, false);
 
         static::assertTrue($package->isValid());
-        static::assertTrue($package->update());
-        static::assertFalse($package->install());
+        static::assertTrue($package->isUpdate());
+        static::assertFalse($package->isInstall());
         static::assertSame(['destroy'], $package->script());
     }
 

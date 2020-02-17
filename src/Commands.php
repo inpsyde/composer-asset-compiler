@@ -134,23 +134,25 @@ class Commands
      */
     public function isValid(): bool
     {
-        return $this->installCmd() && $this->updateCmd() && $this->scriptCmd('test');
+        return !empty($this->dependencies[self::DEPENDENCIES_INSTALL]) && $this->scriptCmd('test');
     }
 
     /**
+     * @param Io $io
      * @return string|null
      */
-    public function installCmd(): ?string
+    public function installCmd(Io $io): ?string
     {
-        return $this->dependencies[self::DEPENDENCIES_INSTALL];
+        return $this->maybeVerbose($this->dependencies[self::DEPENDENCIES_INSTALL], $io);
     }
 
     /**
+     * @param Io $io
      * @return string|null
      */
-    public function updateCmd(): ?string
+    public function updateCmd(Io $io): ?string
     {
-        return $this->dependencies[self::DEPENDENCIES_UPDATE];
+        return $this->maybeVerbose($this->dependencies[self::DEPENDENCIES_UPDATE], $io);
     }
 
     /**
@@ -176,5 +178,78 @@ class Commands
         }
 
         return sprintf($this->script, $command);
+    }
+
+    /**
+     * @param string|null $cmd
+     * @param Io $io
+     * @return string|null
+     */
+    private function maybeVerbose(?string $cmd, Io $io): ?string
+    {
+        if (!$cmd) {
+            return $cmd;
+        }
+
+        $isYarn = stripos($cmd, 'yarn') !== false;
+        $isNpm = !$isYarn && stripos($cmd, 'npm') !== false;
+
+        if (!$isYarn && !$isNpm) {
+            return $cmd;
+        }
+
+        return $isYarn
+            ? $this->maybeVerboseYarn($cmd, $io)
+            : $this->maybeVerboseNpm($cmd, $io);
+    }
+
+    /**
+     * @param string $cmd
+     * @param Io $io
+     * @return string
+     */
+    private function maybeVerboseYarn(string $cmd, Io $io): string
+    {
+        if (!$io->isInteractive() && (stripos($cmd, '-interactive') === false)) {
+            $cmd .= ' --non-interactive';
+        }
+
+        if ((stripos($cmd, '-verbose') !== false) || (stripos($cmd, '-silent') !== false)) {
+            return $cmd;
+        }
+
+        if ($io->isQuiet()) {
+            return "{$cmd} --silent";
+        }
+
+        return $io->isVerbose() ? "{$cmd} --verbose" : $cmd;
+    }
+
+    /**
+     * @param string $cmd
+     * @param Io $io
+     * @return string
+     */
+    private function maybeVerboseNpm(string $cmd, Io $io): string
+    {
+        if ((stripos($cmd, '-d') !== false)
+            || (stripos($cmd, '-s') !== false)
+            || (stripos($cmd, '-loglevel') !== false)
+            || (stripos($cmd, '-silent') !== false)
+            || (stripos($cmd, '-quiet') !== false)
+        ) {
+            return $cmd;
+        }
+
+        switch (true) {
+            case $io->isQuiet():
+                return "{$cmd} --silent";
+            case $io->isVeryVeryVerbose():
+                return "{$cmd} -ddd";
+            case $io->isVeryVerbose():
+                return "{$cmd} -dd";
+        }
+
+        return $io->isVerbose() ? "{$cmd} -d" : $cmd;
     }
 }
