@@ -94,21 +94,13 @@ class Io
     /**
      * @return bool
      */
-    public function isNormalVerbosity(): bool
-    {
-        return !$this->isVerbose() && !$this->isQuiet();
-    }
-
-    /**
-     * @return bool
-     */
     public function isInteractive(): bool
     {
         return $this->io->isInteractive();
     }
 
     /**
-     * @param string[] $messages
+     * @param string ...$messages
      */
     public function write(string ...$messages): void
     {
@@ -118,7 +110,7 @@ class Io
     }
 
     /**
-     * @param string[] $messages
+     * @param string ...$messages
      */
     public function writeVerbose(string ...$messages): void
     {
@@ -128,7 +120,7 @@ class Io
     }
 
     /**
-     * @param string[] $messages
+     * @param string ...$messages
      */
     public function writeInfo(string ...$messages): void
     {
@@ -136,7 +128,7 @@ class Io
     }
 
     /**
-     * @param string[] $messages
+     * @param string ...$messages
      */
     public function writeComment(string ...$messages): void
     {
@@ -144,7 +136,7 @@ class Io
     }
 
     /**
-     * @param string[] $messages
+     * @param string ...$messages
      */
     public function writeError(string ...$messages): void
     {
@@ -152,7 +144,7 @@ class Io
     }
 
     /**
-     * @param string[] $messages
+     * @param string ...$messages
      */
     public function writeVerboseInfo(string ...$messages): void
     {
@@ -160,7 +152,7 @@ class Io
     }
 
     /**
-     * @param string[] $messages
+     * @param string ...$messages
      */
     public function writeVerboseComment(string ...$messages): void
     {
@@ -168,7 +160,7 @@ class Io
     }
 
     /**
-     * @param string[] $messages
+     * @param string ...$messages
      */
     public function writeVerboseError(string ...$messages): void
     {
@@ -178,7 +170,7 @@ class Io
     /**
      * @param string $tag
      * @param bool $verbose
-     * @param string[] $messages
+     * @param string ...$messages
      */
     private function writeDecorated(string $tag, bool $verbose, string ...$messages): void
     {

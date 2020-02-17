@@ -61,6 +61,9 @@ final class ComposerPlugin implements
 
     /**
      * @return array
+     *
+     * @see ComposerPlugin::onAutorunBecauseInstall()
+     * @see ComposerPlugin::onAutorunBecauseUpdate()
      */
     public static function getSubscribedEvents(): array
     {
@@ -360,10 +363,6 @@ final class ComposerPlugin implements
         ProcessExecutor $executor
     ): ?bool {
 
-        $doneDeps = null;
-        $out = null;
-        $cwd = $package->path();
-
         $isUpdate = $package->isUpdate();
         $isInstall = $package->isInstall();
 
@@ -377,16 +376,7 @@ final class ComposerPlugin implements
             ? $commands->updateCmd($this->io)
             : $commands->installCmd($this->io);
 
-        if ($executor->execute($command, $out, $cwd) === 0) {
-            $this->io->writeVerboseInfo('    success!');
-
-            return true;
-        }
-
-        $this->io->writeVerboseError('    failed!');
-        $out and $this->io->writeVerboseError("    {$out}");
-
-        return false;
+        return $this->executeCommand($executor, $command, $package->path());
     }
 
     /**
@@ -411,20 +401,40 @@ final class ComposerPlugin implements
         $done = 0;
         $packageEnv = $package->env();
         foreach ($scripts as $script) {
+            $all++;
             $command = $commands->scriptCmd($script, $packageEnv);
             $this->io->writeVerboseComment("  - executing '{$command}'...");
-            $all++;
-            if ($executor->execute($command, $out, $package->path()) === 0) {
-                $this->io->writeVerboseInfo('    success!');
-                $done++;
-                continue;
-            }
-
-            $this->io->writeVerboseError('    failed!');
-            $out and $this->io->writeVerboseError("    {$out}");
+            $this->executeCommand($executor, $command, $package->path()) and $done++;
         }
 
         return $all === $done;
+    }
+
+    /**
+     * @param ProcessExecutor $executor
+     * @param string $command
+     * @param string $cwd
+     * @return bool
+     */
+    private function executeCommand(ProcessExecutor $executor, string $command, string $cwd): bool
+    {
+        $success = $executor->execute($command, $out, $cwd) === 0;
+        $success
+            ? $this->io->writeVerboseInfo('    success!')
+            : $this->io->writeVerboseError('    failed!');
+
+        if (!$out || !is_string($out)) {
+            return $success;
+        }
+
+        $lines = explode("\n", $out);
+        foreach ($lines as $line) {
+            $success
+                ? $this->io->writeVerbose('    ' . trim($line))
+                : $this->io->writeVerboseError('    ' . trim($line));
+        }
+
+        return $success;
     }
 
     /**
