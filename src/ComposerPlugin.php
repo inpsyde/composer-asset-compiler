@@ -21,6 +21,7 @@ use Composer\Repository\RepositoryManager;
 use Composer\Script\Event;
 use Composer\Util\Filesystem;
 use Composer\Util\ProcessExecutor;
+use Symfony\Component\Process\Process;
 
 /**
  * phpcs:disable Inpsyde.CodeQuality.NoAccessors
@@ -418,21 +419,20 @@ final class ComposerPlugin implements
      */
     private function executeCommand(ProcessExecutor $executor, string $command, string $cwd): bool
     {
-        $success = $executor->execute($command, $out, $cwd) === 0;
+        static $outputHandler;
+        $outputHandler or $outputHandler = function (string $type, string $buffer): void {
+            $lines = explode("\n", $buffer);
+            foreach ($lines as $line) {
+                Process::ERR === $type
+                    ? $this->io->writeVerboseError('    ' . trim($line))
+                    : $this->io->writeVerbose('    ' . trim($line));
+            }
+        };
+
+        $success = $executor->execute($command, $outputHandler, $cwd) === 0;
         $success
             ? $this->io->writeVerboseInfo('    success!')
             : $this->io->writeVerboseError('    failed!');
-
-        if (!$out || !is_string($out)) {
-            return $success;
-        }
-
-        $lines = explode("\n", $out);
-        foreach ($lines as $line) {
-            $success
-                ? $this->io->writeVerbose('    ' . trim($line))
-                : $this->io->writeVerboseError('    ' . trim($line));
-        }
 
         return $success;
     }
