@@ -222,7 +222,7 @@ class Commands
             return "{$cmd} --silent";
         }
 
-        return $io->isVerbose() ? "{$cmd} --verbose" : $cmd;
+        return $io->isVeryVeryVerbose() ? "{$cmd} --verbose" : $cmd;
     }
 
     /**
