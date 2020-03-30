@@ -451,7 +451,7 @@ Libraries that are written to be used as dependencies can be installed at root l
 
 Which means that is possible to use root configuration at package level.
 
-Considering that development and unit tests is most likely the reason why a package is installed as root, it makes sense in most cases to set `auto-discover` to `false` fro libraries.
+Considering that development and unit tests is most likely the reason why a package is installed as root, it makes sense in most cases to set `auto-discover` to `false` for libraries.
 
 ### Root configuration: `default-env`
 
