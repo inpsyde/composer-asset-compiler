@@ -388,15 +388,15 @@ An interesting feature is the possibility to set commands by env:
 
 ### Root configuration: `wipe-node-modules`
 
-The plugin installs frontend dependencies for each of the processed Composer packages, which means a `/node-modules` folder will be created for each processed Composer package, so the possible impact on disk space can be quite huge.
+The plugin installs frontend dependencies for each of the processed Composer packages, which means a `/node_modules` folder will be created for each processed Composer package, so the possible impact on disk space can be quite huge.
 
-However, is true that after assets have been compiled `/node-modules` folder is very likely not necessary anymore, and so could be deleted, and this is exactly what the plugin does by default.
+However, is true that after assets have been compiled `/node_modules` folder is very likely not necessary anymore, and so could be deleted, and this is exactly what the plugin does by default.
 
-By setting `wipe-node-modules` to `false` this is not done, and all `/node-modules` folder will be kept.
+By setting `wipe-node-modules` to `false` this is not done, and all `/node_modules` folder will be kept.
 
-When `wipe-node-modules` is set to `true` (which is the default) `/node-modules` folder is deleted, but only if it is created by the plugin: in the case the folder was already there when the plugin started its work, then it is not deleted.
+When `wipe-node-modules` is set to `true` (which is the default) `/node_modules` folder is deleted, but only if it is created by the plugin: in the case the folder was already there when the plugin started its work, then it is not deleted.
 
-By setting `wipe-node-modules` to the string `"force"` all `/node-modules` folders for processed packages are always deleted, no matter if they existed when plugin started its work.
+By setting `wipe-node-modules` to the string `"force"` all `/node_modules` folders for processed packages are always deleted, no matter if they existed when plugin started its work.
 
 `wipe-node-modules` can also be configured per environment, as already seen in for other settings:
 
@@ -451,7 +451,7 @@ Libraries that are written to be used as dependencies can be installed at root l
 
 Which means that is possible to use root configuration at package level.
 
-Considering that development and unit tests is most likely the reason why a package is installed as root, it makes sense in most cases to set `auto-discover` to `false` fro libraries.
+Considering that development and unit tests is most likely the reason why a package is installed as root, it makes sense in most cases to set `auto-discover` to `false` for libraries.
 
 ### Root configuration: `default-env`
 
