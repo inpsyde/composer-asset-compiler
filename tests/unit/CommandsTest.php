@@ -184,4 +184,15 @@ class CommandsTest extends TestCase
         static::assertSame('npm update -d', $commands->updateCmd($quiet));
         static::assertSame('npm update -d', $commands->updateCmd($quietNoInt));
     }
+
+    public function testAdditionalArguments()
+    {
+        $yarn = Commands::fromDefault('yarn');
+        $npm = Commands::fromDefault('npm');
+
+        $script = 'build -- --name=value';
+
+        static::assertSame('yarn build --name=value', $yarn->scriptCmd($script));
+        static::assertSame('npm run build -- --name=value', $npm->scriptCmd($script));
+    }
 }
