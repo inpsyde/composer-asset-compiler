@@ -376,6 +376,7 @@ final class ComposerPlugin implements
 
         $this->io->writeVerboseComment($isUpdate ? '  - updating...' : '  - installing...');
 
+        /** @var string $command */
         $command = $isUpdate
             ? $commands->updateCmd($this->io)
             : $commands->installCmd($this->io);
@@ -406,6 +407,7 @@ final class ComposerPlugin implements
         $packageEnv = $package->env();
         foreach ($scripts as $script) {
             $all++;
+            /** @var string $command */
             $command = $commands->scriptCmd($script, $packageEnv);
             $this->io->writeVerboseComment("  - executing '{$command}'...");
             $this->executeCommand($executor, $command, $package->path()) and $done++;
@@ -417,10 +419,10 @@ final class ComposerPlugin implements
     /**
      * @param ProcessExecutor $executor
      * @param string $command
-     * @param string $cwd
+     * @param string|null $cwd
      * @return bool
      */
-    private function executeCommand(ProcessExecutor $executor, string $command, string $cwd): bool
+    private function executeCommand(ProcessExecutor $executor, string $command, ?string $cwd): bool
     {
         static $outputHandler;
         $outputHandler or $outputHandler = function (string $type, string $buffer): void {

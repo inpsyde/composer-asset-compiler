@@ -96,6 +96,6 @@ class PackageFactory
         $path = $this->filesystem->normalizePath($installPath);
         $name = $package->getName();
 
-        return new Package((string)$name, $config ?? [], (string)$path);
+        return new Package((string)$name, $config, (string)$path);
     }
 }

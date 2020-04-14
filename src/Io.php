@@ -42,7 +42,7 @@ class Io
      */
     public function isVerbose(): bool
     {
-        return $this->io->isVerbose();
+        return (bool)$this->io->isVerbose();
     }
 
     /**
@@ -50,7 +50,7 @@ class Io
      */
     public function isVeryVerbose(): bool
     {
-        return $this->io->isVeryVerbose();
+        return (bool)$this->io->isVeryVerbose();
     }
 
     /**
@@ -58,7 +58,7 @@ class Io
      */
     public function isVeryVeryVerbose(): bool
     {
-        return $this->io->isDebug();
+        return (bool)$this->io->isDebug();
     }
 
     /**
@@ -76,11 +76,11 @@ class Io
             return false;
         }
 
-        $isQuiet = \Closure::bind(
+        $isQuietChecker = \Closure::bind(
             function (): bool {
                 $output = $this->output ?? null;
                 if ($output instanceof OutputInterface) {
-                    return $output->isQuiet();
+                    return (bool)$output->isQuiet();
                 }
 
                 return false;
@@ -89,9 +89,11 @@ class Io
             ConsoleIO::class
         );
 
-        $this->quiet = $isQuiet();
+        /** @var bool $isQuiet */
+        $isQuiet = $isQuietChecker ? $isQuietChecker() : false;
+        $this->quiet = $isQuiet;
 
-        return $this->quiet;
+        return $isQuiet;
     }
 
     /**
@@ -99,7 +101,7 @@ class Io
      */
     public function isInteractive(): bool
     {
-        return $this->io->isInteractive();
+        return (bool)$this->io->isInteractive();
     }
 
     /**
