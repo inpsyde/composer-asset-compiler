@@ -75,7 +75,7 @@ class PackageFinderTest extends TestCase
     public function testNoSettingsAndNoDefaultsMakeFailureWhenStopOnFailureIsTrue()
     {
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessageRegExp('/Could not find valid configuration/');
+        $this->expectExceptionMessageMatches('/Could not find valid configuration/');
 
         $this->findPackages(
             [
@@ -93,7 +93,7 @@ class PackageFinderTest extends TestCase
     public function testForceDefaultsFailsIfNoDefaults()
     {
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessageRegExp('/configuration is missing/');
+        $this->expectExceptionMessageMatches('/configuration is missing/');
 
         $this->findPackages(
             [

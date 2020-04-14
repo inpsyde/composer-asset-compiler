@@ -120,8 +120,8 @@ class CommandsTest extends TestCase
         $quietNoInt = $this->factoryIo(OutputInterface::VERBOSITY_QUIET, false);
 
         static::assertSame('yarn --verbose', $commands->installCmd($veryVeryVerbose));
-        static::assertSame('yarn --verbose', $commands->installCmd($veryVerbose));
-        static::assertSame('yarn --verbose', $commands->installCmd($verbose));
+        static::assertSame('yarn', $commands->installCmd($veryVerbose));
+        static::assertSame('yarn', $commands->installCmd($verbose));
         static::assertSame('yarn', $commands->installCmd($normal));
         static::assertSame('yarn --silent', $commands->installCmd($quiet));
         static::assertSame('yarn --non-interactive --silent', $commands->installCmd($quietNoInt));
