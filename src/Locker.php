@@ -1,10 +1,13 @@
-<?php declare(strict_types=1);
+<?php
+
 /*
  * This file is part of the "Composer Asset Compiler" package.
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler;
 
@@ -65,7 +68,7 @@ class Locker
     {
         $file = ($package->path() ?? '') . '/' . self::LOCK_FILE;
 
-        if (!@file_put_contents($file, $this->hashForPackage($package))) {
+        if (!@file_put_contents($file, $this->hashForPackage($package))) { // phpcs:ignore
             $this->io->writeVerboseError("Could not write lock file {$file}.");
         }
     }

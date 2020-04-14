@@ -1,10 +1,13 @@
-<?php declare(strict_types=1);
+<?php
+
 /*
  * This file is part of the "Composer Asset Compiler" package.
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler;
 
@@ -62,7 +65,8 @@ class EnvResolver
     {
         $sanitized = [];
         foreach ((array)$vars as $key => $value) {
-            if ($key
+            if (
+                $key
                 && is_string($key)
                 && is_string($value)
                 && preg_match('/^[a-z_][a-z0-9_]*$/i', $key)

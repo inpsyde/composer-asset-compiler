@@ -1,10 +1,13 @@
-<?php declare(strict_types=1);
+<?php
+
 /*
  * This file is part of the "Composer Asset Compiler" package.
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler;
 
@@ -161,7 +164,8 @@ class PackageFinder
     private function shouldExclude(string $name, string ...$exclude): bool
     {
         foreach ($exclude as $pattern) {
-            if ($pattern === $name
+            if (
+                $pattern === $name
                 || fnmatch($pattern, $name, FNM_PATHNAME | FNM_PERIOD | FNM_CASEFOLD)
             ) {
                 return true;
@@ -188,7 +192,8 @@ class PackageFinder
          * @var array|null $data
          */
         foreach ($include as $pattern => $data) {
-            if ($pattern === $name
+            if (
+                $pattern === $name
                 || fnmatch($pattern, $name, FNM_PATHNAME | FNM_PERIOD | FNM_CASEFOLD)
             ) {
                 return $data ?? [];
@@ -238,7 +243,8 @@ class PackageFinder
             return false;
         }
 
-        if (!$package
+        if (
+            !$package
             || $package->isDefault()
             || !file_exists(($package->path() ?? '.') . '/package.json')
         ) {

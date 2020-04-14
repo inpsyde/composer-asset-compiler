@@ -1,10 +1,13 @@
-<?php declare(strict_types=1);
+<?php
+
 /*
  * This file is part of the "Composer Asset Compiler" package.
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
+declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler;
 
@@ -232,7 +235,8 @@ class Commands
      */
     private function maybeVerboseNpm(string $cmd, Io $io): string
     {
-        if ((stripos($cmd, '-d') !== false)
+        if (
+            (stripos($cmd, '-d') !== false)
             || (stripos($cmd, '-s') !== false)
             || (stripos($cmd, '-loglevel') !== false)
             || (stripos($cmd, '-silent') !== false)
