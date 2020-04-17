@@ -135,18 +135,18 @@ class Config
         }
 
         $config = $this->raw[self::COMMANDS] ?? null;
-        if (!$config || !is_string($config) && !is_array($config)) {
-            $commands = Commands::discover($executor, $workingDir, $this->defaultEnv());
-            $this->cache[Commands::class] = $commands;
-
-            return $commands;
-        }
-
         if (is_array($config)) {
             $envConfig = $this->envResolver->resolve($config);
             if ($envConfig && (is_string($envConfig) || is_array($envConfig))) {
                 $config = $envConfig;
             }
+        }
+
+        if (!$config || (!is_string($config) && !is_array($config))) {
+            $commands = Commands::discover($executor, $workingDir, $this->defaultEnv());
+            $this->cache[Commands::class] = $commands;
+
+            return $commands;
         }
 
         if (is_string($config)) {
@@ -217,7 +217,7 @@ class Config
         $config = $this->raw[self::STOP_ON_FAILURE] ?? true;
         if (is_array($config)) {
             $byEnv = $this->envResolver->resolve($config);
-            ($byEnv === null) or $config = $byEnv;
+            $config = $byEnv === null ? true : $byEnv;
         }
 
         $stop = (bool)filter_var($config, FILTER_VALIDATE_BOOLEAN);
@@ -263,7 +263,7 @@ class Config
 
         if (is_array($config)) {
             $byEnv = $this->envResolver->resolve($config);
-            ($byEnv === null) or $config = $byEnv;
+            $config = $byEnv === null ? true : $byEnv;
         }
 
         if ($config === self::WIPE_FORCE) {
