@@ -259,7 +259,8 @@ class Config
             return false;
         }
 
-        $config = $this->raw[self::WIPE_NODE_MODULES] ?? null;
+        $config = $this->raw[self::WIPE_NODE_MODULES] ?? true;
+
         if (is_array($config)) {
             $byEnv = $this->envResolver->resolve($config);
             ($byEnv === null) or $config = $byEnv;
@@ -269,11 +270,13 @@ class Config
             return true;
         }
 
-        $config = (bool)filter_var($config, FILTER_VALIDATE_BOOLEAN);
-
-        if (!$config) {
+        if (!filter_var($config, FILTER_VALIDATE_BOOLEAN)) {
             return false;
         }
+
+        // This is called when the plugin starts process the package.
+        // If `node_modules` dir exists, it means that was *not* created by the plugin itself,
+        // but existed before, so we don't deleted it.
 
         return !is_dir("{$packageFolder}/node_modules");
     }

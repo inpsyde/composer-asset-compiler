@@ -25,11 +25,5 @@
         </properties>
     </rule>
 
-    <rule ref="Inpsyde.CodeQuality.ElementNameMinimalLength">
-        <properties>
-            <property name="additionalAllowedNames" type="array" value="io" />
-        </properties>
-    </rule>
-
 </ruleset>
 
