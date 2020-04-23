@@ -44,6 +44,8 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
         $output->shouldReceive('isQuiet')
             ->andReturn($verbosity === OutputInterface::VERBOSITY_QUIET);
 
+        $output->shouldReceive('write')->zeroOrMoreTimes();
+
         $composerIo = new ConsoleIO($input, $output, new HelperSet());
 
         return new Io($composerIo);

@@ -12,11 +12,6 @@ final class ProcessResults
     private $total = 0;
 
     /**
-     * @var int
-     */
-    private $executed = 0;
-
-    /**
      * @var \SplQueue|null
      */
     private $successful;
@@ -148,7 +143,7 @@ final class ProcessResults
     public function notExecutedCount(): int
     {
         $successes = $this->successes();
-        $errors = $this->successes();
+        $errors = $this->errors();
         $successesCount = $successes ? $successes->count() : 0;
         $errorsCount = $errors ? $errors->count() : 0;
 

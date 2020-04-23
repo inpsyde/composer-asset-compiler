@@ -55,13 +55,13 @@ class ProcessManager
      */
     public function __construct(
         callable $outputHandler,
-        int $timeoutLimit = 600,
+        int $timeoutLimit = 600, # seconds, default: 10 minutes
         int $maxParallel = 4,
-        int $poll = 100000
+        int $poll = 100000       # milliseconds, default: 1/10 of second
     ) {
 
         $this->outputHandler = $outputHandler;
-        $this->timeoutLimit = $timeoutLimit > 10 ? $timeoutLimit : 1000;
+        $this->timeoutLimit = $timeoutLimit >= 10 ? $timeoutLimit : 1000;
         $this->maxParallel = $maxParallel >= 1 ? $maxParallel : 4;
         $this->poll = $poll >= 10000 ? $poll : 100000;
 
@@ -90,7 +90,7 @@ class ProcessManager
      */
     public function execute(Io $io, bool $stopOnFailure): ProcessResults
     {
-        if (!$this->total) {
+        if ($this->total <= 0) {
             return ProcessResults::empty();
         }
 
@@ -102,11 +102,13 @@ class ProcessManager
          */
         [$timedOut, $successful, $erroneous] = $this->executeProcesses($io, $stopOnFailure);
 
-        $this->resetStatus();
-
-        return $timedOut
+        $results = $timedOut
             ? ProcessResults::timeout($this->total, $successful, $erroneous)
             : ProcessResults::new($this->total, $successful, $erroneous);
+
+        $this->resetStatus();
+
+        return $results;
     }
 
     /**
@@ -136,23 +138,21 @@ class ProcessManager
         ?\SplQueue $erroneous = null
     ): array {
 
-        if (
-            $this->timeoutLimit > 10 // Timeout less than 10 seconds is ignored
-            && ((microtime(true) - $this->executionStarted) > $this->timeoutLimit)
-        ) {
-            return [true, $running, $successful, $erroneous];
-        }
-
         $running = $this->startProcessesFormStack($io, $running ?? new \SplQueue());
 
         [$stillRunning, $successful, $erroneous] = $this->checkRunningProcesses(
             $io,
+            $stopOnFailure,
             $running,
             $successful ?? new \SplQueue(),
             $erroneous ?? new \SplQueue()
         );
 
-        if (!$erroneous->isEmpty() && $stopOnFailure) {
+        if ($this->checkTimedOut()) {
+            return [true, $successful, $erroneous, $running];
+        }
+
+        if ($stopOnFailure && !$erroneous->isEmpty()) {
             return [false, $successful, $erroneous, $stillRunning];
         }
 
@@ -167,6 +167,14 @@ class ProcessManager
         }
 
         return [false, $successful, $erroneous, $stillRunning];
+    }
+
+    /**
+     * @return bool
+     */
+    private function checkTimedOut(): bool
+    {
+        return (microtime(true) - $this->executionStarted) > $this->timeoutLimit;
     }
 
     /**
@@ -199,6 +207,7 @@ class ProcessManager
 
     /**
      * @param \Inpsyde\AssetsCompiler\Io $io
+     * @param bool $stopOnFailure ,
      * @param \SplQueue $running
      * @param \SplQueue $successful
      * @param \SplQueue $erroneous
@@ -206,6 +215,7 @@ class ProcessManager
      */
     private function checkRunningProcesses(
         Io $io,
+        bool $stopOnFailure,
         \SplQueue $running,
         \SplQueue $successful,
         \SplQueue $erroneous
@@ -213,6 +223,7 @@ class ProcessManager
 
         $stillRunning = new \SplQueue();
 
+        $stopAnyRunning = false;
         while (!$running->isEmpty()) {
             /**
              * @var Process $process
@@ -221,7 +232,14 @@ class ProcessManager
             [$process, $package] = $running->dequeue();
             $name = $package->name();
 
-            if ($process->isRunning()) {
+            $isRunning = $process->isRunning();
+
+            if ($isRunning && $stopAnyRunning) {
+                $process->stop();
+                continue;
+            }
+
+            if ($isRunning) {
                 $stillRunning->enqueue([$process, $package]);
                 continue;
             }
@@ -232,6 +250,7 @@ class ProcessManager
                 $io->writeError("{$prefix} - Failed processing {$name}.");
                 $veryVerbose or $this->writeProcessError($process, $io);
                 $erroneous->enqueue([$process, $package]);
+                $stopAnyRunning or $stopAnyRunning = $stopOnFailure;
                 continue;
             }
 
