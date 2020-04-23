@@ -46,6 +46,11 @@ class ProcessManager
     private $executionStarted;
 
     /**
+     * @var array<string, string>
+     */
+    private $commands;
+
+    /**
      * @param callable $outputHandler
      */
     public function __construct(
@@ -72,6 +77,7 @@ class ProcessManager
     public function pushPackageToProcess(Package $package, string $packageCommand): ProcessManager
     {
         $process = $this->factoryProcessForPackage($package, $packageCommand);
+        $this->commands[$package->name()] = $packageCommand;
         $this->stack->enqueue([$process, $package]);
         $this->total++;
 
@@ -111,6 +117,7 @@ class ProcessManager
         $this->stack = new \SplQueue();
         $this->total = 0;
         $this->executionStarted = 0.0;
+        $this->commands = [];
     }
 
     /**
@@ -177,7 +184,9 @@ class ProcessManager
             [$process, $package] = $this->stack->dequeue();
 
             $name = $package->name();
+            $command = $this->commands[$name] ?? '';
             $io->writeVerboseComment(" - Starting process of '{$name}'");
+            $command and $io->writeVerboseComment("   $ {$command}");
 
             $process->start($this->outputHandler);
             $running->enqueue([$process, $package]);
@@ -219,9 +228,7 @@ class ProcessManager
 
             if (!$process->isSuccessful()) {
                 $io->writeError(" - Failed processing {$name}.");
-                if (!$io->isVeryVerbose()) {
-                    $io->writeError('   ' . $process->getErrorOutput());
-                }
+                $io->isVeryVerbose() or $io->writeError('   ' . $process->getErrorOutput());
                 $erroneous->enqueue([$process, $package]);
                 continue;
             }
