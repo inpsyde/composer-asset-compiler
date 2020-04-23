@@ -16,14 +16,13 @@ use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Installer\InstallationManager;
 use Composer\IO\IOInterface;
 use Composer\Package\RootPackageInterface;
+use Composer\Plugin\Capability\CommandProvider;
 use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
-use Composer\Plugin\Capability\CommandProvider;
 use Composer\Repository\RepositoryInterface;
 use Composer\Repository\RepositoryManager;
 use Composer\Script\Event;
 use Composer\Util\Filesystem;
-use Composer\Util\ProcessExecutor;
 use Symfony\Component\Process\Process;
 
 /**
@@ -183,15 +182,13 @@ final class ComposerPlugin implements
                 return;
             }
 
-            $exec = new ProcessExecutor();
-
             /** @var Package $firstPackage */
             $firstPackage = reset($packages);
 
             /** @var string $path */
             $path = $firstPackage->path();
 
-            $commands = $this->config->commands($exec, $path);
+            $commands = $this->config->commands($path);
 
             if (!$commands->isValid()) {
                 throw new \Exception(
@@ -200,9 +197,9 @@ final class ComposerPlugin implements
                 );
             }
 
-            if (!$this->processPackages($commands, $exec, ...$packages)) {
-                throw new \Exception("Assets compilation stopped due to failure.");
-            }
+            $this->processPackages($commands, ...$packages)
+                ? $this->io->writeInfo('', 'done.', '')
+                : $exit = 1;
         } catch (\Throwable $throwable) {
             $exit = 1;
             $this->io->writeError($throwable->getMessage());
@@ -260,186 +257,186 @@ final class ComposerPlugin implements
 
     /**
      * @param Commands $commands
-     * @param ProcessExecutor $exec
      * @param Package ...$packages
      * @return bool
      */
-    private function processPackages(
-        Commands $commands,
-        ProcessExecutor $exec,
-        Package ...$packages
-    ): bool {
-
+    private function processPackages(Commands $commands, Package ...$packages): bool
+    {
         $locker = new Locker($this->io, $this->config->envResolver()->env());
 
+        $timeout = 0;
+        $processesData = [];
         foreach ($packages as $package) {
             if ($locker->isLocked($package)) {
                 $name = $package->name();
-                $this->io->writeVerboseComment("Skipping '{$name}' because already compiled.");
+                $this->io->writeVerboseComment(" Skipping '{$name}' because already compiled.");
                 continue;
             }
 
-            if ($this->processPackage($package, $commands, $exec)) {
-                $locker->lock($package);
-                continue;
-            }
+            [$package, $command, $shouldWipe, $timeout] = $this->buildPackageCommandData(
+                $package,
+                $commands,
+                $timeout
+            );
 
-            if ($this->config->stopOnFailure()) {
-                return false;
-            }
+            $processesData[] = [$package, $command, $shouldWipe, $timeout];
         }
 
-        return true;
+        if (!$processesData) {
+            $this->io->writeComment(" Nothing to process.");
+
+            return true;
+        }
+
+        $processManager = new ProcessManager(
+            function (string $type, string $buffer) {
+                $this->outputHandler($type, $buffer);
+            },
+            $timeout,
+            $this->config->maxProcesses(),
+            $this->config->processesPoll()
+        );
+
+        $toWipe = [];
+
+        /**
+         * @var \Inpsyde\AssetsCompiler\Package $package
+         * @var string $command
+         * @var bool $shouldWipe
+         */
+        foreach ($processesData as [$package, $command, $shouldWipe]) {
+            $processManager = $processManager->pushPackageToProcess($package, $command);
+            $toWipe[$package->name()] = $shouldWipe;
+        }
+
+        $results = $processManager->execute($this->io, $this->config->stopOnFailure());
+
+        return $this->handleResults($results, $locker, $toWipe, $timeout);
     }
 
     /**
-     * @param Package $package
-     * @param Commands $commands
-     * @param ProcessExecutor $executor
+     * @param \Inpsyde\AssetsCompiler\ProcessResults $results
+     * @param \Inpsyde\AssetsCompiler\Locker $locker
+     * @param array<string, bool> $toWipe
+     * @param int $timeout
      * @return bool
      */
-    private function processPackage(
-        Package $package,
-        Commands $commands,
-        ProcessExecutor $executor
+    private function handleResults(
+        ProcessResults $results,
+        Locker $locker,
+        array $toWipe,
+        int $timeout
     ): bool {
 
-        $name = $package->name();
-
-        /** @var string $path */
-        $path = $package->path();
-
-        try {
-            $this->io->writeComment("Start processing '{$name}'...");
-            $shouldWipe = $this->config->wipeAllowed($path);
-
-            $doneDeps = $this->doDependencies($package, $commands, $executor);
-            $success = $doneDeps !== false;
-
-            $doneScript = null;
-            if ($success) {
-                $doneScript = $this->doScript($package, $commands, $executor) !== false;
-                $success = $doneDeps !== false;
-            }
-
-            $doneWipe = null;
-            if ($doneDeps && ($doneScript === null || $doneScript === true) && $shouldWipe) {
-                $doneWipe = $this->wipeNodeModules($path);
-            }
-
-            $failedDeps = $doneDeps === false ? 'failed dependency installation' : '';
-            $failedScript = $doneScript === false ? 'failed script execution' : '';
-            $failedWipe = $doneWipe === false ? 'failed node_modules wiping' : '';
-
-            if (!$failedDeps && !$failedScript && !$failedWipe) {
-                $this->io->writeComment("  Processing of '{$name}' done.");
-
-                return true;
-            }
-
-            // If `wipeNodeModules` fails, we show an error message, but we'll still return true
-
-            $messages = ["  Processing of '{$name}' terminated with errors:"];
-            $failedDeps and $messages[] = "   - {$failedDeps}";
-            $failedScript and $messages[] = "   - {$failedScript}";
-            $failedWipe and $messages[] = "   - {$failedWipe}";
-
-            $this->io->writeError(...$messages);
-        } catch (\Throwable $throwable) {
-            $success = false;
-            $this->io->writeError("  Processing of '{$name}' terminated with errors.");
-            $this->io->writeVerboseError($throwable->getMessage());
-            $this->io->writeVerboseError(...explode("\n", $throwable->getTraceAsString()));
+        if ($results->timedOut()) {
+            $this->io->writeError(
+                'Could not complete processing of packages because timeout of '
+                . "{$timeout} seconds reached."
+            );
         }
 
-        return $success;
+        $notExecuted = $results->notExecutedCount();
+        if ($notExecuted > 0) {
+            $total = $results->total();
+            $this->io->writeError("{$notExecuted} packages out of {$total} were NOT processed.");
+        }
+
+        $successes = $results->successes();
+        while ($successes && !$successes->isEmpty()) {
+            /** @var Package $package */
+            [, $package] = $successes->dequeue();
+            $locker->lock($package);
+            if (!empty($toWipe[$package->name()])) {
+                $this->wipeNodeModules($package->path());
+            }
+        }
+
+        return $results->isSuccessful();
     }
 
     /**
-     * @param Package $package
-     * @param Commands $commands
-     * @param ProcessExecutor $executor
-     * @return bool|null
+     * @param \Inpsyde\AssetsCompiler\Package $package
+     * @param \Inpsyde\AssetsCompiler\Commands $commands
+     * @param int $timeout
+     * @return array{0:string, 1:string, 2:bool, 3:int}
      */
-    private function doDependencies(
+    private function buildPackageCommandData(
         Package $package,
         Commands $commands,
-        ProcessExecutor $executor
-    ): ?bool {
+        int $timeout
+    ): array {
 
+        $shouldWipe = $this->config->wipeAllowed($package->path() ?? '');
+
+        $timeout += 300;
+        $command = $this->buildDependenciesCommand($package, $commands);
+        if ($command) {
+            [$script, $timeout] = $this->buildScriptCommand($package, $commands, $timeout);
+            $script and $command .= " && {$script}";
+        }
+
+        return [$package, $command, $shouldWipe, $timeout];
+    }
+
+    /**
+     * @param \Inpsyde\AssetsCompiler\Package $package
+     * @param \Inpsyde\AssetsCompiler\Commands $commands
+     * @return string
+     */
+    private function buildDependenciesCommand(Package $package, Commands $commands): string
+    {
         $isUpdate = $package->isUpdate();
         $isInstall = $package->isInstall();
 
         if (!$isUpdate && !$isInstall) {
-            return null;
+            return '';
         }
 
-        $this->io->writeVerboseComment($isUpdate ? '  - updating...' : '  - installing...');
-
-        /** @var string $command */
-        $command = $isUpdate
-            ? $commands->updateCmd($this->io)
-            : $commands->installCmd($this->io);
-
-        return $this->executeCommand($executor, $command, $package->path());
+        return $isUpdate
+            ? ($commands->updateCmd($this->io) ?? '')
+            : ($commands->installCmd($this->io) ?? '');
     }
 
     /**
-     * @param Package $package
-     * @param Commands $commands
-     * @param ProcessExecutor $executor
-     * @return bool|null
+     * @param \Inpsyde\AssetsCompiler\Package $package
+     * @param \Inpsyde\AssetsCompiler\Commands $commands
+     * @param int $timeout
+     * @return array{0:string, 1:int}
      */
-    private function doScript(
-        Package $package,
-        Commands $commands,
-        ProcessExecutor $executor
-    ): ?bool {
-
+    private function buildScriptCommand(Package $package, Commands $commands, int $timeout): array
+    {
         /** @var string[] $scripts */
         $scripts = $package->script();
         if (!$scripts) {
-            return null;
+            return ['', $timeout];
         }
 
-        $all = 0;
-        $done = 0;
+        $packageCommands = [];
         $packageEnv = $package->env();
         foreach ($scripts as $script) {
-            $all++;
-            /** @var string $command */
             $command = $commands->scriptCmd($script, $packageEnv);
-            $this->io->writeVerboseComment("  - executing '{$command}'...");
-            $this->executeCommand($executor, $command, $package->path()) and $done++;
+            if ($command) {
+                $packageCommands[] = $command;
+                $timeout += 300;
+            }
         }
 
-        return $all === $done;
+        return [implode(' && ', $packageCommands), $timeout];
     }
 
     /**
-     * @param ProcessExecutor $executor
-     * @param string $command
-     * @param string|null $cwd
-     * @return bool
+     * @param string $type
+     * @param string $buffer
+     * @return void
      */
-    private function executeCommand(ProcessExecutor $executor, string $command, ?string $cwd): bool
+    private function outputHandler(string $type, string $buffer): void
     {
-        static $outputHandler;
-        $outputHandler or $outputHandler = function (string $type, string $buffer): void {
-            $lines = explode("\n", $buffer);
-            foreach ($lines as $line) {
-                Process::ERR === $type
-                    ? $this->io->writeVerboseError('    ' . trim($line))
-                    : $this->io->writeVerbose('    ' . trim($line));
-            }
-        };
-
-        $success = $executor->execute($command, $outputHandler, $cwd) === 0;
-        $success
-            ? $this->io->writeVerboseInfo('    success!')
-            : $this->io->writeVerboseError('    failed!');
-
-        return $success;
+        $lines = explode("\n", $buffer);
+        foreach ($lines as $line) {
+            Process::ERR === $type
+                ? $this->io->writeVeryVerboseError('   ' . trim($line))
+                : $this->io->writeVeryVerbose('   ' . trim($line));
+        }
     }
 
     /**
@@ -451,18 +448,18 @@ final class ComposerPlugin implements
         $filesystem = $this->config->filesystem();
         $dir = rtrim((string)$filesystem->normalizePath($baseDir), '/') . "/node_modules";
         if (!is_dir($dir)) {
-            $this->io->writeVerboseComment("  - '{$dir}' not found, nothing to wipe.");
+            $this->io->writeVerboseComment(" - '{$dir}' not found, nothing to wipe.");
 
             return null;
         }
 
-        $this->io->writeVerboseComment("  - wiping '{$dir}'...");
+        $this->io->writeVerboseComment(" - wiping '{$dir}'...");
 
         /** @var bool $doneWipe */
         $doneWipe = $filesystem->removeDirectory($dir);
         $doneWipe
-            ? $this->io->writeVerboseInfo('    success!')
-            : $this->io->writeVerboseError('    failed!');
+            ? $this->io->writeVerboseInfo('   success!')
+            : $this->io->writeVerboseError('   failed!');
 
         return $doneWipe;
     }
@@ -474,13 +471,12 @@ final class ComposerPlugin implements
     {
         /** @psalm-suppress MixedArgumentTypeCoercion */
         set_error_handler(
-            function (int $severity, string $message, string $file = '', int $line = 0) {
-
+            static function (int $severity, string $msg, string $file = '', int $line = 0): void {
                 if ($file && $line) {
-                    $message = rtrim($message, '. ') . ", in {$file} line {$line}.";
+                    $msg = rtrim($msg, '. ') . ", in {$file} line {$line}.";
                 }
 
-                throw new \Exception($message, $severity);
+                throw new \Exception($msg, $severity);
             },
             E_ALL
         );

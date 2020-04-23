@@ -100,9 +100,7 @@ JSON;
 JSON;
         $config = $this->factoryConfig($json);
 
-        $exec = \Mockery::mock(ProcessExecutor::class);
-
-        static::assertSame('yarn', $config->commands($exec, __DIR__)->installCmd($this->factoryIo()));
+        static::assertSame('yarn', $config->commands(__DIR__)->installCmd($this->factoryIo()));
     }
 
     public function testCommandsCreatesNpmFromDefault()
@@ -118,10 +116,8 @@ JSON;
 JSON;
         $config = $this->factoryConfig($json);
 
-        $exec = \Mockery::mock(ProcessExecutor::class);
-
         $io = $this->factoryIo();
-        static::assertSame('npm install', $config->commands($exec, __DIR__)->installCmd($io));
+        static::assertSame('npm install', $config->commands(__DIR__)->installCmd($io));
     }
 
     public function testCommandsAdvanced()
@@ -147,11 +143,9 @@ JSON;
     }
 }
 JSON;
-        $exec = \Mockery::mock(ProcessExecutor::class);
-
-        $configForTest = $this->factoryConfig($json, 'test')->commands($exec, __DIR__);
-        $configForProd = $this->factoryConfig($json, 'production')->commands($exec, __DIR__);
-        $configForLocal = $this->factoryConfig($json, 'local')->commands($exec, __DIR__);
+        $configForTest = $this->factoryConfig($json, 'test')->commands(__DIR__);
+        $configForProd = $this->factoryConfig($json, 'production')->commands(__DIR__);
+        $configForLocal = $this->factoryConfig($json, 'local')->commands(__DIR__);
 
         static::assertSame('foo --install', $configForTest->installCmd($this->factoryIo()));
         static::assertSame('bar --update', $configForTest->updateCmd($this->factoryIo()));
@@ -162,6 +156,7 @@ JSON;
         static::assertSame('yarn', $configForLocal->installCmd($this->factoryIo()));
     }
 
+    /** @noinspection PhpParamsInspection */
     public function testCommandsFromBadDefaults()
     {
         $json = <<<'JSON'
@@ -184,7 +179,7 @@ JSON;
                 }
             );
 
-        $config = $this->factoryConfig($json)->commands($exec, __DIR__);
+        $config = $this->factoryConfig($json)->commands(__DIR__, $exec);
 
         static::assertFalse($config->isValid());
     }
@@ -242,6 +237,54 @@ JSON;
 
         static::assertFalse($stopForTest);
         static::assertTrue($stopForProd);
+    }
+
+    public function testMaxProcesses()
+    {
+        $json = <<<'JSON'
+{
+    "composer-asset-compiler": {
+        "packages": [],
+        "max-processes": {
+            "env": {
+                "$default": 4,
+                "test": "10"
+            }
+        }
+    }
+}
+JSON;
+        $forTest = $this->factoryConfig($json, 'test')->maxProcesses();
+        $forProd = $this->factoryConfig($json, 'production')->maxProcesses();
+
+        static::assertSame(10, $forTest);
+        static::assertSame(4, $forProd);
+    }
+
+    public function testProcessesPoll()
+    {
+        $json = <<<'JSON'
+{
+    "composer-asset-compiler": {
+        "packages": [],
+        "processes-poll": {
+            "env": {
+                "$default": 100000,
+                "test": 500000,
+                "low": 500
+            }
+        }
+    }
+}
+JSON;
+
+        $forTest = $this->factoryConfig($json, 'test')->processesPoll();
+        $forProd = $this->factoryConfig($json, 'production')->processesPoll();
+        $tooLow = $this->factoryConfig($json, 'low')->processesPoll();
+
+        static::assertSame(500000, $forTest);
+        static::assertSame(100000, $forProd);
+        static::assertSame(100000, $tooLow);
     }
 
     public function testWipeNotAllowedForSymlinkedPackages()

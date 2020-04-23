@@ -26,6 +26,8 @@ class Config
     public const WIPE_NODE_MODULES = 'wipe-node-modules';
     public const AUTO_DISCOVER = 'auto-discover';
     public const DEF_ENV = 'default-env';
+    public const MAX_PROCESSES = 'max-processes';
+    public const PROCESSES_POLL = 'processes-poll';
 
     private const EXTRA_KEY = 'composer-asset-compiler';
     private const WIPE_FORCE = 'force';
@@ -122,11 +124,10 @@ class Config
     }
 
     /**
-     * @param ProcessExecutor $executor
      * @param string $workingDir
      * @return Commands
      */
-    public function commands(ProcessExecutor $executor, string $workingDir): Commands
+    public function commands(string $workingDir, ?ProcessExecutor $executor = null): Commands
     {
         /** @var Commands|null $cached */
         $cached = $this->cache[Commands::class] ?? null;
@@ -143,6 +144,7 @@ class Config
         }
 
         if (!$config || (!is_string($config) && !is_array($config))) {
+            $executor or $executor = new ProcessExecutor();
             $commands = Commands::discover($executor, $workingDir, $this->defaultEnv());
             $this->cache[Commands::class] = $commands;
 
@@ -153,7 +155,7 @@ class Config
             $commands = Commands::fromDefault($config, $this->defaultEnv());
             if (!$commands->isValid()) {
                 $this->io->writeError("'{$config}' is not valid, trying to auto-discover.");
-                $commands = Commands::discover($executor, $workingDir);
+                $commands = Commands::discover($executor ?? new ProcessExecutor(), $workingDir);
                 $this->cache[Commands::class] = $commands;
 
                 return $commands;
@@ -224,6 +226,52 @@ class Config
         $this->cache[__METHOD__] = $stop;
 
         return $stop;
+    }
+
+    /**
+     * @return int
+     */
+    public function maxProcesses(): int
+    {
+        if (array_key_exists(__METHOD__, $this->cache)) {
+            return (int)$this->cache[__METHOD__];
+        }
+
+        $config = $this->raw[self::MAX_PROCESSES] ?? null;
+        if (is_array($config)) {
+            $byEnv = $this->envResolver->resolve($config);
+            $config = is_numeric($byEnv) ? (int)$byEnv : null;
+        }
+
+        $maxProcesses = is_numeric($config) ? (int)$config : 4;
+        ($maxProcesses < 1) and $maxProcesses = 1;
+
+        $this->cache[__METHOD__] = $maxProcesses;
+
+        return $maxProcesses;
+    }
+
+    /**
+     * @return int
+     */
+    public function processesPoll(): int
+    {
+        if (array_key_exists(__METHOD__, $this->cache)) {
+            return (int)$this->cache[__METHOD__];
+        }
+
+        $config = $this->raw[self::PROCESSES_POLL] ?? null;
+        if (is_array($config)) {
+            $byEnv = $this->envResolver->resolve($config);
+            $config = is_numeric($byEnv) ? (int)$byEnv : null;
+        }
+
+        $poll = is_numeric($config) ? (int)$config : 100000;
+        ($poll <= 10000) and $poll = 100000;
+
+        $this->cache[__METHOD__] = $poll;
+
+        return $poll;
     }
 
     /**

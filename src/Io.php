@@ -127,9 +127,19 @@ class Io
     /**
      * @param string ...$messages
      */
+    public function writeVeryVerbose(string ...$messages): void
+    {
+        foreach ($messages as $message) {
+            $this->io->write(self::SPACER . $message, true, IOInterface::VERY_VERBOSE);
+        }
+    }
+
+    /**
+     * @param string ...$messages
+     */
     public function writeInfo(string ...$messages): void
     {
-        $this->writeDecorated('info', false, ...$messages);
+        $this->writeDecorated('info', IOInterface::NORMAL, ...$messages);
     }
 
     /**
@@ -137,7 +147,7 @@ class Io
      */
     public function writeComment(string ...$messages): void
     {
-        $this->writeDecorated('comment', false, ...$messages);
+        $this->writeDecorated('comment', IOInterface::NORMAL, ...$messages);
     }
 
     /**
@@ -145,7 +155,7 @@ class Io
      */
     public function writeError(string ...$messages): void
     {
-        $this->writeDecorated('error', false, ...$messages);
+        $this->writeDecorated('error', IOInterface::NORMAL, ...$messages);
     }
 
     /**
@@ -153,7 +163,15 @@ class Io
      */
     public function writeVerboseInfo(string ...$messages): void
     {
-        $this->writeDecorated('info', true, ...$messages);
+        $this->writeDecorated('info', IOInterface::VERBOSE, ...$messages);
+    }
+
+    /**
+     * @param string ...$messages
+     */
+    public function writeVeryVerboseInfo(string ...$messages): void
+    {
+        $this->writeDecorated('info', IOInterface::VERY_VERBOSE, ...$messages);
     }
 
     /**
@@ -161,7 +179,15 @@ class Io
      */
     public function writeVerboseComment(string ...$messages): void
     {
-        $this->writeDecorated('comment', true, ...$messages);
+        $this->writeDecorated('comment', IOInterface::VERBOSE, ...$messages);
+    }
+
+    /**
+     * @param string ...$messages
+     */
+    public function writeVeryVerboseComment(string ...$messages): void
+    {
+        $this->writeDecorated('comment', IOInterface::VERY_VERBOSE, ...$messages);
     }
 
     /**
@@ -169,15 +195,23 @@ class Io
      */
     public function writeVerboseError(string ...$messages): void
     {
-        $this->writeDecorated('error', true, ...$messages);
+        $this->writeDecorated('error', IOInterface::VERBOSE, ...$messages);
+    }
+
+    /**
+     * @param string ...$messages
+     */
+    public function writeVeryVerboseError(string ...$messages): void
+    {
+        $this->writeDecorated('error', IOInterface::VERY_VERBOSE, ...$messages);
     }
 
     /**
      * @param string $tag
-     * @param bool $verbose
+     * @param int $verbosity
      * @param string ...$messages
      */
-    private function writeDecorated(string $tag, bool $verbose, string ...$messages): void
+    private function writeDecorated(string $tag, int $verbosity, string ...$messages): void
     {
         $method = 'write';
         $closeTag = $tag;
@@ -191,7 +225,7 @@ class Io
             $this->io->{$method}(
                 self::SPACER . "<{$tag}>$message</{$closeTag}>",
                 true,
-                $verbose ? IOInterface::VERBOSE : IOInterface::NORMAL
+                $verbosity
             );
         }
     }
