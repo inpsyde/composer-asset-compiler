@@ -184,6 +184,11 @@ class ProcessManager
      */
     private function startProcessesFormStack(Io $io, \SplQueue $running): \SplQueue
     {
+        $toAdd = $this->stack->isEmpty() ? 0 : ($this->maxParallel - $running->count());
+        if ($toAdd > 0) {
+            usleep($this->poll * $toAdd);
+        }
+
         while (($running->count() < $this->maxParallel) && !$this->stack->isEmpty()) {
             /**
              * @var Process $process
