@@ -223,7 +223,7 @@ class ProcessManager
                 continue;
             }
 
-            $io->writeVerboseComment(" - Processing of {$name} done successfully.");
+            $io->writeVerboseInfo(" - Processing of {$name} done successfully.");
             $successful->enqueue([$process, $package]);
         }
 
