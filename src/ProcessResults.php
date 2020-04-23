@@ -147,7 +147,14 @@ final class ProcessResults
      */
     public function notExecutedCount(): int
     {
-        return ($this->total > 0) ? $this->total - $this->executed : 0;
+        $successes = $this->successes();
+        $errors = $this->successes();
+        $successesCount = $successes ? $successes->count() : 0;
+        $errorsCount = $errors ? $errors->count() : 0;
+
+        return ($this->total > 0)
+            ? ($this->total - ($successesCount + $errorsCount))
+            : 0;
     }
 
     /**
