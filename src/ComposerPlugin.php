@@ -197,16 +197,17 @@ final class ComposerPlugin implements
                 );
             }
 
-            $this->processPackages($commands, ...$packages)
-                ? $this->io->writeInfo('', 'done.', '')
-                : $exit = 1;
+            $this->processPackages($commands, ...$packages) or $exit = 1;
         } catch (\Throwable $throwable) {
             $exit = 1;
             $this->io->writeError($throwable->getMessage());
             $this->io->writeVerboseError(...explode("\n", $throwable->getTraceAsString()));
         } finally {
+            ($exit > 0)
+                ? $this->io->writeError('', 'failed!', '')
+                : $this->io->writeInfo('', 'done.', '');
             restore_error_handler();
-            if ($exit || $this->mode === self::MODE_COMMAND) {
+            if (($exit > 0) || ($this->mode === self::MODE_COMMAND)) {
                 exit($exit);
             }
         }
@@ -338,7 +339,9 @@ final class ComposerPlugin implements
         $notExecuted = $results->notExecutedCount();
         if ($notExecuted > 0) {
             $total = $results->total();
-            $this->io->writeError("{$notExecuted} packages out of {$total} were NOT processed.");
+            $this->io->writeError(
+                "Processing for {$notExecuted} packages out of {$total} did NOT completed."
+            );
         }
 
         $successes = $results->successes();
