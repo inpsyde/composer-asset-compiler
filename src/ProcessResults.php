@@ -161,9 +161,10 @@ final class ProcessResults
             return null;
         }
 
-        $this->successful->rewind();
+        $successes = clone $this->successful;
+        $successes->rewind();
 
-        return $this->successful;
+        return $successes;
     }
 
     /**
@@ -175,8 +176,9 @@ final class ProcessResults
             return null;
         }
 
-        $this->erroneous->rewind();
+        $errors = clone $this->erroneous;
+        $errors->rewind();
 
-        return $this->erroneous;
+        return $errors;
     }
 }
