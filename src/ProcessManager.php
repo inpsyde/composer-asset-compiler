@@ -227,8 +227,10 @@ class ProcessManager
             }
 
             if (!$process->isSuccessful()) {
-                $io->writeError(" - Failed processing {$name}.");
-                $io->isVeryVerbose() or $io->writeError('   ' . $process->getErrorOutput());
+                $veryVerbose = $io->isVeryVerbose();
+                $prefix = $veryVerbose ? '' : "\n";
+                $io->writeError("{$prefix} - Failed processing {$name}.");
+                $veryVerbose or $this->writeProcessError($process, $io);
                 $erroneous->enqueue([$process, $package]);
                 continue;
             }
@@ -238,6 +240,18 @@ class ProcessManager
         }
 
         return [$stillRunning, $successful, $erroneous];
+    }
+
+    /**
+     * @return void
+     */
+    private function writeProcessError(Process $process, Io $io): void
+    {
+        $lines = explode("\n", trim($process->getErrorOutput()));
+        foreach ($lines as $line) {
+            $cleanLine = trim($line);
+            $cleanLine and $io->writeError("   {$cleanLine}");
+        }
     }
 
     /**
