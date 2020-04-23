@@ -193,8 +193,7 @@ class ProcessManager
 
             $name = $package->name();
             $command = $this->commands[$name] ?? '';
-            $io->writeVerboseComment(" - Starting process of '{$name}'");
-            $command and $io->writeVerboseComment("   $ {$command}");
+            $io->writeVerboseComment(" - Starting process of '{$name}' using: `{$command}`.");
 
             $process->start($this->outputHandler);
             $running->enqueue([$process, $package]);
