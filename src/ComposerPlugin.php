@@ -434,7 +434,7 @@ final class ComposerPlugin implements
         $lines = explode("\n", $buffer);
         foreach ($lines as $line) {
             Process::ERR === $type
-                ? $this->io->writeVerboseError('   ' . trim($line))
+                ? $this->io->writeVeryVerboseError('   ' . trim($line))
                 : $this->io->writeVeryVerbose('   ' . trim($line));
         }
     }

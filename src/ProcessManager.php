@@ -219,6 +219,9 @@ class ProcessManager
 
             if (!$process->isSuccessful()) {
                 $io->writeError(" - Failed processing {$name}.");
+                if (!$io->isVeryVerbose()) {
+                    $io->writeError('   ' . $process->getErrorOutput());
+                }
                 $erroneous->enqueue([$process, $package]);
                 continue;
             }
