@@ -23,6 +23,7 @@ use Composer\Repository\RepositoryInterface;
 use Composer\Repository\RepositoryManager;
 use Composer\Script\Event;
 use Composer\Util\Filesystem;
+use Composer\Util\ProcessExecutor;
 use Symfony\Component\Process\Process;
 
 /**
@@ -267,24 +268,45 @@ final class ComposerPlugin implements
 
         $timeout = 0;
         $processesData = [];
+        $toWipe = [];
+        $executor = new ProcessExecutor();
+        $stopOnFailure = $this->config->stopOnFailure();
+
         foreach ($packages as $package) {
+            $name = $package->name();
+
             if ($locker->isLocked($package)) {
-                $name = $package->name();
                 $this->io->writeVerboseComment(" Skipping '{$name}' because already compiled.");
                 continue;
             }
 
-            [$package, $command, $shouldWipe, $timeout] = $this->buildPackageCommandData(
-                $package,
-                $commands,
-                $timeout
-            );
+            $shouldWipe = $this->config->wipeAllowed($package->path());
+            
+            $this->io->writeVerboseComment(" Start installation dependencies for '{$name}'");
+            if (!$this->doDependencies($package, $commands, $executor)) {
+                if ($stopOnFailure) {
+                    return false;
+                }
 
-            $processesData[] = [$package, $command, $shouldWipe, $timeout];
+                continue;
+            }
+
+            [$command, $timeout] = $this->buildPackageScriptData($package, $commands, $timeout);
+
+            // No script, we can lock already
+            if (!$command) {
+                $locker->isLocked($package);
+                $shouldWipe and $this->wipeNodeModules($package->path());
+
+                continue;
+            }
+
+            $processesData[] = [$package, $command, $timeout];
+            $shouldWipe and $toWipe[$name] = $shouldWipe;
         }
 
         if (!$processesData) {
-            $this->io->writeComment(" Nothing to process.");
+            $this->io->writeComment(" Nothing else to process.");
 
             return true;
         }
@@ -298,21 +320,47 @@ final class ComposerPlugin implements
             $this->config->processesPoll()
         );
 
-        $toWipe = [];
-
         /**
          * @var \Inpsyde\AssetsCompiler\Package $package
          * @var string $command
-         * @var bool $shouldWipe
          */
-        foreach ($processesData as [$package, $command, $shouldWipe]) {
+        foreach ($processesData as [$package, $command]) {
             $processManager = $processManager->pushPackageToProcess($package, $command);
-            $toWipe[$package->name()] = $shouldWipe;
         }
 
-        $results = $processManager->execute($this->io, $this->config->stopOnFailure());
+        $results = $processManager->execute($this->io, $stopOnFailure);
 
         return $this->handleResults($results, $locker, $toWipe, $timeout);
+    }
+
+    /**
+     * @param \Inpsyde\AssetsCompiler\Package $package
+     * @param \Inpsyde\AssetsCompiler\Commands $commands
+     * @param \Composer\Util\ProcessExecutor $executor
+     * @return bool|null
+     */
+    private function doDependencies(
+        Package $package,
+        Commands $commands,
+        ProcessExecutor $executor
+    ): ?bool {
+
+        $isUpdate = $package->isUpdate();
+        $isInstall = $package->isInstall();
+
+        if (!$isUpdate && !$isInstall) {
+            return null;
+        }
+
+        $this->io->writeVerboseComment($isUpdate ? '  - updating...' : '  - installing...');
+
+        $command = $isUpdate ? $commands->updateCmd($this->io) : $commands->installCmd($this->io);
+
+        $outputHandler = function (string $type, string $buffer): void {
+            $this->outputHandler($type, $buffer);
+        };
+
+        return $executor->execute($command ?? '', $outputHandler, $package->path()) === 0;
     }
 
     /**
@@ -361,43 +409,17 @@ final class ComposerPlugin implements
      * @param \Inpsyde\AssetsCompiler\Package $package
      * @param \Inpsyde\AssetsCompiler\Commands $commands
      * @param int $timeout
-     * @return array{0:string, 1:string, 2:bool, 3:int}
+     * @return array{1:string, 2:int}
      */
-    private function buildPackageCommandData(
+    private function buildPackageScriptData(
         Package $package,
         Commands $commands,
         int $timeout
     ): array {
 
-        $shouldWipe = $this->config->wipeAllowed($package->path() ?? '');
+        [$script, $timeout] = $this->buildScriptCommand($package, $commands, $timeout);
 
-        $timeout += 300;
-        $command = $this->buildDependenciesCommand($package, $commands);
-        if ($command) {
-            [$script, $timeout] = $this->buildScriptCommand($package, $commands, $timeout);
-            $script and $command .= " && {$script}";
-        }
-
-        return [$package, $command, $shouldWipe, $timeout];
-    }
-
-    /**
-     * @param \Inpsyde\AssetsCompiler\Package $package
-     * @param \Inpsyde\AssetsCompiler\Commands $commands
-     * @return string
-     */
-    private function buildDependenciesCommand(Package $package, Commands $commands): string
-    {
-        $isUpdate = $package->isUpdate();
-        $isInstall = $package->isInstall();
-
-        if (!$isUpdate && !$isInstall) {
-            return '';
-        }
-
-        return $isUpdate
-            ? ($commands->updateCmd($this->io) ?? '')
-            : ($commands->installCmd($this->io) ?? '');
+        return [$script, $timeout];
     }
 
     /**
