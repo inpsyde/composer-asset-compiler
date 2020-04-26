@@ -11,12 +11,11 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler;
 
-use Composer\Package\PackageInterface;
 use Composer\Package\RootPackageInterface;
 use Composer\Util\Filesystem;
 use Composer\Util\ProcessExecutor;
 
-class Config
+class RootConfig
 {
     public const AUTO_RUN = 'auto-run';
     public const COMMANDS = 'commands';
@@ -25,11 +24,9 @@ class Config
     public const STOP_ON_FAILURE = 'stop-on-failure';
     public const WIPE_NODE_MODULES = 'wipe-node-modules';
     public const AUTO_DISCOVER = 'auto-discover';
-    public const DEF_ENV = 'default-env';
     public const MAX_PROCESSES = 'max-processes';
     public const PROCESSES_POLL = 'processes-poll';
 
-    private const EXTRA_KEY = 'composer-asset-compiler';
     private const WIPE_FORCE = 'force';
 
     /**
@@ -58,15 +55,9 @@ class Config
     private $cache = [];
 
     /**
-     * @param PackageInterface $package
-     * @return array|null
+     * @var \Inpsyde\AssetsCompiler\PackageConfig
      */
-    public static function configFromPackage(PackageInterface $package): ?array
-    {
-        $extra = $package->getExtra()[self::EXTRA_KEY] ?? null;
-
-        return is_array($extra) ? $extra : null;
-    }
+    private $rootPackageConfig;
 
     /**
      * @param RootPackageInterface $package
@@ -81,7 +72,9 @@ class Config
         Io $io
     ) {
 
-        $this->raw = static::configFromPackage($package) ?? [];
+        $data = $package->getExtra()[PackageConfig::EXTRA_KEY] ?? null;
+        $this->raw = is_array($data) ? $data : [];
+        $this->rootPackageConfig = PackageConfig::forComposerPackage($package, $envResolver);
         $this->envResolver = $envResolver;
         $this->filesystem = $filesystem;
         $this->io = $io;
@@ -104,6 +97,33 @@ class Config
     }
 
     /**
+     * @return PackageFinder
+     */
+    public function packagesFinder(): PackageFinder
+    {
+        /** @var PackageFinder|null $cached */
+        $cached = $this->cache[PackageFinder::class] ?? null;
+        if ($cached) {
+            return $cached;
+        }
+
+        $envResolver = $this->envResolver();
+        $rawPackagesData = $this->raw[self::PACKAGES] ?? [];
+        $packageData = is_array($rawPackagesData)
+            ? $packageData = $envResolver->removeEnv($rawPackagesData)
+            : [];
+
+        $this->cache[PackageFinder::class] = new PackageFinder(
+            $packageData,
+            $envResolver,
+            $this->defaults(),
+            $this->stopOnFailure()
+        );
+
+        return $this->cache[PackageFinder::class];
+    }
+
+    /**
      * @return bool
      */
     public function autoDiscover(): bool
@@ -118,7 +138,7 @@ class Config
      */
     public function autoRun(): bool
     {
-        $config = $this->raw[self::AUTO_RUN] ?? true;
+        $config = $this->resolveByEnv(self::AUTO_RUN, false, true);
 
         return (bool)filter_var($config, FILTER_VALIDATE_BOOLEAN);
     }
@@ -135,24 +155,19 @@ class Config
             return $cached;
         }
 
-        $config = $this->raw[self::COMMANDS] ?? null;
-        if (is_array($config)) {
-            $envConfig = $this->envResolver->resolve($config);
-            if ($envConfig && (is_string($envConfig) || is_array($envConfig))) {
-                $config = $envConfig;
-            }
-        }
+        $config = $this->resolveByEnv(self::COMMANDS, true, null);
+        $defaultEnv = $this->rootPackageConfig->defaultEnv();
 
         if (!$config || (!is_string($config) && !is_array($config))) {
             $executor or $executor = new ProcessExecutor();
-            $commands = Commands::discover($executor, $workingDir, $this->defaultEnv());
+            $commands = Commands::discover($executor, $workingDir, $defaultEnv);
             $this->cache[Commands::class] = $commands;
 
             return $commands;
         }
 
         if (is_string($config)) {
-            $commands = Commands::fromDefault($config, $this->defaultEnv());
+            $commands = Commands::fromDefault($config, $defaultEnv);
             if (!$commands->isValid()) {
                 $this->io->writeError("'{$config}' is not valid, trying to auto-discover.");
                 $commands = Commands::discover($executor ?? new ProcessExecutor(), $workingDir);
@@ -166,41 +181,32 @@ class Config
             return $commands;
         }
 
-        $commands = new Commands($config, $this->defaultEnv());
+        $commands = new Commands($config, $defaultEnv);
         $this->cache[Commands::class] = $commands;
 
         return $commands;
     }
 
     /**
-     * @return Package|null
+     * @return Defaults
      */
-    public function defaults(): ?Package
+    public function defaults(): Defaults
     {
         if (array_key_exists(__METHOD__, $this->cache)) {
-            /** @var Package|null $cached */
+            /** @var Defaults $cached */
             $cached = $this->cache[__METHOD__];
 
             return $cached;
         }
 
-        $config = $this->raw[self::DEFAULTS] ?? null;
-        if (!is_array($config)) {
-            $this->cache[__METHOD__] = null;
+        $config = $this->resolveByEnv(self::DEFAULTS, true, null);
+        if (!$config || !is_array($config)) {
+            $this->cache[__METHOD__] = Defaults::empty();
 
-            return null;
+            return $this->cache[__METHOD__];
         }
 
-        $byEnv = $this->envResolver->resolve($config);
-        ($byEnv && is_array($byEnv)) and $config = $byEnv;
-
-        $defaults = Package::defaults($config);
-
-        if (!$defaults->isValid()) {
-            $this->cache[__METHOD__] = null;
-
-            return null;
-        }
+        $defaults = Defaults::new(PackageConfig::forRawPackageData($config, $this->envResolver));
 
         $this->cache[__METHOD__] = $defaults;
 
@@ -212,20 +218,9 @@ class Config
      */
     public function stopOnFailure(): bool
     {
-        if (array_key_exists(__METHOD__, $this->cache)) {
-            return (bool)$this->cache[__METHOD__];
-        }
+        $config = $this->resolveByEnv(self::STOP_ON_FAILURE, false, true);
 
-        $config = $this->raw[self::STOP_ON_FAILURE] ?? true;
-        if (is_array($config)) {
-            $byEnv = $this->envResolver->resolve($config);
-            $config = $byEnv === null ? true : $byEnv;
-        }
-
-        $stop = (bool)filter_var($config, FILTER_VALIDATE_BOOLEAN);
-        $this->cache[__METHOD__] = $stop;
-
-        return $stop;
+        return (bool)filter_var($config, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
@@ -233,20 +228,9 @@ class Config
      */
     public function maxProcesses(): int
     {
-        if (array_key_exists(__METHOD__, $this->cache)) {
-            return (int)$this->cache[__METHOD__];
-        }
-
-        $config = $this->raw[self::MAX_PROCESSES] ?? null;
-        if (is_array($config)) {
-            $byEnv = $this->envResolver->resolve($config);
-            $config = is_numeric($byEnv) ? (int)$byEnv : null;
-        }
-
+        $config = $this->resolveByEnv(self::MAX_PROCESSES, false, 4);
         $maxProcesses = is_numeric($config) ? (int)$config : 4;
         ($maxProcesses < 1) and $maxProcesses = 1;
-
-        $this->cache[__METHOD__] = $maxProcesses;
 
         return $maxProcesses;
     }
@@ -256,42 +240,11 @@ class Config
      */
     public function processesPoll(): int
     {
-        if (array_key_exists(__METHOD__, $this->cache)) {
-            return (int)$this->cache[__METHOD__];
-        }
-
-        $config = $this->raw[self::PROCESSES_POLL] ?? null;
-        if (is_array($config)) {
-            $byEnv = $this->envResolver->resolve($config);
-            $config = is_numeric($byEnv) ? (int)$byEnv : null;
-        }
-
+        $config = $this->resolveByEnv(self::PROCESSES_POLL, false, 100000);
         $poll = is_numeric($config) ? (int)$config : 100000;
         ($poll <= 10000) and $poll = 100000;
 
-        $this->cache[__METHOD__] = $poll;
-
         return $poll;
-    }
-
-    /**
-     * @return PackageFinder
-     */
-    public function packagesFinder(): PackageFinder
-    {
-        /** @var PackageFinder|null $cached */
-        $cached = $this->cache[PackageFinder::class] ?? null;
-        if ($cached) {
-            return $cached;
-        }
-
-        $packageData = $this->raw[self::PACKAGES] ?? [];
-        $packageData = is_array($packageData) ? $packageData : [];
-
-        $finder = new PackageFinder($packageData, $this->defaults(), $this->stopOnFailure());
-        $this->cache[PackageFinder::class] = $finder;
-
-        return $finder;
     }
 
     /**
@@ -307,13 +260,7 @@ class Config
             return false;
         }
 
-        $config = $this->raw[self::WIPE_NODE_MODULES] ?? true;
-
-        if (is_array($config)) {
-            $byEnv = $this->envResolver->resolve($config);
-            $config = $byEnv === null ? true : $byEnv;
-        }
-
+        $config = $this->resolveByEnv(self::WIPE_NODE_MODULES, false, true);
         if ($config === self::WIPE_FORCE) {
             return true;
         }
@@ -330,24 +277,40 @@ class Config
     }
 
     /**
-     * @return array<string, string>
+     * @param string $key
+     * @param bool $allowedArray
+     * @param $default
+     * @return array|mixed
+     *
+     * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
+     * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
+     *
+     * @psalm-suppress MissingParamType
+     * @psalm-suppress MissingReturnType
      */
-    public function defaultEnv(): array
+    private function resolveByEnv(string $key, bool $allowedArray, $default)
     {
-        /** @var array<string, string>|null $cached */
-        $cached = $this->cache[self::DEF_ENV] ?? null;
-        if (is_array($cached)) {
-            return $cached;
+        // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
+        // phpcs:enable Inpsyde.CodeQuality.ArgumentTypeDeclaration
+
+        $config = $this->raw[$key] ?? null;
+        if ($config === null) {
+            return $default;
         }
 
-        $config = $this->raw[self::DEF_ENV] ?? null;
-        if (!is_array($config) && !$config instanceof \stdClass) {
-            return [];
+        if (!is_array($config)) {
+            return $config;
         }
 
-        $sanitized = EnvResolver::sanitizeEnvVars((array)$config);
-        $this->cache[self::DEF_ENV] = $sanitized;
+        $byEnv = $this->envResolver->resolve($config);
+        if ($byEnv === null) {
+            return $allowedArray ? $this->envResolver->removeEnv($config) : $default;
+        }
 
-        return $sanitized;
+        if (is_array($byEnv) && !$allowedArray) {
+            return $default;
+        }
+
+        return $byEnv;
     }
 }

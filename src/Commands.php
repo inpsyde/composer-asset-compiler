@@ -46,10 +46,7 @@ class Commands
     /**
      * @var array{update: null|string, install: null|string}
      */
-    private $dependencies = [
-        self::DEPENDENCIES_UPDATE => null,
-        self::DEPENDENCIES_INSTALL => null,
-    ];
+    private $dependencies;
 
     /**
      * @var string|null
@@ -169,34 +166,52 @@ class Commands
             return null;
         }
 
+        $environment = array_filter(array_merge($this->defaultEnvironment, $env));
+        $command = $this->replaceEnv($command, $environment);
+
         // To pass arguments to scripts defined in package.json, npm requires `--` to be used,
         // whereas Yarn requires the arguments to be appended to script name.
         // For example, `npm run foo -- --bar=baz` is equivalent to `yarn foo --bar=baz`.
         // This is why if the command defined in "script" contains ` -- ` and we are using Yarn
         // then we remove `--`.
-        if (
-            substr_count($command, ' -- ', 1) === 1
-            && stripos($this->script, 'yarn') !== false
-        ) {
-            [$commandNoArgs, $args] = explode(' -- ', $command, 2);
+        $cmdParams = '';
+        if (substr_count($command, ' -- ', 1) === 1) {
+            $isYarn = stripos($this->script, 'yarn') !== false;
+            [$commandNoArgs, $cmdParams] = explode(' -- ', $command, 2);
             $commandNoArgsClean = trim($commandNoArgs);
             if ($commandNoArgsClean) {
-                $command = trim($commandNoArgsClean . ' ' . trim($args));
+                $command = trim($commandNoArgsClean);
+                $cmdParams = trim($cmdParams);
+            }
+            if ($cmdParams && !$isYarn) {
+                $cmdParams = "-- {$cmdParams}";
             }
         }
 
-        if (strpos($command, '${') !== false) {
-            $allEnv = array_merge($env, $this->defaultEnvironment);
-            $command = (string)preg_replace_callback(
-                '~\$\{([a-z0-9_]+)\}~i',
-                static function (array $var) use ($allEnv): string {
-                    return (string)EnvResolver::readEnv((string)$var[1], $allEnv);
-                },
-                $command
-            );
+        $resolved = trim(sprintf($this->script, $command));
+        $cmdParams and $resolved .= " {$cmdParams}";
+
+        return $resolved;
+    }
+
+    /**
+     * @param string $command
+     * @param array $environment
+     * @return string
+     */
+    private function replaceEnv(string $command, array $environment): string
+    {
+        if (!$command || !$environment || strpos($command, '${') === false) {
+            return $command;
         }
 
-        return sprintf($this->script, $command);
+        return (string)preg_replace_callback(
+            '~\$\{([a-z0-9_]+)\}~i',
+            static function (array $var) use ($environment): string {
+                return (string)EnvResolver::readEnv((string)$var[1], $environment);
+            },
+            $command
+        );
     }
 
     /**

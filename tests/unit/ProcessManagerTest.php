@@ -11,7 +11,10 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\Tests\Unit;
 
+use Inpsyde\AssetsCompiler\EnvResolver;
 use Inpsyde\AssetsCompiler\Package;
+use Inpsyde\AssetsCompiler\PackageConfig;
+use Inpsyde\AssetsCompiler\ProcessFactory;
 use Inpsyde\AssetsCompiler\ProcessManager;
 use Inpsyde\AssetsCompiler\Tests\TestCase;
 use Symfony\Component\Process\Process;
@@ -23,7 +26,7 @@ class ProcessManagerTest extends TestCase
         $handler = static function () {
         };
 
-        $manager = new ProcessManager($handler);
+        $manager = new ProcessManager($handler, new ProcessFactory());
         $result = $manager->execute($this->factoryIo(), false);
 
         static::assertTrue($result->isEmpty());
@@ -48,13 +51,13 @@ class ProcessManagerTest extends TestCase
             $this->total++;
         };
 
-        $manager = new ProcessManager($handler, 100, 7);
+        $manager = new ProcessManager($handler, new ProcessFactory(), 100, 7);
         $bound = $setter->bindTo($manager, ProcessManager::class);
 
         $ok = true;
         foreach (range('A', 'L') as $name) {
             $process = $this->factoryProcess(0.1, $ok);
-            $bound(new Package($name, [], __DIR__), "run --{$name}", $process);
+            $bound($this->factoryPackage($name), "run --{$name}", $process);
             $ok = !$ok;
         }
 
@@ -87,13 +90,13 @@ class ProcessManagerTest extends TestCase
             $this->total++;
         };
 
-        $manager = new ProcessManager($handler, 100, 4);
+        $manager = new ProcessManager($handler, new ProcessFactory(), 100, 4);
         $bound = $setter->bindTo($manager, ProcessManager::class);
 
         $ok = false;
         foreach (range('A', 'L') as $name) {
             $process = $this->factoryProcess(0.1, $ok);
-            $bound(new Package($name, [], __DIR__), "run --{$name}", $process);
+            $bound($this->factoryPackage($name), "run --{$name}", $process);
             $ok = !$ok;
         }
 
@@ -128,7 +131,7 @@ class ProcessManagerTest extends TestCase
             $this->timeoutLimit = 1;
         };
 
-        $manager = new ProcessManager($handler, 600, 4, 1000000);
+        $manager = new ProcessManager($handler, new ProcessFactory(), 600, 4, 1000000);
         $bound = $setter->bindTo($manager, ProcessManager::class);
 
         $duration = 0.001;
@@ -142,7 +145,7 @@ class ProcessManagerTest extends TestCase
                 $duration = 10;
             }
 
-            $bound(new Package($name, [], __DIR__), "run --{$name}", $process);
+            $bound($this->factoryPackage($name), "run --{$name}", $process);
         }
 
         $io = $this->factoryIo();
@@ -213,5 +216,17 @@ class ProcessManagerTest extends TestCase
             );
 
         return $process;
+    }
+
+    /**
+     * @param string $name
+     * @return \Inpsyde\AssetsCompiler\Package
+     */
+    private function factoryPackage(string $name): Package
+    {
+        $resolver = new EnvResolver('', false);
+        $config = PackageConfig::forRawPackageData(['dependencies' => 'install'], $resolver);
+
+        return Package::new($name, $config, __DIR__);
     }
 }

@@ -14,15 +14,17 @@ namespace Inpsyde\AssetsCompiler\Tests\Unit;
 use Composer\Package\RootPackage;
 use Composer\Util\Filesystem;
 use Composer\Util\ProcessExecutor;
-use Inpsyde\AssetsCompiler\Config;
 use Inpsyde\AssetsCompiler\EnvResolver;
 use Inpsyde\AssetsCompiler\Io;
+use Inpsyde\AssetsCompiler\PackageConfig;
+use Inpsyde\AssetsCompiler\RootConfig;
 use Inpsyde\AssetsCompiler\Tests\TestCase;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
 
 class ConfigTest extends TestCase
 {
+
     /**
      * @var Io|\Mockery\MockInterface
      */
@@ -174,7 +176,7 @@ JSON;
         $this->io
             ->shouldReceive('writeError')
             ->andReturnUsing(
-                function (string $msg): void {
+                static function (string $msg): void {
                     static::assertStringContainsString('not valid, trying to auto-discover', $msg);
                 }
             );
@@ -212,9 +214,9 @@ JSON;
         $defaultsForProd = $this->factoryConfig($json, 'production')->defaults();
         $defaultsInvalid = $this->factoryConfig($json, 'invalid')->defaults();
 
-        static::assertTrue($defaultsForTest->isInstall());
-        static::assertTrue($defaultsForProd->isUpdate());
-        static::assertNull($defaultsInvalid);
+        static::assertTrue($defaultsForTest->toConfig()->dependenciesIs(PackageConfig::INSTALL));
+        static::assertTrue($defaultsForProd->toConfig()->dependenciesIs(PackageConfig::UPDATE));
+        static::assertFalse($defaultsInvalid->isValid());
     }
 
     public function testStopOnFailureAdvanced()
@@ -303,7 +305,7 @@ JSON;
             ->with(__DIR__)
             ->andReturn(true);
 
-        $config =  $this->factoryConfig($json);
+        $config = $this->factoryConfig($json);
 
         static::assertFalse($config->wipeAllowed(__DIR__));
         static::assertTrue($config->wipeAllowed(__DIR__ . '/foo'));
@@ -319,7 +321,7 @@ JSON;
     }
 }
 JSON;
-        $config =  $this->factoryConfig($json);
+        $config = $this->factoryConfig($json);
 
         $dir = vfsStream::setup('exampleDir');
         $dir->addChild(new vfsStreamDirectory('node_modules'));
@@ -344,9 +346,9 @@ JSON;
     }
 }
 JSON;
-        $configTest =  $this->factoryConfig($json, 'test');
-        $configProd =  $this->factoryConfig($json, 'prod');
-        $configStaging =  $this->factoryConfig($json, 'staging');
+        $configTest = $this->factoryConfig($json, 'test');
+        $configProd = $this->factoryConfig($json, 'prod');
+        $configStaging = $this->factoryConfig($json, 'staging');
 
         $dir = vfsStream::setup('exampleDir');
         $dir->addChild(new vfsStreamDirectory('node_modules'));
@@ -361,46 +363,22 @@ JSON;
         static::assertFalse($configStaging->wipeAllowed($dir->url() . '/foo'));
     }
 
-    public function testDefaultEnv()
-    {
-        $json = <<<'JSON'
-{
-    "composer-asset-compiler": {
-        "packages": [],
-        "default-env": {
-            "FOO": "FOO",
-            "BAR_2": "BAR_2",
-            " bad": "bad",
-            "1no1": "no",
-            "OK": "this_is_ok",
-            "n-o": "this_is_not"
-        }
-    }
-}
-JSON;
-        $env =  $this->factoryConfig($json)->defaultEnv();
-
-        static::assertSame('FOO', $env['FOO']);
-        static::assertSame('BAR_2', $env['BAR_2']);
-        static::assertSame('this_is_ok', $env['OK']);
-        static::assertArrayNotHasKey(' bad', $env);
-        static::assertArrayNotHasKey('bad', $env);
-        static::assertArrayNotHasKey('1no1', $env);
-        static::assertArrayNotHasKey('n-o', $env);
-    }
-
     /**
      * @param string $json
      * @param string|null $env
      * @param bool $isDev
-     * @return Config
+     * @return RootConfig
      */
-    private function factoryConfig(string $json, ?string $env = 'test', bool $isDev = false): Config
-    {
+    private function factoryConfig(
+        string $json,
+        ?string $env = 'test',
+        bool $isDev = false
+    ): RootConfig {
+
         $root = new RootPackage('company/my-root-package', '1.0', '1.0.0.0');
         $root->setExtra((array)json_decode($json, true));
 
-        return new Config(
+        return new RootConfig(
             $root,
             new EnvResolver($env, $isDev),
             $this->filesystem,

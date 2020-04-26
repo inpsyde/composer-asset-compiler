@@ -12,15 +12,13 @@ declare(strict_types=1);
 namespace Inpsyde\AssetsCompiler\Tests\Unit;
 
 use Composer\Installer\InstallationManager;
-use Composer\IO\NullIO;
 use Composer\Package\Package as ComposerPackage;
 use Composer\Package\PackageInterface;
 use Composer\Package\RootPackage;
 use Composer\Repository\ArrayRepository;
 use Composer\Repository\RepositoryInterface;
 use Composer\Util\Filesystem;
-use Inpsyde\AssetsCompiler\Commands;
-use Inpsyde\AssetsCompiler\Config;
+use Inpsyde\AssetsCompiler\RootConfig;
 use Inpsyde\AssetsCompiler\EnvResolver;
 use Inpsyde\AssetsCompiler\Io;
 use Inpsyde\AssetsCompiler\Package;
@@ -75,12 +73,12 @@ class PackageFinderTest extends TestCase
     public function testNoSettingsAndNoDefaultsMakeFailureWhenStopOnFailureIsTrue()
     {
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessageMatches('/Could not find valid configuration/');
+        $this->expectExceptionMessageMatches('/me\/baz-package/');
 
         $this->findPackages(
             [
                 'packages' => [
-                    'me/baz-*' => true,
+                    'me/baz-package' => true,
                 ],
                 'auto-discover' => false,
                 'stop-on-failure' => true,
@@ -93,7 +91,7 @@ class PackageFinderTest extends TestCase
     public function testForceDefaultsFailsIfNoDefaults()
     {
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessageMatches('/configuration is missing/');
+        $this->expectExceptionMessageMatches('/me\/baz-package/');
 
         $this->findPackages(
             [
@@ -127,41 +125,6 @@ class PackageFinderTest extends TestCase
         $bar = $found['me/bar'];
 
         static::assertSame(['my-name-is-bar --default'], $bar->script());
-    }
-
-    public function testReplaceEnv()
-    {
-        $settings = [
-            'default-env' => [
-                'ENV_NAME' => 'production',
-            ],
-        ];
-
-        /** @var Config $config */
-        [, $config] = $this->factoryRootAndConfig($settings, 'test', true);
-
-        $found = $this->findPackages($settings, 'production', true);
-
-        static::assertArrayHasKey('last/with-env', $found);
-
-        $commands = Commands::fromDefault('yarn', $config->defaultEnv());
-
-        $last = $found['last/with-env'];
-        $scripts = $last->script();
-
-        $backup = $_ENV;
-
-        foreach ($scripts as $script) {
-            static::assertSame('yarn encore production', $commands->scriptCmd($script));
-
-            $_ENV['ENV_NAME'] = 'prod';
-            static::assertSame('yarn encore prod', $commands->scriptCmd($script));
-
-            $_ENV['ENV_NAME'] = 'dev';
-            static::assertSame('yarn encore dev', $commands->scriptCmd($script));
-        }
-
-        $_ENV = $backup;
     }
 
     public function testForceDefaults()
@@ -202,15 +165,16 @@ class PackageFinderTest extends TestCase
     private function factoryRootAndConfig(?array $settings, string $env, bool $isDev): array
     {
         $root = new RootPackage('company/my-root-package', '1.0', '1.0.0.0');
+
         if ($settings) {
             $root->setExtra(['composer-asset-compiler' => $settings]);
         }
 
-        $config = new Config(
+        $config = new RootConfig(
             $root,
             new EnvResolver($env, $isDev),
             new Filesystem(),
-            new Io(new NullIO())
+            $this->factoryIo()
         );
 
         return [$root, $config];
@@ -220,11 +184,16 @@ class PackageFinderTest extends TestCase
      * @param array $settings
      * @param string $env
      * @param bool $isDev
-     * @param Config|null $config
+     * @param RootConfig|null $config
      * @return array
+     * @noinspection PhpParamsInspection
      */
     private function findPackages(?array $settings, string $env, bool $isDev): array
     {
+        /**
+         * @var RootPackage $root
+         * @var RootConfig $config
+         */
         [$root, $config] = $this->factoryRootAndConfig($settings, $env, $isDev);
 
         $packagesJson = (new vfsStreamFile('package.json'))->withContent('{}');

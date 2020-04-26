@@ -11,7 +11,9 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\Tests\Unit;
 
+use Inpsyde\AssetsCompiler\EnvResolver;
 use Inpsyde\AssetsCompiler\Package;
+use Inpsyde\AssetsCompiler\PackageConfig;
 use Inpsyde\AssetsCompiler\Tests\TestCase;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamFile;
@@ -80,23 +82,6 @@ JSON;
         static::assertSame(["foo", "bar", "baz"], $package->script());
     }
 
-    public function testDefaultIsValidIfConfigAreValid()
-    {
-        $json = <<<JSON
-{
-	"dependencies": "install",
-	"script": "setup"
-}
-JSON;
-        $package = Package::defaults(json_decode($json, true));
-
-        static::assertTrue($package->isValid());
-        static::assertTrue($package->isDefault());
-        static::assertTrue($package->isInstall());
-        static::assertFalse($package->isUpdate());
-        static::assertSame(["setup"], $package->script());
-    }
-
     public function testJsonSerialization()
     {
         $json = <<<JSON
@@ -105,7 +90,11 @@ JSON;
 	"script": "setup"
 }
 JSON;
-        $package = new Package('test/test-package', json_decode($json, true), __DIR__);
+        $package = Package::new(
+            'test/test-package',
+            $this->factoryConfig($json),
+            __DIR__
+        );
 
         static::assertJsonStringEqualsJsonString($json, json_encode($package));
     }
@@ -121,7 +110,19 @@ JSON;
 
         $dir = vfsStream::setup('exampleDir');
         $dir->addChild($packagesJson);
+        $config = $this->factoryConfig($json);
 
-        return new Package($name, json_decode($json, true), $dir->url());
+        return Package::new($name, $config, $dir->url());
+    }
+
+    /**
+     * @param string $json
+     * @return \Inpsyde\AssetsCompiler\PackageConfig
+     */
+    private function factoryConfig(string $json): PackageConfig
+    {
+        $resolver = new EnvResolver('', false);
+
+        return PackageConfig::forRawPackageData(json_decode($json, true), $resolver);
     }
 }

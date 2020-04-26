@@ -1,10 +1,16 @@
 <?php
 
+/*
+ * This file is part of the "Composer Asset Compiler" package.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler;
 
-use Composer\Util\Platform;
 use Symfony\Component\Process\Process;
 
 class ProcessManager
@@ -14,6 +20,11 @@ class ProcessManager
      * @var callable
      */
     private $outputHandler;
+
+    /**
+     * @var \Inpsyde\AssetsCompiler\ProcessFactory
+     */
+    private $processFactory;
 
     /**
      * @var int
@@ -52,15 +63,21 @@ class ProcessManager
 
     /**
      * @param callable $outputHandler
+     * @param \Inpsyde\AssetsCompiler\ProcessFactory $processFactory
+     * @param int $timeoutLimit
+     * @param int $maxParallel
+     * @param int $poll
      */
     public function __construct(
         callable $outputHandler,
+        ProcessFactory $processFactory,
         int $timeoutLimit = 600, # seconds, default: 10 minutes
         int $maxParallel = 4,
         int $poll = 100000       # milliseconds, default: 1/10 of second
     ) {
 
         $this->outputHandler = $outputHandler;
+        $this->processFactory = $processFactory;
         $this->timeoutLimit = $timeoutLimit >= 10 ? $timeoutLimit : 1000;
         $this->maxParallel = $maxParallel >= 1 ? $maxParallel : 4;
         $this->poll = $poll >= 10000 ? $poll : 100000;
@@ -76,7 +93,7 @@ class ProcessManager
      */
     public function pushPackageToProcess(Package $package, string $packageCommand): ProcessManager
     {
-        $process = $this->factoryProcessForPackage($package, $packageCommand);
+        $process = $this->processFactory->create($packageCommand, (string)$package->path());
         $this->commands[$package->name()] = $packageCommand;
         $this->stack->enqueue([$process, $package]);
         $this->total++;
@@ -100,7 +117,13 @@ class ProcessManager
          * @var \SplQueue $successful
          * @var \SplQueue $erroneous
          */
-        [$timedOut, $successful, $erroneous] = $this->executeProcesses($io, $stopOnFailure);
+        [$timedOut, $successful, $erroneous] = $this->executeProcesses(
+            $io,
+            $stopOnFailure,
+            new \SplQueue(),
+            new \SplQueue(),
+            new \SplQueue()
+        );
 
         $results = $timedOut
             ? ProcessResults::timeout($this->total, $successful, $erroneous)
@@ -125,31 +148,36 @@ class ProcessManager
     /**
      * @param \Inpsyde\AssetsCompiler\Io $io
      * @param bool $stopOnFailure
-     * @param \SplQueue|null $running
-     * @param \SplQueue|null $successful
-     * @param \SplQueue|null $erroneous
-     * @return array{0:boll, 1:\SplQueue, 2:\SplQueue, 2:\SplQueue}
+     * @param \SplQueue $running
+     * @param \SplQueue $successful
+     * @param \SplQueue $erroneous
+     * @return array{0:bool, 1:\SplQueue, 2:\SplQueue, 2:\SplQueue}
      */
     private function executeProcesses(
         Io $io,
         bool $stopOnFailure,
-        ?\SplQueue $running = null,
-        ?\SplQueue $successful = null,
-        ?\SplQueue $erroneous = null
+        \SplQueue $running,
+        \SplQueue $successful,
+        \SplQueue $erroneous
     ): array {
 
-        $running = $this->startProcessesFormStack($io, $running ?? new \SplQueue());
+        $running = $this->startProcessesFormStack($io, $running);
 
+        /**
+         * @var \SplQueue $stillRunning
+         * @var \SplQueue $successful
+         * @var \SplQueue $erroneous
+         */
         [$stillRunning, $successful, $erroneous] = $this->checkRunningProcesses(
             $io,
             $stopOnFailure,
             $running,
-            $successful ?? new \SplQueue(),
-            $erroneous ?? new \SplQueue()
+            $successful,
+            $erroneous
         );
 
         if ($this->checkTimedOut()) {
-            return [true, $successful, $erroneous, $running];
+            return [true, $successful, $erroneous, $stillRunning];
         }
 
         if ($stopOnFailure && !$erroneous->isEmpty()) {
@@ -174,7 +202,7 @@ class ProcessManager
      */
     private function checkTimedOut(): bool
     {
-        return (microtime(true) - $this->executionStarted) > $this->timeoutLimit;
+        return ((float)microtime(true) - $this->executionStarted) > $this->timeoutLimit;
     }
 
     /**
@@ -184,11 +212,6 @@ class ProcessManager
      */
     private function startProcessesFormStack(Io $io, \SplQueue $running): \SplQueue
     {
-        $toAdd = $this->stack->isEmpty() ? 0 : ($this->maxParallel - $running->count());
-        if ($toAdd > 0) {
-            usleep($this->poll * $toAdd);
-        }
-
         while (($running->count() < $this->maxParallel) && !$this->stack->isEmpty()) {
             /**
              * @var Process $process
@@ -215,7 +238,7 @@ class ProcessManager
      * @param \SplQueue $running
      * @param \SplQueue $successful
      * @param \SplQueue $erroneous
-     * @return @return array{0:\SplQueue, 1:\SplQueue, 2:\SplQueue}
+     * @return array{0:\SplQueue, 1:\SplQueue, 2:\SplQueue}
      */
     private function checkRunningProcesses(
         Io $io,
@@ -239,7 +262,7 @@ class ProcessManager
             $isRunning = $process->isRunning();
 
             if ($isRunning && $stopAnyRunning) {
-                $process->stop();
+                $process->stop(0.2);
                 continue;
             }
 
@@ -270,32 +293,10 @@ class ProcessManager
      */
     private function writeProcessError(Process $process, Io $io): void
     {
-        $lines = explode("\n", trim($process->getErrorOutput()));
+        $lines = explode("\n", trim((string)$process->getErrorOutput()));
         foreach ($lines as $line) {
             $cleanLine = trim($line);
             $cleanLine and $io->writeError("   {$cleanLine}");
         }
-    }
-
-    /**
-     * @param \Inpsyde\AssetsCompiler\Package $package
-     * @param string $command
-     * @return \Symfony\Component\Process\Process
-     */
-    private function factoryProcessForPackage(Package $package, string $command): Process
-    {
-        $cwd = $package->path();
-
-        if ($cwd === null && Platform::isWindows() && stripos($command, 'git ') !== false) {
-            $cwdRaw = getcwd();
-            $cwdRaw and $cwd = (realpath($cwdRaw) ?: null);
-        }
-
-        if (method_exists('Symfony\Component\Process\Process', 'fromShellCommandline')) {
-            return Process::fromShellCommandline($command, $cwd, null, null, (float)PHP_INT_MAX);
-        }
-
-        /** @noinspection PhpParamsInspection */
-        return new Process($command, $cwd, null, null, (float)PHP_INT_MAX);
     }
 }

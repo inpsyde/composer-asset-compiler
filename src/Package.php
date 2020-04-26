@@ -13,130 +13,80 @@ namespace Inpsyde\AssetsCompiler;
 
 class Package implements \JsonSerializable
 {
-    public const DEPENDENCIES = 'dependencies';
-    public const DEPENDENCIES_INSTALL = 'install';
-    public const DEPENDENCIES_UPDATE = 'update';
-    public const SCRIPT = 'script';
-
-    /**
-     * @var string|null
-     */
-    private static $defaultName;
-
     /**
      * @var string
      */
     private $name;
 
     /**
-     * @var string|null
+     * @var PackageConfig|null
      */
-    private $dependencies;
-
-    /**
-     * @var string[]
-     */
-    private $script;
+    private $config = null;
 
     /**
      * @var string|null
      */
-    private $folder;
+    private $folder = null;
 
     /**
      * @var bool|null
      */
-    private $isValid;
+    private $valid;
 
     /**
-     * @var array<string, string>
+     * @param string $name
+     * @param \Inpsyde\AssetsCompiler\PackageConfig $config
+     * @param string|null $folder
+     * @return \Inpsyde\AssetsCompiler\Package
      */
-    private $env;
-
-    /**
-     * @return array
-     */
-    public static function emptyConfig(): array
+    public static function new(string $name, PackageConfig $config, ?string $folder = null): Package
     {
-        return [
-            self::DEPENDENCIES => null,
-            self::SCRIPT => null,
-        ];
-    }
-
-    /**
-     * @param array $config
-     * @return Package
-     */
-    public static function defaults(array $config): Package
-    {
-        return new static(self::defaultName(), $config, null);
-    }
-
-    /**
-     * @return string
-     */
-    private static function defaultName(): string
-    {
-        if (self::$defaultName === null) {
-            self::$defaultName = uniqid('~~defaults~~');
+        $package = new static($name);
+        if (!$config->isRunnable()) {
+            return $package;
         }
 
-        return self::$defaultName;
+        $package->folder = $folder ? rtrim($folder, '/') : null;
+        $package->config = $config;
+
+        return $package;
     }
 
     /**
      * @param string $name
-     * @param array $config
-     * @param string|null $folder
      */
-    public function __construct(string $name, array $config, string $folder = null)
+    private function __construct(string $name)
     {
         $this->name = $name;
-        $this->folder = $folder ? rtrim($folder, '/') : null;
-
-        $dependencies = $config[self::DEPENDENCIES] ?? null;
-        ($dependencies && is_string($dependencies)) or $dependencies = null;
-
-        /** @var string[] $script */
-        $script = array_filter((array)($config[self::SCRIPT] ?? []), 'is_string');
-
-        $envRaw = $config[Config::DEF_ENV] ?? null;
-        if ($envRaw && (is_array($envRaw) || $envRaw instanceof \stdClass)) {
-            $env = EnvResolver::sanitizeEnvVars((array)$envRaw);
-        }
-
-        $this->dependencies = $dependencies;
-        $this->script = array_values(array_filter($script));
-        $this->env = $env ?? [];
     }
 
     /**
      * @return bool
+     *
+     * @psalm-assert-if-true string $this->name
+     * @psalm-assert-if-true string $this->folder
      */
     public function isValid(): bool
     {
-        if (is_bool($this->isValid)) {
-            return $this->isValid;
+        if (is_bool($this->valid)) {
+            return $this->valid;
         }
 
-        if (!$this->isInstall() && !$this->isUpdate() && !$this->script()) {
-            $this->isValid = false;
+        if (!$this->name || !$this->folder) {
+            $this->valid = false;
 
             return false;
         }
 
-        $this->isValid = ($this->name && $this->folder) || $this->isDefault();
+        if (!$this->config || !$this->config->isRunnable()) {
+            $this->valid = false;
 
-        return $this->isValid;
-    }
+            return false;
+        }
 
-    /**
-     * @return bool
-     */
-    public function isDefault(): bool
-    {
-        return $this->name === self::defaultName();
+        $this->valid = true;
+
+        return true;
     }
 
     /**
@@ -144,7 +94,7 @@ class Package implements \JsonSerializable
      */
     public function isInstall(): bool
     {
-        return $this->dependencies === self::DEPENDENCIES_INSTALL;
+        return $this->config && ($this->config->dependenciesIs(PackageConfig::INSTALL));
     }
 
     /**
@@ -152,7 +102,7 @@ class Package implements \JsonSerializable
      */
     public function isUpdate(): bool
     {
-        return $this->dependencies === self::DEPENDENCIES_UPDATE;
+        return $this->config && ($this->config->dependenciesIs(PackageConfig::UPDATE));
     }
 
     /**
@@ -168,15 +118,22 @@ class Package implements \JsonSerializable
      */
     public function path(): ?string
     {
-        return $this->isDefault() ? null : $this->folder;
+        return $this->folder;
     }
 
     /**
-     * @return string[]
+     * @return array<string>
      */
     public function script(): array
     {
-        return $this->script;
+        if (!$this->config) {
+            return [];
+        }
+
+        /** @var array<string>|null $scripts */
+        $scripts = $this->config->scripts();
+
+        return $scripts ?? [];
     }
 
     /**
@@ -184,7 +141,7 @@ class Package implements \JsonSerializable
      */
     public function env(): array
     {
-        return $this->env;
+        return $this->config ? $this->config->defaultEnv() : [];
     }
 
     /**
@@ -192,22 +149,18 @@ class Package implements \JsonSerializable
      */
     public function toArray(): array
     {
-        $dependencies = null;
-        if ($this->isUpdate()) {
-            $dependencies = self::DEPENDENCIES_UPDATE;
-        } elseif ($this->isInstall()) {
-            $dependencies = self::DEPENDENCIES_INSTALL;
+        if (!$this->config || !$this->isValid()) {
+            return [];
         }
 
         $scripts = $this->script();
-
         if (count($scripts) === 1) {
             $scripts = reset($scripts);
         }
 
         $data = [
-            self::DEPENDENCIES => $dependencies ?? null,
-            self::SCRIPT => $scripts ?: null,
+            PackageConfig::DEPENDENCIES => $this->config->dependencies(),
+            PackageConfig::SCRIPT => $scripts,
         ];
 
         return array_filter($data);

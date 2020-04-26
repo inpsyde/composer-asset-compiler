@@ -129,4 +129,13 @@ class EnvResolver
 
         return null;
     }
+
+    /**
+     * @param array $config
+     * @return array
+     */
+    public function removeEnv(array $config): array
+    {
+        return (array)array_diff_key($config, [self::ENV_KEY => '']);
+    }
 }

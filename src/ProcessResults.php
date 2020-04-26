@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * This file is part of the "Composer Asset Compiler" package.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler;
@@ -9,7 +16,7 @@ final class ProcessResults
     /**
      * @var int
      */
-    private $total = 0;
+    private $total;
 
     /**
      * @var \SplQueue|null

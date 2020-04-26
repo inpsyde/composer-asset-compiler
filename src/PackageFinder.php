@@ -17,15 +17,18 @@ use Composer\Repository\RepositoryInterface;
 
 class PackageFinder
 {
-    private const FORCE_DEFAULTS = 'force-defaults';
-
     /**
      * @var array
      */
     private $packageData;
 
     /**
-     * @var Package|null
+     * @var \Inpsyde\AssetsCompiler\EnvResolver
+     */
+    private $envResolver;
+
+    /**
+     * @var \Inpsyde\AssetsCompiler\Defaults
      */
     private $defaults;
 
@@ -36,12 +39,19 @@ class PackageFinder
 
     /**
      * @param array $packageData
-     * @param Package|null $defaults
+     * @param \Inpsyde\AssetsCompiler\EnvResolver $envResolver
+     * @param \Inpsyde\AssetsCompiler\Defaults $defaults
      * @param bool $stopOnFailure
      */
-    public function __construct(array $packageData, ?Package $defaults, bool $stopOnFailure)
-    {
+    public function __construct(
+        array $packageData,
+        EnvResolver $envResolver,
+        Defaults $defaults,
+        bool $stopOnFailure
+    ) {
+
         $this->packageData = $packageData;
+        $this->envResolver = $envResolver;
         $this->defaults = $defaults;
         $this->stopOnFailure = $stopOnFailure;
     }
@@ -61,48 +71,60 @@ class PackageFinder
     ): array {
 
         /**
-         * @var array<string,array|null> $include
-         * @var array<int,string> $exclude
+         * @var array<string, PackageConfig> $rootLevelIncludePackagesConfig
+         * @var array<int, string> $excludeNames
          */
-        [$include, $exclude] = $this->prepareData();
-
-        if (!$include && !$autoDiscover) {
-            return [];
-        }
+        [$rootLevelIncludePackagesConfig, $excludeNames] = $this->extractRootLevelPackagesData();
 
         $found = [];
 
+        $rootPackage = $this->attemptRootPackageFactory($root, $packageFactory);
+        $rootPackage and $found[(string)$root->getName()] = $rootPackage;
+
+        if (!$rootLevelIncludePackagesConfig && !$autoDiscover) {
+            return $found;
+        }
+
+        /** @var array<int, string> $rootLevelIncludeNames */
+        $rootLevelIncludeNames = array_keys($rootLevelIncludePackagesConfig);
+
         /** @var PackageInterface[] $composerPackages */
         $composerPackages = $repository->getPackages();
-        array_unshift($composerPackages, $root);
 
         foreach ($composerPackages as $composerPackage) {
             /** @var string $name */
             $name = $composerPackage->getName();
-            if (isset($found[$name]) || $this->shouldExclude($name, ...$exclude)) {
+            if (
+                $composerPackage === $root
+                || isset($found[$name])
+                || $this->nameMatches($name, ...$excludeNames)[0]
+            ) {
                 continue;
             }
 
-            $config = $this->includeData($name, $include);
+            /** @var string|null $rootLevelPackagePattern */
+            [, $rootLevelPackagePattern] = $this->nameMatches($name, ...$rootLevelIncludeNames);
 
-            $isRoot = $composerPackage === $root;
-            $rootRequired = !$isRoot && ($config !== null);
+            /** @var PackageConfig|null $rootLevelPackageConfig */
+            $rootLevelPackageConfig = $rootLevelPackagePattern
+                ? ($rootLevelIncludePackagesConfig[$rootLevelPackagePattern] ?? null)
+                : null;
 
-            if (!$rootRequired && !$autoDiscover) {
+            // If there's no root-level config for the package, and auto-discover is disabled,
+            // there's nothing else we should do.
+            if (!$autoDiscover && !$rootLevelPackageConfig) {
                 continue;
             }
-
-            // if package was included with `true` (config is `[]`), we allow look in package config
-            $packageConfigAllowed = $autoDiscover || ($config === []);
 
             $package = $packageFactory->attemptFactory(
                 $composerPackage,
-                $config,
-                $this->defaults,
-                $packageConfigAllowed
+                $rootLevelPackageConfig,
+                $this->defaults
             );
 
-            if (!$this->assertValidPackage($package, $name, $rootRequired)) {
+            $requiredExplicitly = $rootLevelPackageConfig && ($rootLevelPackagePattern === $name);
+
+            if (!$this->assertValidPackage($package, $name, $requiredExplicitly)) {
                 continue;
             }
 
@@ -113,152 +135,119 @@ class PackageFinder
     }
 
     /**
-     * @return array
+     * @param \Composer\Package\RootPackageInterface $root
+     * @param \Inpsyde\AssetsCompiler\PackageFactory $packageFactory
+     * @return \Inpsyde\AssetsCompiler\Package|null
      */
-    private function prepareData(): array
-    {
-        /** @var array<string, array|null> $include */
-        $include = [];
+    private function attemptRootPackageFactory(
+        RootPackageInterface $root,
+        PackageFactory $packageFactory
+    ): ?Package {
 
-        /** @var string[] $exclude */
-        $exclude = [];
-
-        $defaultsConfig = $this->defaults ? $this->defaults->toArray() : null;
-
-        foreach ($this->packageData as $key => $packageData) {
-            if (!$key || !is_string($key)) {
-                continue;
-            }
-
-            if ($packageData === self::FORCE_DEFAULTS) {
-                $this->assertDefaults();
-                $defaultsConfig and $include[$key] = $defaultsConfig;
-                continue;
-            }
-
-            $isArray = is_array($packageData);
-
-            // No array, no bool: invalid
-            if (!$isArray && !is_bool($packageData)) {
-                continue;
-            }
-
-            // `$packageData` is `false`, let's add to exclude
-            if (!$isArray && !$packageData) {
-                $exclude[] = $key;
-                continue;
-            }
-
-            // if `$packageData` is true, means "use package-level config", we set to null
-            $include[$key] = $isArray ? $packageData : null;
+        $packageConfig = PackageConfig::forComposerPackage($root, $this->envResolver);
+        if (!$packageConfig->isRunnable()) {
+            return null;
         }
 
-        return [$include, $exclude];
-    }
-
-    /**
-     * @param string $name
-     * @param string[] $exclude
-     * @return bool
-     */
-    private function shouldExclude(string $name, string ...$exclude): bool
-    {
-        foreach ($exclude as $pattern) {
-            if (
-                $pattern === $name
-                || fnmatch($pattern, $name, FNM_PATHNAME | FNM_PERIOD | FNM_CASEFOLD)
-            ) {
-                return true;
-            }
+        $rootPackage = $packageFactory->attemptFactory($root, $packageConfig, Defaults::empty());
+        if ($rootPackage && $rootPackage->isValid()) {
+            return $rootPackage;
         }
 
-        return false;
-    }
-
-    /**
-     * Possible return values:
-     * - `null`: means "auto discover",
-     * - empty array: is included with no config
-     * - non-empty array: included with some config
-     *
-     * @param string $name
-     * @param array $include
-     * @return array|null
-     */
-    private function includeData(string $name, array $include): ?array
-    {
-        /**
-         * @var string $pattern
-         * @var array|null $data
-         */
-        foreach ($include as $pattern => $data) {
-            if (
-                $pattern === $name
-                || fnmatch($pattern, $name, FNM_PATHNAME | FNM_PERIOD | FNM_CASEFOLD)
-            ) {
-                return $data ?? [];
-            }
-        }
-
-        // Not in include, auto-discover required
         return null;
     }
 
     /**
-     * @return void
+     * @return array{0:array<string, PackageConfig>, 1:array<int, string>}
      */
-    private function assertDefaults(): void
+    private function extractRootLevelPackagesData(): array
     {
-        if ($this->stopOnFailure && !$this->defaults) {
-            throw new \Exception(
-                sprintf(
-                    '"%s" is used in %s settings, however %s configuration is missing.',
-                    self::FORCE_DEFAULTS,
-                    Config::PACKAGES,
-                    Config::DEFAULTS
-                )
-            );
+        $packages = [];
+        $exclude = [];
+
+        foreach ($this->packageData as $key => $packageData) {
+            $config = $this->factoryRootLevelPackageConfig([$key, $packageData]);
+            if (!$config) {
+                continue;
+            }
+
+            if ($config->isDisabled()) {
+                $exclude[] = $key;
+                continue;
+            }
+
+            $packages[$key] = $config;
         }
+
+        return [$packages, $exclude];
+    }
+
+    /**
+     * @param array $keyAndPackageData
+     * @return \Inpsyde\AssetsCompiler\PackageConfig|null
+     */
+    private function factoryRootLevelPackageConfig(array $keyAndPackageData): ?PackageConfig
+    {
+        [$key, $packageData] = $keyAndPackageData;
+        if (!$key || !is_string($key)) {
+            if ($this->stopOnFailure) {
+                throw new \Exception("invalid packages settings.");
+            }
+
+            return null;
+        }
+
+        $config = PackageConfig::forRawPackageData($packageData, $this->envResolver);
+        if (!$config->isValid()) {
+            if ($this->stopOnFailure) {
+                throw new \Exception("Package setting for '{$key}' is not valid.");
+            }
+
+            return null;
+        }
+
+        return $config;
+    }
+
+    /**
+     * @param string $name
+     * @param string[] $patterns
+     * @return array{0:null, 1:null}|array{0:string, 1:string}
+     */
+    private function nameMatches(string $name, string ...$patterns): array
+    {
+        foreach ($patterns as $pattern) {
+            if (
+                $pattern === $name
+                || fnmatch($pattern, $name, FNM_PATHNAME | FNM_PERIOD | FNM_CASEFOLD)
+            ) {
+                return [$name, $pattern];
+            }
+        }
+
+        return [null, null];
     }
 
     /**
      * @param Package $package
      * @param string $name
-     * @param bool $rootRequired
+     * @param bool $requiredByRoot
      * @return bool
      */
     private function assertValidPackage(
         ?Package $package,
         string $name,
-        bool $rootRequired
+        bool $requiredByRoot
     ): bool {
 
-        $errorMessage = "Could not find valid configuration for '{$name}'.";
+        $valid = $package
+            && $package->isValid()
+            && file_exists(($package->path() ?? '.') . '/package.json');
 
-        if (!$package && $rootRequired) {
-            if ($this->stopOnFailure) {
-                throw new \Exception($errorMessage);
-            }
-
-            return false;
+        if (!$valid && $requiredByRoot && $this->stopOnFailure) {
+            throw new \Exception("Could not find valid configuration for '{$name}'.");
         }
 
-        if (
-            !$package
-            || $package->isDefault()
-            || !file_exists(($package->path() ?? '.') . '/package.json')
-        ) {
-            return false;
-        }
-
-        if ($package->isValid()) {
-            return true;
-        }
-
-        if ($this->stopOnFailure && $rootRequired) {
-            throw new \Exception($errorMessage);
-        }
-
-        return false;
+        return $valid;
     }
 }

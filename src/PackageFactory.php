@@ -49,53 +49,50 @@ class PackageFactory
     }
 
     /**
-     * @param PackageInterface $package
-     * @param array|null $config
-     * @param Package|null $defaults
-     * @param bool $packageConfigAllowed
-     * @return Package|null
+     * @param \Composer\Package\PackageInterface $package
+     * @param \Inpsyde\AssetsCompiler\PackageConfig|null $rootLevelPackageConfig
+     * @param \Inpsyde\AssetsCompiler\Defaults $defaults
+     * @return \Inpsyde\AssetsCompiler\Package|null
      */
     public function attemptFactory(
         PackageInterface $package,
-        ?array $config,
-        ?Package $defaults,
-        bool $packageConfigAllowed
+        ?PackageConfig $rootLevelPackageConfig,
+        Defaults $defaults
     ): ?Package {
 
-        if ($config) {
-            $configByEnv = $this->envResolver->resolve($config);
-            ($configByEnv && is_array($configByEnv)) and $config = $configByEnv;
-        }
+        $config = $rootLevelPackageConfig;
 
-        if (!$config && $packageConfigAllowed) {
-            $packageConfig = Config::configFromPackage($package);
-            // If config is null, package wasn't required in root, and if it also has no package-level
-            // config, there's no place we can look for config.
-            if ($config === null && !$packageConfig) {
-                return null;
-            }
-
-            if ($packageConfig) {
-                $packageEnv = $packageConfig[Config::DEF_ENV] ?? null;
-                unset($packageConfig[Config::DEF_ENV]);
-
-                $packageByEnv = $this->envResolver->resolve($packageConfig);
-                ($packageByEnv && is_array($packageByEnv)) and $packageConfig = $packageByEnv;
-                $packageConfig and $config = $packageConfig;
-                $config and $config[Config::DEF_ENV] = $packageEnv;
-            }
-        }
-
-        // If we have no config and no default, no way we can create a valid package.
-        if (!$config && !$defaults) {
+        if ($config && $config->isForcedDefault() && !$defaults->isValid()) {
             return null;
         }
 
-        $config or $config = $defaults->toArray();
-        $installPath = $this->installationManager->getInstallPath($package);
-        $path = $this->filesystem->normalizePath($installPath);
-        $name = $package->getName();
+        if (!$rootLevelPackageConfig || $rootLevelPackageConfig->usePackageLevelOrDefault()) {
+            $packageLevelConfig = PackageConfig::forComposerPackage($package, $this->envResolver);
 
-        return new Package((string)$name, $config, (string)$path);
+            // If no package-level and no root-level config there's nothing we can do.
+            if (!$rootLevelPackageConfig && !$packageLevelConfig->isValid()) {
+                return null;
+            }
+
+            $config = $packageLevelConfig;
+        }
+
+        $validConfig = $config && $config->isRunnable();
+
+        // If we have no config and no default, no way we can create a valid package.
+        if (!$validConfig && !$defaults->isValid()) {
+            return null;
+        }
+
+        if (!$config || $config->isForcedDefault()) {
+            /** @var PackageConfig $config */
+            $config = $defaults->toConfig();
+        }
+
+        $installPath = $this->installationManager->getInstallPath($package);
+        $path = (string)$this->filesystem->normalizePath($installPath);
+        $name = (string)($package->getName() ?? '');
+
+        return Package::new($name, $config, $path);
     }
 }
