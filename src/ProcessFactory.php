@@ -31,7 +31,7 @@ class ProcessFactory
     private $factory;
 
     /**
-     * @param callable(string, ?string): Process|null $factory
+     * @param callable(string, ?string=):?Process $factory
      */
     public function __construct(callable $factory = null)
     {
