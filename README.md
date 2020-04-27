@@ -4,17 +4,16 @@
 
 ## Preface
 
-Working with WordPress we more often than not we deal with _packages_ (as in Composer packages) that contain
-PHP code and "frontend assets" (as in javascript, styles, images...).
+Working with WordPress we, more often than not, deal with _packages_ (as in *Composer packages*) that contain both PHP code and "frontend assets" (as in javascript, styles, images...).
 
-Using Composer we can put the packages together, bur then we need either that frontend assets are _built_
-or we need a way to build them after they are pulled via Composer.
+Using Composer we can put the packages together, but then we need either that:
+
+- frontend assets are already built when the Composer package is pulled (so built assets are kept under version control)
+- a way to build assets after the packages are pulled via Composer.
 
 This package is a Composer plugin that has the scope to pursuit the latter approach.
 
-It means that we can always keep under version control packages that have non-built frontend assets,
-and they are built after being pulled via Composer, no matter how "deep" in the dependency tree
-they are.
+It means that in version control we *don't* have to keep compiled frontend assets, but they are built after the package that contains them is pulled via Composer, no matter how "deep" in the dependency tree the packages are.
 
 
 
@@ -22,7 +21,7 @@ they are.
 ## Build is done via javascript tools
 
 Even if the technology we use to collect the packages is Composer, so it is PHP, the only sane way
-to "build" frontend assets is using frontend technology.
+to "build" frontend assets is to use frontend technology.
 
 What we do is to use Composer to run shell commands that will execute the frontend tools used to 
 build assets.
@@ -41,17 +40,17 @@ So the entire workflow can be summarized like this:
 
 1. Composer is used to pull dependencies from their repositories
 2. After Composer finishes its work, it loops all the installed packages to find those that needs to be built
-3. For each package found, it moves the current directory in the root and
-    1. install the dependencies via either _npm_ and *Yarn* 
+3. For each package found, it moves the current directory to the root of the package and:
+    1. installs the dependencies via either _npm_ or *Yarn* 
     2. uses either _npm_ or *Yarn* to execute one or more "scripts" defined in `package.json`.
 
 
 
 ## Which packages?
 
-At point *2.* of in the list at the end of previous section it is said: "*to find those that needs to be built*".
+At point *2.* of the list at the end of previous section it is said: "*to find those that needs to be built*".
 
-But how can this Composer plugin programmatically determine which packages have _something_ to be built and which not?
+But how can this Composer plugin programmatically determine which packages have assets to be compiled and which not?
 
 It uses two strategies, that can be combined:
 
@@ -113,9 +112,9 @@ webpack --env.staging
 
 A good way to deal with this issue is to use **environment variables**.
 
-So in we could, for example, set a variable `WEBPACK_ENV` to `"production"` in the production system and to `"staging"` in the staging system.
+So we could, for example, set the variable `WEBPACK_ENV` to `"production"` in the production system and to `"staging"` in the staging system.
 
-The **`default-env`** configuration key is used by this Compose plugin to provide a fallback in case an environment variable is not found.
+The **`default-env`** configuration key is used by this Composer plugin to provide a *fallback* in case an environment variable is not found.
 
 Let's assume, for example, that we need the `WEBPACK_ENV` environment to be defined (we'll see shorty how variables can be used for the plugin) we could do:
 
@@ -131,13 +130,13 @@ Let's assume, for example, that we need the `WEBPACK_ENV` environment to be defi
 }
 ```
 
-With the configuration above, then the plugin compiles the package in the case the `WEBPACK_ENV` variable is not defined for in the current environment, then its value will default to  `"development"`.
+With the configuration above, when the plugin will compile the package in the case the `WEBPACK_ENV` variable is not defined in the current environment, then its value will default to  `"development"`.
 
 
 
 ### Dependencies install and update
 
-As said in the introductory sections of this README, the "building" of assets is done in two steps: first the package dependencies are installed and the one ore more scripts are executed.
+As said in the introductory sections of this README, the "building" of assets is done in two steps: first the package dependencies are installed and only after that one or more *scripts* are executed.
 
 The **`dependencies`** configuration property defines how to proceed for the first step. 
 
@@ -148,14 +147,14 @@ The value for this property can be:
 
 Anything else, means *"do not install nor update frontend dependencies for this package"*.
 
-This plugins support both *npm* and *Yarn*. The actual command executed when using the two different configuration values, with each of the two supported dependency managers is summarized in the following table:
+This plugins support both *npm* and *Yarn*. The table below summarizes the actual command executed when using the two different configuration values, depending on the dependency manager in use:
 
 |                             | npm*                   | Yarn*          |
 | --------------------------- | ---------------------- | -------------- |
 | `"dependencies": "install"` | `npm install`          | `yarn`         |
 | `"dependencies": "update"`  | `npm update --no-save` | `yarn upgrade` |
 
-**the "map" between `dependencies` configuration value and actual command shown in the table above is the default when using the two most popular package managers. However, via configuration at root level it is possible to map the two configuration values with a different command.*
+**the "map" between `dependencies` configuration value and actual command shown in the table above is the default when using the two most popular package managers. However, via configuration at root level it is possible to map the two configuration values to a different command.*
 
 
 
@@ -186,9 +185,9 @@ The following table summarize how these Composer parameters are "mapped" to para
 
 ### Assets building scripts
 
-The second step in "building" assets after dependencies are being pulled is to execute one ore more "scripts" that are defined in `package.json`.
+The second step in the "building" of assets, after dependencies are being pulled, is to execute one ore more *scripts* that are defined in `package.json`.
 
-The script(s) to be executed are configured in the **`script`** configuration value.
+The scripts to be executed are configured in the **`script`** configuration value.
 
 For example, assuming a configuration in `composer.json` that looks like this:
 
@@ -205,7 +204,7 @@ For example, assuming a configuration in `composer.json` that looks like this:
 
 After the package has been installed via Composer, the plugin will install dependencies with either *npm* or *Yarn* and after that will execute the `"build"` script, that should be defined in `package.json`.
 
-The actual command run will depending on the package manager used:
+The actual command run will depend on the package manager used:
 
 | Asset compiled config | npm             | Yarn         |
 | --------------------- | --------------- | ------------ |
@@ -221,23 +220,21 @@ It is possible to instruct the asset compiler to execute _multiple_ scripts, by 
 
 #### Leveraging environment variables for scripts
 
-Many tools that we can use to build assets can use a different behavior per environment. As a simple example, we can take [Symfony Encore](https://symfony.com/doc/current/frontend.html) that can be executed as:
+Many tools that we can use to build assets can use a different behavior per environment. As a simple example, we can take [Symfony Encore](https://symfony.com/doc/current/frontend.html) that can be executed to use defaults tailored for development environments like this:
 
 ```shell
 yarn encore dev
 # or `npm run encore dev`
 ```
 
-to use defaults tailored for development environments, or as:
+or for production optimization like this:
 
 ```shell
 yarn encore prod
 # or `npm run encore prod`
 ```
 
-for production optimization.
-
-The Composer asset compiler  **`script`** configuration, has support for environment variables placeholders, that are replaced with the value of actual variables before being run.
+The compiler  **`script`** configuration, has support for environment variables placeholders, that are replaced with the value of actual variables before being ran.
 
 Which means that we can have a configuration like this:
 
@@ -248,7 +245,7 @@ Which means that we can have a configuration like this:
           	"dependencies": "install",
             "script": "encore ${ENCORE_ENV}",
           	"default-env": {
-              	"WEBPACK_ENV": "dev"
+              	"ENCORE_ENV": "dev"
             }
         }
     }
@@ -264,13 +261,13 @@ yarn encore prod
 
 and we can set to `"dev"` in development environments.
 
-When the variable is not defined at all, thanks to the `"default-env"` configuration value, the script will default to `"dev"` (as documented above in this README) which means that we always run the command in a meaningful way even without defining the variable.
+When the variable is not defined at all, thanks to the `"default-env"` configuration, the script will default to `"dev"` (as documented above in this README) which means that we always run the command in a meaningful way even if the system has no environment variable defined.
 
 
 
 #### Passing parameters to `package.json` scripts
 
-Let's assume a package has a `package.json` that looks like contains:
+Let's assume a package has a `package.json` that contains:
 
 ```json
 {
@@ -292,7 +289,7 @@ and that would actually execute:
 gulp build
 ```
 
-because all the parameters after ` -- ` are passed by npm to the script defined in  `package.json` .
+because all the parameters after ` -- ` are passed by *npm* to the script defined in `package.json` .
 
 However, if we would use *Yarn* instead of *npm*, to obtain the same result we would type:
 
@@ -300,11 +297,11 @@ However, if we would use *Yarn* instead of *npm*, to obtain the same result we w
 yarn tasks build
 ```
 
-because Yarn passes everything after the script name to the script, without the need of ` -- ` .
+because *Yarn* passes everything after the script name to the script itself, without the need for ` -- ` .
 
-Composer asset compiler configuration is agnostic in the regard of the usage of *Yarn* or *npm* and this is why when there's the need to pass arguments to `package.json` script, those must be written using the *npm* syntax (with ` -- `) the asset compiler will recognize when running Yarn and will remove the non needed  ` -- `.
+Composer asset compiler configuration is agnostic in the regard of the usage of *Yarn* or *npm* and this is why when there's the need to pass arguments to `package.json` script, those must be written using the *npm* syntax (with ` -- `) and the asset compiler will recognize when running *Yarn* and will remove the not needed  ` -- `.
 
-Back to previous example, assuming the same `package.json` on top of this section, we could have an asset compiler configuration as follows:
+Back to previous example, assuming the same `package.json` on top of this section, we could have a configuration as follows:
 
 ```json
 {
@@ -371,7 +368,7 @@ For example, it might be desirable to build assets and then run tests in staging
 
 This cases are achievable thanks to the **`env`** configuration.
 
-Both `dependencies` and `scripts` configurations, instead of being set as own properties of the `composer-asset-compiler` object, can be placed inside an `env` object, so that it is possible to have different configuration per environment.
+Both `dependencies` and `script` configurations, instead of being set as own properties of the `composer-asset-compiler` object, can be placed inside an `env` object, so that it is possible to have different configuration per environment.
 
 For example:
 
@@ -407,9 +404,9 @@ For the previous snippet to work, an environment variable named `COMPOSER_ASSETS
 
 It is important to note that `COMPOSER_ASSETS_COMPILER` is the only environment variable that **can't** have a default value assigned via `"default-env"` configuration.
 
-When it is not defined for the environment the default value will be either **`"$default"`** or **`"$default-no-dev"`**, depending if Composer is being run with the `--no-dev` flag or not.
+When it is not defined in the real environment the default value will be either **`"$default"`** or **`"$default-no-dev"`**, depending if Composer is being run with the `--no-dev` flag or not.
 
-More details on this will be provided later in this README when documenting the root-level configuration, for now it is important to say that when using this kind of configuration it is a good idea to provide a set of configuration for the `"$default"` environment, otherwise if `COMPOSER_ASSETS_COMPILER` environment variable is not defined the compiler will not know which configuration to use.
+More details on this will be provided later in this README when documenting the root-level configuration, for now it is important to say that when using this kind of configuration it is a good idea to provide a set of configuration for the `"$default"` environment, otherwise if `COMPOSER_ASSETS_COMPILER` environment variable is not defined the compiler will not know which configuration to use (and will do nothing).
 
 For example, the previous snippet would be better written like this:
 
@@ -433,7 +430,7 @@ For example, the previous snippet would be better written like this:
 
 Finally, it worth to be noted that advanced environment-based configuration can be combined with the other techniques previously documented, like passing arguments to scripts and the usage of placeholders for environment variables.
 
-For example, the following example leverage all of them:
+For example, the following example leverages all of them:
 
 ```json
 {
@@ -460,11 +457,13 @@ For example, the following example leverage all of them:
 
 ## Root-level configuration
 
-The root Composer package is, at any effect, a Composer package, meaning that all the package-configuration describe above will apply to root package.
+The root Composer package is, at any effect, a Composer package, meaning that all the package-level configuration described above will apply to root package as well.
 
 **An additional note has to be made in the regard of `"default-env"` though**.
 
-In fact, `"default-env"` configuration in the root package will apply to *all* the packages, *merging* its value with any package-specific value that could be defined at package level. In case the same value is defined both at root and package level, the one at package level "wins".
+In fact, `"default-env"` configuration in the root package will apply to *all* the packages, *merging* its value with any package-specific value that could be defined at package level.
+
+In case the same value is defined *both* at root and package level, the one at package level "wins".
 
 
 
@@ -488,7 +487,7 @@ The following table summarize them:
 
 It must be noted that **all the settings are optional**.
 
-Assuming installed Composer packages include package-level configuration, after Composer install (or updates) dependencies the asset compiler will kick-in, recursively search for packages that have usable configuration and install and build package assets based on those settings.
+In fact, if the root package has completely not compiler settings, but some of the installed Composer packages have package-level configuration, after Composer installs (or updates) dependencies the asset compiler will kick-in, recursively search for packages that have an usable configuration and will install and build package assets based on that configuration.
 
 Many parts of this default behavior can be customized used the above settings, and the next section will document each of them.
 
@@ -496,9 +495,9 @@ Many parts of this default behavior can be customized used the above settings, a
 
 ### Configuration by environment
 
-When document package-level configuration above, it has been said  how the `env` configuration can be used to obtain different configuration values per environment.
+When package-level configuration was documented above, it has been said how the `env` configuration can be used to obtain different configuration values per environment.
 
-For root package, the `env` configuration property can be used in two ways.
+In root-level configuration, the `env` configuration property can be used in two ways.
 
 The first comes from the fact that root package is still a package, so anything has been said about package-level configuration applies to root-level configuration as well.
 
@@ -510,7 +509,6 @@ For example, we can have a root-level configuration that looks like this:
 {
     "extra": {
         "composer-asset-compiler": {
-          	"dependencies": "install",
           	"env": {
               	"$default": {
                   	"script": ["build", "test"]
@@ -532,7 +530,7 @@ For example, we can have a root-level configuration that looks like this:
 
 The first `env`, located directly as a property of `composer-asset-compiler` shows the usage that has been described for package-level configuration.
 
-The second usage, is found as property of `auto-run`, one of the root-level configurations, and allow to define per-environment configuration for that specific setting.
+The second usage, is shown where `env` is a property of `auto-run`, one of the possible root-level settings, and allows to define per-environment configuration for that specific setting.
 
 This usage is allowed for any of the configuration that in the configuration cheat-sheet table in the previous sections have "*yes*" under "*By env*".
 
@@ -540,7 +538,7 @@ This usage is allowed for any of the configuration that in the configuration che
 
 ### Auto-run VS on-demand asset compiling
 
-By default running either `composer install` or `composer update` also means, if `inpsyde/composer-asset-compiler` is among the dependencies to run the compiling assets workflow.
+By default, running either `composer install` or `composer update` also means the compiling assets workflow will automatically start immediately after the installation finishes, assuming `inpsyde/composer-asset-compiler` is among the dependencies.
 
 This might not be desirable. In that case, the `auto-run` configuration can be used to change this behavior.
 
@@ -562,13 +560,15 @@ Having such configuration, the only way to start the assets compilation workflow
 
 ### Which packages to process: `packages ` and `auto-discover` settings
 
-If the Composer dependencies installed from root package ships in their `composer.json` settings for the Composer asset compiler, then the compiler knows what to process.
+If some of the Composer dependencies installed ships in their `composer.json` a configuration for the Composer asset compiler, then the compiler knows what to process.
 
-However, there is the possibility that not all the dependencies that we need to process ship such configuration and / or the configuration shipped with all or some the packages do not fit our needs.
+However, there is the possibility that not all the dependencies should be processes ship such configuration and / or the configuration shipped by the packages is not correct.
 
-In such cases, the **`packages`** and **`auto-discover`** settings serve the purpose of tweaking the compiler behavior to do what we need.
+In such cases, the **`packages`** and **`auto-discover`** settings serve the purpose of tweaking the compiler behavior.
 
-`auto-discover`  can be set to `false` to prevent the compiler to recursively look into installed dependencies to find packages that needs asset compilation. This is useful when either we want to make sure the compilation happen according to the setting in root package, or when it is already known that no installed package ships any compiler configuration so it is possible to avoid wasting time searching.
+`auto-discover`  can be set to `false` to prevent the compiler to recursively look into installed dependencies to find packages that needs asset compilation.
+
+This is useful when either there's the need to make sure the compilation happen according to the setting in root package, or when it is already known that no installed package ships any compiler configuration so it is possible to avoid wasting time searching.
 
 `packages` is where to define configuration for packages that have no package-level configuration or have package-level configuration that should be overridden.
 
@@ -599,9 +599,9 @@ For example:
 }
 ```
 
-Every value in the `packages` object, totally comparable with the package-level configuration that can be placed in dependencies `composer.json`.
+Every value in the `packages` object, is totally comparable with the package-level configuration that can be placed in dependencies `composer.json`.
 
-To be noted how the `"default-env"` defined at root level will apply to all packages, both defined in `packages` and "discovered" by reading installed  dependencies (assuming `"auto-discover"` is `true`).
+To be noted how the `"default-env"` defined at root level will apply to all packages, both defined in `packages` and "discovered" by reading installed dependencies (assuming `"auto-discover"` is `true`).
 
 However, `"packages"` object keys can make use of `*` placeholder to apply to multiple packages, without the need to list them one by one.
 
@@ -630,7 +630,11 @@ For example:
 
 #### Exclude packages
 
-`"packages"` can also be used to _exclude_ some packages. If  `"auto-discover"` is `true` the root package has no knowledge over what packages will be compiled, but there might be the need to exclude a particular object (or a particular set of objects). This can be done by setting the target package(s) to `false`.
+`"packages"` can also be used to _exclude_ some packages.
+
+When `"auto-discover"` is `true` the root package has no knowledge over what packages will be compiled, but there might be the need to exclude a particular package (or a particular set of packages).
+
+This can be done by setting the target package(s) to `false`.
 
 For example:
 
@@ -650,9 +654,11 @@ For example:
 
 ### Default packages configuration
 
-Even if the asset compiler provides a very flexible way to configure granularly every package (or group of similar packages) in a different way, the reality is that more often than not the `dependencies` and `script` configuration are the same. 
+Even if the asset compiler provides a very flexible way to granularly configure every package (or group of similar packages) in a different way, the reality is that more often than not the `dependencies` and `script` configuration are the same. 
 
-When that's the case, having to set same properties again and again might be quite verbose. Take this example:
+When that's the case, having to set same properties again and again might be quite verbose.
+
+Let's take this example:
 
 ```json
 {
@@ -704,7 +710,7 @@ For example, the snippet above can be re-written in a less verbose way like this
 }
 ```
 
-By defining a set of defaults ad then using `true` for the packages, we are instructing the compiler to use those defaults, without having to copy same settings again and again.
+By defining a set of defaults and then using `true` for the packages, we are instructing the compiler to use those defaults, without having to copy same settings again and again.
 
 Actually, `true` means that defaults will be used *unless* different settings are provided at package level.
 
@@ -735,21 +741,21 @@ For example:
 
 When documenting package-level configuration it has been show how the different values for `dependencies` and `script` are mapped to *npm* or *Yarn* commands.
 
-But it has no been said, among other things, how the asset compile decides which package manager to use.
+But it has not been said, among other things, how the asset compiler decides which package manager to use.
 
 #### Package manager discovery
 
 By default, when the asset compiler starts its work it will check for the availability of the package manager and will use the first found.
 
-It first executes the "version" command for *Yarn* (`yarn --version`) and if that is successful it is assumed Yarn is available and that is used. On the contrary, the sane check is done for *npm* and that will be used in case of success.
+It first executes the "version" command for *Yarn* (`yarn --version`) and if that is successful it is assumed Yarn is available and that is used. On the contrary, the same check is done for *npm* and that will be used in case of success.
 
 In the case none of the two "version" commands give successful results, the compiler bail with an error.
 
-When that happen, but one knows that one of the two is available or when for any reason one of the two wants to be forced, that is possible via the **`commands`** configuration property.
+When that happen, but one knows that one of the two is available or when for any reason one of the two package managers wants to be forced, that is possible via the **`commands`** configuration property.
 
 #### Force one package manager
 
-`commands` is a quite powerful configuration, in its simplest form allow to force the usage of one of the two package managers, like this:
+`commands` is a quite powerful configuration, in its simplest form it allows to force the usage of one of the two supported package managers, like this:
 
 ```json
 {
@@ -763,7 +769,7 @@ When that happen, but one knows that one of the two is available or when for any
 
 (of course, `"yarn"` can be used to force the usage of *Yarn*).
 
-`commands` is one of the settings that can be set per-environment, so that it is possible to force a package manager for the usage systems, without affecting the others.
+`commands` is one of the settings that can be set per-environment, so that it is possible to force a package manager in some systems, without affecting the others.
 
 For example:
 
@@ -790,9 +796,9 @@ In other environments, the default will apply: the compiler will check for the a
 
 #### Advanced commands configuration
 
-The `commands` configuration property is internally mapped from the strings `"npm"` an `"yarn"` to an object. 
+The `commands` configuration property is internally mapped from the strings `"npm"` and `"yarn"` to an object. 
 
-For example, when the settings is  `{ "commands": "npm" }`, the mapped object looks like this:
+For example, when the settings is  `{ "commands": "npm" }`, the *mapped object* looks like this:
 
 ```json
 {
@@ -831,7 +837,9 @@ After the `"commands"` objects is being created according to the package manager
 
 The value `{ "dependencies": "install" }` is  "resolved" to the value of `commands.dependencies.install`. In the same way, `{ "script": "build" }` is "resolved" replacing the `%s` in `commands.dependencies.script` with `"build"`.
 
-Knowing this workflow is important to understand how it is possible to customize the `commands` object in very powerful way. In fact, it is possible to a complete `commands` object instead of letting the compiler use the default object (shown above) based on the package manager in use.
+To know this workflow is important to understand how it is possible to customize the `commands` object in very powerful way.
+
+In fact, it is possible to use a complete `commands` object instead of letting the compiler use the default object based on the package manager in use.
 
 For example, in root `composer.json` it is possible to write a configuration like this:
 
@@ -857,9 +865,9 @@ Using such a configuration, we are instructing the compiler how to resolve the c
 
 ### Stop compilation on failure
 
-By default, when anything goes wrong, the processing of packages stops and the compiler exit with an non-zero code.
+By default, when *anything* during building process goes wrong, the processing of packages stops and the compiler exit with an non-zero code.
 
-It is possible to instruct the compiler to continue processing other packages, that have been listed for processing. This can be done via the **`stop-on-failure`** property.
+When an error happen for a package, it is possible to instruct the compiler to continue processing other packages. This can be done via the **`stop-on-failure`** property.
 
 ```json
 {
@@ -877,24 +885,26 @@ Must be noted that when `"stop-on-failure"` is `false` the compiler will continu
 
 ### Cleanup of `node_modules`
 
-The `node_modules` folder is where javascript package manager place the files for the dependencies. 
+The `node_modules` folder is where javascript package managers place the files for the dependencies. 
 
-It is "infamous" for being very heavy in size. When using asset compiler, all processed packages that are located in root package vendor folder will have own `node_modules` folder, accounting in total for several, maybe dozen of gigabytes.
+It is "infamous" for being very heavy in size. When using asset compiler, all processed packages will have own `node_modules` folder accounting in total for several, sometimes dozen, hopefully not hundreds of gigabytes.
 
-In some situation, the same system can contain several version of the complete built system (e. g. when using deployments with support to immediate rollback to previous version) so the space required to host all these `node_modules` folder can be very expensive for something that is useless after the assets are built.
+In some situations, the same system can contain several versions of the complete built system (e. g. when using deployments with support to immediate rollback to previous version) so the space required to host all these `node_modules` folder can be very expensive for something that is useless after the assets are built.
 
 For this reason, by default, after a package is processed, the compiler deletes the `node_modules` folder.
 
 There are two exceptions:
 
-- if the `node_modules` folder was there _before_ the asset compiler started its work for the package, it was probably *manually* created on purpose, so the compiler keeps it
-- if the package is symlinked very likely the current system is a development environment that is using a [Composer `path` repository](https://getcomposer.org/doc/05-repositories.md#path), or [Composer Studio](https://github.com/franzliedke/studio), or other similar strategies, which means the `node_modules` is probably being used during the development of such packages. This is why the compiler ignore the  `node_modules` folder found inside packages that are symlinked.
+- if the `node_modules` folder was there _before_ the asset compiler started its work for the package, it was probably *manually* created on purpose by a developer, so the compiler keeps it
+- if the package is symlinked, very likely the current system is a development environment that is using a [Composer `path` repository](https://getcomposer.org/doc/05-repositories.md#path), or [Composer Studio](https://github.com/franzliedke/studio), or other similar strategies, which means the `node_modules` is probably being used during the development of such packages. This is why the compiler ignore the  `node_modules` folder found inside packages that are symlinked.
 
 However, this is just the default behavior.
 
 The configuration **`wipe-node-modules`**  can be used to change this behavior.
 
-Specifically, the deletion of `node_modules` can be avoided in all cases, by setting its value to `false` or can be forced in all cases by setting it to `"force"`. The other allowed value is `true` and that equals the default.
+Specifically, the deletion of `node_modules` can be always avoided by setting its value to `false`, or can be forced by setting it to `"force" ` (`node_modules` for symlinked packages will still ignored, even with `false`).
+
+The other allowed value is `true` and that equals the default.
 
 It worth noting that `wipe-node-modules` is one of those settings that can be set by environment, and considering that deleting `node_modules` might be both time-consuming and "invasive" having the possibility to set it per environment is very important.
 
@@ -914,13 +924,13 @@ There are two settings: **`max-processes`** and **`processes-poll`** that contro
 
 `max-processes` is the maximum number of processes that will run in parallel. In theory the higher is the number the faster is the processing, but in reality that depends on the number of CPUs (and their cores) and the memory available.
 
-Because the compiler is written in PHP after processes are started is is necessary to check every "bit" of time that they are still running or not (so either successful or erroneous). This "bit" can be customized via the `processes-poll` setting. The value is in *microseconds*, that is 1/1000000 of a second, and it defaults to `100000 ` which means packages with intervals of 0.1 seconds.
+Because the compiler is written in PHP, after processes are started it is necessary to check every "bit" of time that they are still running or not (so either successful or erroneous). This "bit" can be customized via the `processes-poll` setting. The value is in *microseconds*, that is 1/1000000 of a second, and it defaults to `100000 ` which means packages are checked with intervals of 0.1 seconds.
 
-Setting this value to be too small means packages are checked for their status more frequently, so would be possible to recognize earlier when a process is completed, but the act of _checking_ packages takes time so a too small value could actually increase the total time necessary.
+Setting this configuration to a smaller value means packages are checked for their status more frequently, so would be possible to recognize earlier when a process is completed, but the act of _checking_ packages takes time so a too small value could actually increase the total time necessary.
 
-On the other had, using a too big value means finished processes could not be recognized as so for some time time, making the compiler realize it is done later than what would be possible.
+On the other had, using a too big value means finished processes could not be recognized as soon as they finishes making the compiler realize the job is done later than what would be possible.
 
-The default value has been empirically found to be optimal, bu YMMV and the setting is there.
+The default value has been *empirically* found to be optimal, but YMMV and the setting is there.
 
 It worth noting that being these setting closely related to the underlying system hardware, the possibility of setting them per environment is crucial for the best optimization.
 
@@ -936,7 +946,7 @@ This file contains an hash calculated from:
 - the package compiler configuration
 - the current environment
 
-Before the plugin starts to process any package it checks if this file is there.
+Before the plugin starts to process any package it checks if this file is package root folder.
 
 If so, the hash is re-calculated and, in the case it matches what is saved in the file, the processing of the package is skipped.
 
@@ -948,9 +958,7 @@ This is particularly useful when the compiler runs automatically on Composer ins
 
 Unless very special cases it is suggested to do **not keep the lock file under version control**.
 
-The reason is that if built assets for a package are not kept under version control (an that's likely the case otherwise the compiler makes no sense for that package) if lock file is found the building process for that package assets would not take place, and the package at the end of installation process will have no built assets.
-
-
+The reason is that if built assets for a package are not kept under version control (an that's likely the case otherwise the compiler makes no sense for that package) if the lock file is found the building process for that package assets would not take place, and the package at the end of installation process will have no built assets.
 
 
 
@@ -960,21 +968,21 @@ It has been said how, by default, the compiler starts immediately after each Com
 
 It has also been said how the `auto-run` configuration can be used to prevent that so that the only way to start the compiler would be to start it "manually".
 
-Being a Composer plugin, the asset compiler can add commands to Composer, and it adds a command named , **`compile-assets`**, that can be run like this:
+Being a Composer plugin, the asset compiler can add commands to Composer, and it actually adds a command named , **`compile-assets`**, that can be run like this:
 
 ```shell
 $ composer compile-assets
 ```
 
-This command can be used regardless the value of the `auto-run` configuration, but when `auto-run` is `false` using the command is the only way to start the compiler.
+This command can be used regardless the value of the `auto-run` configuration, but when `auto-run` is `false` using the command is *the only* way to start the compiler.
 
 
 
-### Plugin command environment
+### Command environment
 
-Both package-level and root-level configuration supports environment-based settings via `env` configuration property.
+Both package-level and root-level configuration support environment-based settings via `env` configuration property.
 
-When using the command is possible to "force" the value of compiler environment via the **`--env`** flag.
+When using the `compile-assets` command it is possible to force the value of compiler environment via the **`--env`** flag.
 
 For example:
 
@@ -982,19 +990,21 @@ For example:
 $ composer compile-assets --env=production
 ```
 
-If the flag is not used, the compiler environment will depends as usual to the value of the `COMPOSER_ASSETS_COMPILER` environment variable and fallback to `"$default"` if that variable is not defined.
+If the flag is not used, the compiler environment will depends (as usual) to the value of the `COMPOSER_ASSETS_COMPILER` environment variable and fallback to `"$default"` if that variable is not defined.
 
 When the compiler runs automatically after composer install/update, and the install/update command is executed with the `--no-dev` flag, the compiler will use `"$default-no-dev"` as fallback.
 
  **`compile-assets`** command support the `--no-dev` flag as well, so that same behavior can be replicated even when the compiler is start "manually".
 
-It worth nothing that both flags can be sued together, for example:
+It worth nothing that both flags can be used together, for example:
 
 ```shell
-$ composer compile-assets --env=production --no-dev
+$ composer compile-assets --env=staging --no-dev
 ```
 
-Running the command is such way means the compiler will run in `production` environment, and if no setting can be found for that specific environment, then fallback to `"$default-no-dev"`, if available.
+Running the command in such way means the compiler will run in `"staging"` environment, and if packages to process have no setting specific for `"staging"`, then the compiler will use package settings for `"$default-no-dev"`, if available. Otherwise, settings for `"$default"` environment will be tried as last fallback.
+
+This behavior exactly resembles what happens when the compiler "auto starts" and Composer commands use the `--no-dev` flag and the `COMPOSER_ASSETS_COMPILER` env variable is set to ``"staging"`.
 
 
 
