@@ -78,7 +78,7 @@ class PackagesProcessorTest extends TestCase
             ],
             'you/package-two' => [
                 'install' => null,
-                'script' => 'npm run encore TEST_ME --quiet',
+                'script' => 'npm run build --quiet -- TEST_ME override',
             ],
         ];
 
@@ -282,9 +282,10 @@ class PackagesProcessorTest extends TestCase
         $you2->setExtra(
             [
                 'composer-asset-compiler' => [
-                    'script' => 'encore ${INNER_ENV}',
+                    'script' => 'build -- ${INNER_ENV} ${ASSETS_ARGS}',
                     'default-env' => [
                         'INNER_ENV' => 'dev',
+                        'ASSETS_ARGS' => 'override',
                     ],
                 ],
             ]

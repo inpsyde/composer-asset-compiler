@@ -166,7 +166,7 @@ class Commands
             return null;
         }
 
-        $environment = array_filter(array_merge($this->defaultEnvironment, $env));
+        $environment = array_merge(array_filter($this->defaultEnvironment), array_filter($env));
         $command = $this->replaceEnv($command, $environment);
 
         // To pass arguments to scripts defined in package.json, npm requires `--` to be used,

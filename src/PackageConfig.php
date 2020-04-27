@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace Inpsyde\AssetsCompiler;
 
 use Composer\Package\PackageInterface;
+use Composer\Package\RootPackageInterface;
 
 class PackageConfig
 {
@@ -32,6 +33,11 @@ class PackageConfig
      * @var bool
      */
     private $isPackage;
+
+    /**
+     * @var bool
+     */
+    private $isRootPackage = false;
 
     /**
      * @var \Inpsyde\AssetsCompiler\EnvResolver
@@ -99,7 +105,10 @@ class PackageConfig
         $raw = $package->getExtra()[self::EXTRA_KEY] ?? [];
         is_array($raw) or $raw = [];
 
-        return new static(true, $raw, $envResolver);
+        $instance = new static(true, $raw, $envResolver);
+        $instance->isRootPackage = $package instanceof RootPackageInterface;
+
+        return $instance;
     }
 
     /**
@@ -122,7 +131,7 @@ class PackageConfig
     {
         $this->parseData();
 
-        return $this->valid;
+        return $this->valid || $this->isRootPackage;
     }
 
     /**
@@ -230,10 +239,12 @@ class PackageConfig
 
         $this->data[self::DEF_ENV] = [];
 
-        $this->parseData();
+        if (!$this->isRootPackage) {
+            $this->parseData();
 
-        if (!$this->valid) {
-            return [];
+            if (!$this->valid) {
+                return [];
+            }
         }
 
         $config = $this->raw[self::DEF_ENV] ?? null;
