@@ -239,7 +239,8 @@ final class ComposerPlugin implements
         $factory = new PackageFactory(
             $this->config->envResolver(),
             $this->config->filesystem(),
-            $installationManager
+            $installationManager,
+            dirname($this->composer->getConfig()->getConfigSource()->getName())
         );
 
         /** @var array<string,Package> $packages */

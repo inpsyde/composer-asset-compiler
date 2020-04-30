@@ -13,6 +13,7 @@ namespace Inpsyde\AssetsCompiler\Tests\Unit;
 
 use Composer\Installer\InstallationManager;
 use Composer\Package\PackageInterface;
+use Composer\Package\RootPackageInterface;
 use Composer\Util\Filesystem;
 use Inpsyde\AssetsCompiler\Commands;
 use Inpsyde\AssetsCompiler\Defaults;
@@ -324,6 +325,55 @@ JSON;
         );
     }
 
+    /** @noinspection PhpParamsInspection */
+    public function testForRootPackage()
+    {
+        $factory = $this->factoryFactory();
+
+        $json = <<<'JSON'
+{
+	"dependencies": "update",
+	"script": "test"
+}
+JSON;
+        /** @var PackageInterface|\Mockery\MockInterface $composerPackage */
+        $rootPackage = \Mockery::mock(RootPackageInterface::class);
+        $rootPackage->shouldReceive('getName')->andReturn('test/root-package');
+
+        /** @var PackageInterface|\Mockery\MockInterface $composerPackage */
+        $noRootPackage = \Mockery::mock(RootPackageInterface::class);
+        $noRootPackage->shouldReceive('getName')->andReturn('test/some-package');
+
+        $rootDir = vfsStream::setup('rootDir');
+        $rootDir->addChild((new vfsStreamFile('package.json'))->withContent('{}'));
+        $rootPath = $rootDir->url();
+
+        $fromRoot = $factory->attemptFactory(
+            $rootPackage,
+            $this->factoryConfig($json),
+            $this->factoryDefault()
+        );
+
+        $fromDep = $factory->attemptFactory(
+            $noRootPackage,
+            $this->factoryConfig($json),
+            $this->factoryDefault()
+        );
+
+        static::assertTrue($fromRoot->isValid());
+        static::assertTrue($fromRoot->isUpdate());
+        static::assertFalse($fromRoot->isInstall());
+        static::assertSame(['test'], $fromRoot->script());
+
+        static::assertTrue($fromDep->isValid());
+        static::assertTrue($fromDep->isUpdate());
+        static::assertFalse($fromDep->isInstall());
+        static::assertSame(['test'], $fromDep->script());
+
+        static::assertSame($rootPath, $fromRoot->path());
+        static::assertNotSame($fromDep, $fromDep->path());
+    }
+
     /**
      * @param array|string[] $config
      * @return \Inpsyde\AssetsCompiler\Defaults
@@ -334,7 +384,7 @@ JSON;
 
         return Defaults::new($conf);
     }
-    
+
     /**
      * @param string $env
      * @param bool $isDev
@@ -342,27 +392,35 @@ JSON;
      *
      * @noinspection PhpParamsInspection
      */
-    private function factoryFactory(string $env = 'test', bool $isDev = true): PackageFactory
-    {
+    private function factoryFactory(
+        string $env = 'test',
+        bool $isDev = true,
+        ?string $rootPath = null
+    ): PackageFactory {
+
         $packagesJson = (new vfsStreamFile('package.json'))->withContent('{}');
 
         $dir = vfsStream::setup('exampleDir');
         $dir->addChild($packagesJson);
 
-        /** @var Filesystem $fs */
-        $filesystem = \Mockery::mock(Filesystem::class);
+        if (!$rootPath) {
+            $rootDir = vfsStream::setup('rootDir');
+            $rootDir->addChild($packagesJson);
+            $rootPath = $rootDir->url();
+        }
+
+        $rootDir = vfsStream::setup('rootDir');
+        $rootDir->addChild($packagesJson);
 
         /** @var \Mockery\MockInterface|InstallationManager $im */
-        $instManager = \Mockery::mock(InstallationManager::class);
-        $instManager->shouldReceive('getInstallPath')
+        $manager = \Mockery::mock(InstallationManager::class);
+        $manager->shouldReceive('getInstallPath')
             ->with(\Mockery::type(PackageInterface::class))
             ->andReturn($dir->url());
 
-        $filesystem->shouldReceive('normalizePath')
-            ->with($dir->url())
-            ->andReturn($dir->url());
+        $filesystem = new Filesystem();
 
-        return new PackageFactory(new EnvResolver($env, $isDev), $filesystem, $instManager);
+        return new PackageFactory(new EnvResolver($env, $isDev), $filesystem, $manager, $rootPath);
     }
 
     /**

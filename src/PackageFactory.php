@@ -13,6 +13,7 @@ namespace Inpsyde\AssetsCompiler;
 
 use Composer\Installer\InstallationManager;
 use Composer\Package\PackageInterface;
+use Composer\Package\RootPackageInterface;
 use Composer\Util\Filesystem;
 
 class PackageFactory
@@ -33,6 +34,11 @@ class PackageFactory
     private $installationManager;
 
     /**
+     * @var string
+     */
+    private $rootDir;
+
+    /**
      * @param EnvResolver $envResolver
      * @param Filesystem $filesystem
      * @param InstallationManager $installationManager
@@ -40,12 +46,14 @@ class PackageFactory
     public function __construct(
         EnvResolver $envResolver,
         Filesystem $filesystem,
-        InstallationManager $installationManager
+        InstallationManager $installationManager,
+        string $rootDir
     ) {
 
         $this->envResolver = $envResolver;
         $this->filesystem = $filesystem;
         $this->installationManager = $installationManager;
+        $this->rootDir = $rootDir;
     }
 
     /**
@@ -89,9 +97,13 @@ class PackageFactory
             $config = $defaults->toConfig();
         }
 
-        $installPath = $this->installationManager->getInstallPath($package);
-        $path = (string)$this->filesystem->normalizePath($installPath);
         $name = (string)($package->getName() ?? '');
+
+        $installPath = ($package instanceof RootPackageInterface)
+            ? $this->rootDir
+            : $this->installationManager->getInstallPath($package);
+
+        $path = (string)$this->filesystem->normalizePath($installPath);
 
         return Package::new($name, $config, $path);
     }

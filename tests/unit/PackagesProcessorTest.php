@@ -191,7 +191,12 @@ class PackagesProcessorTest extends TestCase
             ->with(\Mockery::type(PackageInterface::class))
             ->andReturn($dir->url());
 
-        return new PackageFactory($config->envResolver(), $config->filesystem(), $manager);
+        return new PackageFactory(
+            $config->envResolver(),
+            $config->filesystem(),
+            $manager,
+            $dir->url()
+        );
     }
 
     /**

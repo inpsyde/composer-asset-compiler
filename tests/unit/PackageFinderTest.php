@@ -206,14 +206,16 @@ class PackageFinderTest extends TestCase
             ->with(\Mockery::type(PackageInterface::class))
             ->andReturn($dir->url());
 
+        $factory = new PackageFactory(
+            $config->envResolver(),
+            $config->filesystem(),
+            $manager,
+            $dir->url()
+        );
+
         return $config
             ->packagesFinder()
-            ->find(
-                $this->composerRepo(),
-                $root,
-                new PackageFactory($config->envResolver(), $config->filesystem(), $manager),
-                $config->autoDiscover()
-            );
+            ->find($this->composerRepo(), $root, $factory, $config->autoDiscover());
     }
 
     /**
