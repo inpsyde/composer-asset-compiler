@@ -1006,7 +1006,27 @@ Running the command in such way means the compiler will run in `"staging"` envir
 
 This behavior exactly resembles what happens when the compiler "auto starts" and Composer commands use the `--no-dev` flag and the `COMPOSER_ASSETS_COMPILER` env variable is set to ``"staging"`.
 
+## Troubleshooting
 
+In case you run into a process timeout (default is 300s) like this:
+
+```
+    starting...
+    
+    The process "yarn" exceeded the timeout of 300 seconds.
+    
+    failed!
+
+```
+
+you have to increase (or completely disable) the process timeout in your composer.json:
+
+
+```
+"config": {
+    "process-timeout": 0
+}
+```
 
 ## Requirements
 
