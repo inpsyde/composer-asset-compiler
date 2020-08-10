@@ -235,12 +235,16 @@ final class ComposerPlugin implements
 
         /** @var RootPackageInterface $root */
         $root = $this->composer->getPackage();
+        /** @var \Composer\Config $config */
+        $config = $this->composer->getConfig();
+        /** @var \Composer\Config\ConfigSourceInterface $source */
+        $source = $config->getConfigSource();
 
         $factory = new PackageFactory(
             $this->config->envResolver(),
             $this->config->filesystem(),
             $installationManager,
-            dirname($this->composer->getConfig()->getConfigSource()->getName())
+            dirname((string)$source->getName())
         );
 
         /** @var array<string,Package> $packages */
