@@ -1,5 +1,10 @@
 # Composer Asset Compiler
 
+_Composer plugin that install dependencies and compile assets based on configuration._
+
+![PHP Quality Assurance](https://github.com/inpsyde/composer-asset-compiler/workflows/PHP%20Quality%20Assurance/badge.svg)
+
+-----
 
 
 ## Preface
