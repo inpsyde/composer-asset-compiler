@@ -13,7 +13,7 @@ Using Composer we can put the packages together, but then we need either that:
 
 This package is a Composer plugin that has the scope to pursuit the latter approach.
 
-It means that in version control we *don't* have to keep compiled frontend assets, but they are built after the package that contains them is pulled via Composer, no matter how "deep" in the dependency tree the packages are.
+It means that **in version control we *don't* have to keep compiled frontend assets**, but they are built after the package that contains them is pulled via Composer, no matter how "deep" in the dependency tree the packages are.
 
 
 
@@ -30,7 +30,7 @@ In other words, we assume that the running system has a frontend dependency mana
 and from Composer we execute commands like `npm install` (or `yarn`) to resolve the dependencies.
 
 Resolving dependencies will likely not be enough. In fact, normally we need to also execute a 
-task runner like _gulp.js_ or _Grunt_, or some builder like _webpack_ to build the install dependencies.
+task runner like _gulp.js_ or _Grunt_, or some builder like _webpack_ to *build* the installed dependencies.
 
 To solve the issue we decided to leverage `package.json` scripts.
 
@@ -39,7 +39,7 @@ Just like Composer has support for ["scripts"](https://getcomposer.org/doc/artic
 So the entire workflow can be summarized like this:
 
 1. Composer is used to pull dependencies from their repositories
-2. After Composer finishes its work, it loops all the installed packages to find those that needs to be built
+2. After Composer finishes its work, this plugin loops all the installed packages to find those that needs to be "built"
 3. For each package found, it moves the current directory to the root of the package and:
     1. installs the dependencies via either _npm_ or *Yarn* 
     2. uses either _npm_ or *Yarn* to execute one or more "scripts" defined in `package.json`.
@@ -130,7 +130,7 @@ Let's assume, for example, that we need the `WEBPACK_ENV` environment to be defi
 }
 ```
 
-With the configuration above, when the plugin will compile the package in the case the `WEBPACK_ENV` variable is not defined in the current environment, then its value will default to  `"development"`.
+With the configuration above, when the plugin will compile the package, in the case the `WEBPACK_ENV` variable is not defined in the current environment its value will default to  `"development"`.
 
 
 
@@ -532,7 +532,7 @@ The first `env`, located directly as a property of `composer-asset-compiler` sho
 
 The second usage, is shown where `env` is a property of `auto-run`, one of the possible root-level settings, and allows to define per-environment configuration for that specific setting.
 
-This usage is allowed for any of the configuration that in the configuration cheat-sheet table in the previous sections have "*yes*" under "*By env*".
+This usage is allowed for any of the configuration that in the configuration cheat-sheet table in the previous sections have "*yes*" in the "*By env*" column.
 
 
 
@@ -566,7 +566,7 @@ However, there is the possibility that not all the dependencies should be proces
 
 In such cases, the **`packages`** and **`auto-discover`** settings serve the purpose of tweaking the compiler behavior.
 
-`auto-discover`  can be set to `false` to prevent the compiler to recursively look into installed dependencies to find packages that needs asset compilation.
+`auto-discover` can be set to `false` to prevent the compiler to recursively look into installed dependencies to find packages that needs asset compilation.
 
 This is useful when either there's the need to make sure the compilation happen according to the setting in root package, or when it is already known that no installed package ships any compiler configuration so it is possible to avoid wasting time searching.
 
@@ -837,7 +837,7 @@ After the `"commands"` objects is being created according to the package manager
 
 The value `{ "dependencies": "install" }` is  "resolved" to the value of `commands.dependencies.install`. In the same way, `{ "script": "build" }` is "resolved" replacing the `%s` in `commands.dependencies.script` with `"build"`.
 
-To know this workflow is important to understand how it is possible to customize the `commands` object in very powerful way.
+Knowing this workflow is important to understand how it is possible to customize the `commands` object in very powerful way.
 
 In fact, it is possible to use a complete `commands` object instead of letting the compiler use the default object based on the package manager in use.
 
@@ -865,7 +865,7 @@ Using such a configuration, we are instructing the compiler how to resolve the c
 
 ### Stop compilation on failure
 
-By default, when *anything* during building process goes wrong, the processing of packages stops and the compiler exit with an non-zero code.
+By default, when *anything* during building process goes wrong, the processing of packages stops and the compiler exit with an non-zero exit code.
 
 When an error happen for a package, it is possible to instruct the compiler to continue processing other packages. This can be done via the **`stop-on-failure`** property.
 
@@ -879,7 +879,7 @@ When an error happen for a package, it is possible to instruct the compiler to c
 }
 ```
 
-Must be noted that when `"stop-on-failure"` is `false` the compiler will continue processing packages, but at the end of the process it will anyway exist with a non-zero code if something went wrong.
+Must be noted that when `"stop-on-failure"` is `false` the compiler will continue processing packages, but at the end of the process it will anyway exist with a non-zero exit code if something went wrong.
 
 
 
@@ -887,7 +887,7 @@ Must be noted that when `"stop-on-failure"` is `false` the compiler will continu
 
 The `node_modules` folder is where javascript package managers place the files for the dependencies. 
 
-It is "infamous" for being very heavy in size. When using asset compiler, all processed packages will have own `node_modules` folder accounting in total for several, sometimes dozen, hopefully not hundreds of gigabytes.
+It is "infamous" for being very heavy in size. When using asset compiler, all processed packages will have own `node_modules` folder accounting in total for several, sometimes dozen, hopefully not hundreds, of gigabytes.
 
 In some situations, the same system can contain several versions of the complete built system (e. g. when using deployments with support to immediate rollback to previous version) so the space required to host all these `node_modules` folder can be very expensive for something that is useless after the assets are built.
 
@@ -1006,20 +1006,19 @@ Running the command in such way means the compiler will run in `"staging"` envir
 
 This behavior exactly resembles what happens when the compiler "auto starts" and Composer commands use the `--no-dev` flag and the `COMPOSER_ASSETS_COMPILER` env variable is set to ``"staging"`.
 
+
+
 ## Troubleshooting
 
 In case you run into a process timeout (default is 300s) like this:
 
 ```
-    starting...
+The process "yarn" exceeded the timeout of 300 seconds.
     
-    The process "yarn" exceeded the timeout of 300 seconds.
-    
-    failed!
-
+failed!
 ```
 
-you have to increase (or completely disable) the process timeout in your composer.json:
+you have to increase (or completely disable) the process timeout in your `composer.json`:
 
 
 ```
@@ -1028,13 +1027,15 @@ you have to increase (or completely disable) the process timeout in your compose
 }
 ```
 
+
+
 ## Requirements
 
 * PHP 7.2 or higher
 
 * Composer 1.8+
 
-* either Yarn or NPM (and compatible Node.js version)
+* either Yarn or NPM and compatible Node.js version
 
     
 
