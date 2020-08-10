@@ -159,7 +159,7 @@ class PackagesProcessor
         );
 
         /**
-         * @var \Inpsyde\AssetsCompiler\Package $package
+         * @var Package $package
          * @var string $command
          */
         foreach ($processesData as [$package, $command]) {
@@ -221,7 +221,7 @@ class PackagesProcessor
     }
 
     /**
-     * @param \Inpsyde\AssetsCompiler\Package $package
+     * @param Package $package
      * @param int $timeout
      * @return array{0:string, 1:int}
      */
@@ -273,7 +273,7 @@ class PackagesProcessor
     }
 
     /**
-     * @param \Inpsyde\AssetsCompiler\ProcessResults $results
+     * @param ProcessResults $results
      * @param array<string, bool> $toWipe
      * @param int $timeout
      * @return bool
@@ -301,8 +301,10 @@ class PackagesProcessor
 
         $successes = $results->successes();
         while ($successes && !$successes->isEmpty()) {
+            /** @var array{Process, Package} $success */
+            $success = $successes->dequeue();
             /** @var Package $package */
-            [, $package] = $successes->dequeue();
+            [, $package] = $success;
             $this->locker->lock($package);
             if (!empty($toWipe[$package->name()])) {
                 $path = $package->path();
@@ -314,7 +316,7 @@ class PackagesProcessor
     }
 
     /**
-     * @param \Inpsyde\AssetsCompiler\Package $package
+     * @param Package $package
      * @param int $timeout
      * @return array{0:string, 1:int}
      */

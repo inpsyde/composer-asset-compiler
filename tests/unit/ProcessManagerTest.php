@@ -204,11 +204,11 @@ class ProcessManagerTest extends TestCase
             ->andReturnUsing(
                 static function () use ($success, &$started): ?string {
                     if ($started === null) {
-                        throw new \Exception('getErrorOutput should not be called without starting.');
+                        throw new \Exception('getErrorOutput must not be called without starting.');
                     }
 
                     if ($success) {
-                        throw new \Exception('getErrorOutput should not be called on success.');
+                        throw new \Exception('getErrorOutput must not be called on success.');
                     }
 
                     return $success ? null : 'Error!';
@@ -220,7 +220,7 @@ class ProcessManagerTest extends TestCase
 
     /**
      * @param string $name
-     * @return \Inpsyde\AssetsCompiler\Package
+     * @return Package
      */
     private function factoryPackage(string $name): Package
     {

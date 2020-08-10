@@ -213,11 +213,9 @@ class ProcessManager
     private function startProcessesFormStack(Io $io, \SplQueue $running): \SplQueue
     {
         while (($running->count() < $this->maxParallel) && !$this->stack->isEmpty()) {
-            /**
-             * @var Process $process
-             * @var \Inpsyde\AssetsCompiler\Package $package
-             */
-            [$process, $package] = $this->stack->dequeue();
+            /** @var array{Process, Package} $current */
+            $current = $this->stack->dequeue();
+            [$process, $package] = $current;
 
             $name = $package->name();
             $command = $this->commands[$name] ?? '';
@@ -233,7 +231,7 @@ class ProcessManager
     }
 
     /**
-     * @param \Inpsyde\AssetsCompiler\Io $io
+     * @param Io $io
      * @param bool $stopOnFailure ,
      * @param \SplQueue $running
      * @param \SplQueue $successful
@@ -252,11 +250,9 @@ class ProcessManager
 
         $stopAnyRunning = false;
         while (!$running->isEmpty()) {
-            /**
-             * @var Process $process
-             * @var \Inpsyde\AssetsCompiler\Package $package
-             */
-            [$process, $package] = $running->dequeue();
+            /** @var array{Process, Package} $current */
+            $current = $running->dequeue();
+            [$process, $package] = $current;
             $name = $package->name();
 
             $isRunning = $process->isRunning();

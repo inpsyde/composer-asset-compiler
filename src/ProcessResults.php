@@ -34,7 +34,7 @@ final class ProcessResults
     private $timedOut = false;
 
     /**
-     * @return \Inpsyde\AssetsCompiler\ProcessResults
+     * @return ProcessResults
      */
     public static function empty(): ProcessResults
     {
@@ -48,7 +48,7 @@ final class ProcessResults
      * @param int $total
      * @param \SplQueue|null $successful
      * @param \SplQueue|null $erroneous
-     * @return \Inpsyde\AssetsCompiler\ProcessResults
+     * @return ProcessResults
      */
     public static function new(
         int $total,
@@ -66,7 +66,7 @@ final class ProcessResults
      * @param int $total
      * @param \SplQueue|null $successful
      * @param \SplQueue|null $erroneous
-     * @return \Inpsyde\AssetsCompiler\ProcessResults
+     * @return ProcessResults
      */
     public static function timeout(
         int $total,

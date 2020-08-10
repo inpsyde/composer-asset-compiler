@@ -37,7 +37,7 @@ class EnvResolver
     {
         $env = getenv($name);
         if ($env) {
-            return $env;
+            return (string)$env;
         }
 
         $toCheck = [$_ENV];

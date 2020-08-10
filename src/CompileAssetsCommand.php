@@ -43,7 +43,8 @@ final class CompileAssetsCommand extends BaseCommand
                 'env',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Set the environment to run command in. Overrides value of COMPOSER_ASSETS_COMPILER, if set.'
+                'Set the environment to run command in. '
+                . 'Overrides value of COMPOSER_ASSETS_COMPILER, if set.'
             );
     }
 
