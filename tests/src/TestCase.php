@@ -12,8 +12,7 @@ declare(strict_types=1);
 namespace Inpsyde\AssetsCompiler\Tests;
 
 use Composer\IO\ConsoleIO;
-use Inpsyde\AssetsCompiler\Io;
-use Mockery;
+use Inpsyde\AssetsCompiler\Util\Io;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Symfony\Component\Console\Helper\HelperSet;
 use Symfony\Component\Console\Input\InputInterface;
@@ -33,21 +32,18 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
         bool $interactive = true
     ): Io {
 
-        $input = Mockery::mock(InputInterface::class);
-        $input->shouldReceive('isInteractive')
-            ->andReturn($interactive);
+        $input = \Mockery::mock(InputInterface::class);
+        $input->shouldReceive('isInteractive')->andReturn($interactive);
 
-        $output = Mockery::mock(OutputInterface::class);
-        $output->shouldReceive('getVerbosity')
-            ->andReturn($verbosity);
+        $output = \Mockery::mock(OutputInterface::class);
+        $output->shouldReceive('getVerbosity')->andReturn($verbosity);
 
         $output->shouldReceive('isQuiet')
             ->andReturn($verbosity === OutputInterface::VERBOSITY_QUIET);
-
         $output->shouldReceive('write')->zeroOrMoreTimes();
 
         $composerIo = new ConsoleIO($input, $output, new HelperSet());
 
-        return new Io($composerIo);
+        return Io::new($composerIo);
     }
 }

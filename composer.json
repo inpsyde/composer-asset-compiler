@@ -1,6 +1,6 @@
 {
     "name": "inpsyde/composer-assets-compiler",
-    "description": "Composer plugin that install dependencies and compile assets based on configuration.",
+    "description": "Composer plugin that installs and compile frontend dependencies for installed Composer packages based on configuration.",
     "type": "composer-plugin",
     "license": "MIT",
     "authors": [
@@ -16,8 +16,8 @@
     "minimum-stability": "stable",
     "require": {
         "php": ">= 7.2",
-        "composer-plugin-api": "^1.1",
-        "ext-json": "*"
+        "ext-json": "*",
+        "composer-plugin-api": "^1.1"
     },
     "autoload": {
         "psr-4": {
@@ -49,6 +49,6 @@
         ]
     },
     "extra": {
-        "class": "Inpsyde\\AssetsCompiler\\ComposerPlugin"
+        "class": "Inpsyde\\AssetsCompiler\\Composer\\Plugin"
     }
 }

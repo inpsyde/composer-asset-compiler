@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <psalm
     totallyTyped="true"
-    useDocblockTypes="false"
+    useDocblockTypes="true"
     useDocblockPropertyTypes="true"
     usePhpDocMethodsWithoutMagicCall="true"
     strictBinaryOperands="true"
