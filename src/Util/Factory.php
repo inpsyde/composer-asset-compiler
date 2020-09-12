@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Inpsyde\AssetsCompiler\Util;
 
 use Composer\Composer;
-use Composer\Installer\InstallationManager;
 use Composer\IO\IOInterface;
 use Composer\Package\RootPackageInterface;
 use Composer\Repository\RepositoryInterface;
@@ -299,9 +298,9 @@ final class Factory
     public function commands(): Commands
     {
         if (empty($this->objects[__FUNCTION__])) {
-            /** @var Asset|null $package */
-            $package = $this->assets()->current();
-            $path = ($package instanceof Asset) ? $package->path() : null;
+            /** @var Asset|null $asset */
+            $asset = $this->assets()->current();
+            $path = ($asset instanceof Asset) ? $asset->path() : null;
             $this->objects[__FUNCTION__] = $path
                 ? $this->commandsFinder()->find($path)
                 : Commands::new([], []);

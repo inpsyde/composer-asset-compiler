@@ -157,12 +157,12 @@ class Finder
 
     /**
      * @param RootPackageInterface $root
-     * @param Factory $packageFactory
+     * @param Factory $assetFactory
      * @return Asset|null
      */
     private function attemptFactoryRootPackageAsset(
         RootPackageInterface $root,
-        Factory $packageFactory
+        Factory $assetFactory
     ): ?Asset {
 
         $packageConfig = Config::forComposerPackage($root, $this->envResolver);
@@ -170,7 +170,7 @@ class Finder
             return null;
         }
 
-        $rootPackage = $packageFactory->attemptFactory($root, $packageConfig, Defaults::empty());
+        $rootPackage = $assetFactory->attemptFactory($root, $packageConfig, Defaults::empty());
         if ($rootPackage && $rootPackage->isValid()) {
             return $rootPackage;
         }

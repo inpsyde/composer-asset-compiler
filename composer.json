@@ -17,7 +17,7 @@
     "require": {
         "php": ">= 7.2",
         "ext-json": "*",
-        "composer-plugin-api": "^1.1"
+        "composer-plugin-api": "^1|^2"
     },
     "autoload": {
         "psr-4": {

@@ -101,6 +101,36 @@ final class Plugin implements
     }
 
     /**
+     * @param Composer $composer
+     * @param IOInterface $io
+     * @return void
+     */
+    public function deactivate(Composer $composer, IOInterface $io)
+    {
+        // noop
+    }
+
+    /**
+     * @param Composer $composer
+     * @param IOInterface $io
+     * @return void
+     */
+    public function uninstall(Composer $composer, IOInterface $io)
+    {
+        if (version_compare(self::PLUGIN_API_VERSION, '2', '<')) {
+            return;
+        }
+
+        $io->write(
+            'Composer Asset Compiler is going to be uninstalled, but files it eventually created'
+            . ' are not going to be deleted or altered.'
+            . ' You might need to intervene manually.',
+            true,
+            IOInterface::VERBOSE
+        );
+    }
+
+    /**
      * @param Event $event
      */
     public function onAutorunBecauseInstall(Event $event): void
