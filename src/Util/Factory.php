@@ -11,6 +11,7 @@ use Composer\Repository\RepositoryInterface;
 use Composer\Repository\RepositoryManager;
 use Composer\Util\Filesystem;
 use Composer\Util\ProcessExecutor;
+use Composer\Util\RemoteFilesystem;
 use Inpsyde\AssetsCompiler\Commands\Commands;
 use Inpsyde\AssetsCompiler\Commands\Finder as CommandsFinder;
 use Inpsyde\AssetsCompiler\Asset\Config;
@@ -23,6 +24,7 @@ use Inpsyde\AssetsCompiler\Asset\Asset;
 use Inpsyde\AssetsCompiler\Asset\Processor;
 use Inpsyde\AssetsCompiler\Asset\RootConfig;
 use Inpsyde\AssetsCompiler\PreCompilation\ArchiveDownloaderAdapter;
+use Inpsyde\AssetsCompiler\PreCompilation\GithubActionArtifactAdapter;
 use Inpsyde\AssetsCompiler\PreCompilation\Handler;
 use Inpsyde\AssetsCompiler\Process\Factory as ProcessFactory;
 use Inpsyde\AssetsCompiler\Process\ParallelManager;
@@ -162,6 +164,24 @@ final class Factory
         }
 
         /** @var Filesystem $filesystem */
+        $filesystem = $this->objects[__FUNCTION__];
+
+        return $filesystem;
+    }
+
+    /**
+     * @return RemoteFilesystem
+     */
+    public function remoteFilesystem(): RemoteFilesystem
+    {
+        if (empty($this->objects[__FUNCTION__])) {
+            $this->objects[__FUNCTION__] = \Composer\Factory::createRemoteFilesystem(
+                $this->composerIo(),
+                $this->composerConfig()
+            );
+        }
+
+        /** @var RemoteFilesystem $filesystem */
         $filesystem = $this->objects[__FUNCTION__];
 
         return $filesystem;
@@ -376,6 +396,41 @@ final class Factory
     }
 
     /**
+     * @return HttpClient
+     */
+    public function httpClient(): HttpClient
+    {
+        if (empty($this->objects[__FUNCTION__])) {
+            $this->objects[__FUNCTION__] = HttpClient::new($this->io(), $this->composer());
+        }
+
+        /** @var HttpClient $client */
+        $client = $this->objects[__FUNCTION__];
+
+        return $client;
+    }
+
+    /**
+     * @return ArchiveDownloaderFactory
+     */
+    public function archiveDownloaderFactory(): ArchiveDownloaderFactory
+    {
+        if (empty($this->objects[__FUNCTION__])) {
+            $this->objects[__FUNCTION__] = ArchiveDownloaderFactory::new(
+                $this->io(),
+                $this->composer(),
+                $this->processExecutor(),
+                $this->filesystem()
+            );
+        }
+
+        /** @var ArchiveDownloaderFactory $factory */
+        $factory = $this->objects[__FUNCTION__];
+
+        return $factory;
+    }
+
+    /**
      * @return ArchiveDownloaderAdapter
      */
     public function archiveDownloaderAdapter(): ArchiveDownloaderAdapter
@@ -383,11 +438,30 @@ final class Factory
         if (empty($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = ArchiveDownloaderAdapter::new(
                 $this->io(),
-                $this->composerConfig()
+                $this->archiveDownloaderFactory()
             );
         }
 
         /** @var ArchiveDownloaderAdapter $adapter */
+        $adapter = $this->objects[__FUNCTION__];
+
+        return $adapter;
+    }
+
+    /**
+     * @return GithubActionArtifactAdapter
+     */
+    public function githubArtifactAdapter(): GithubActionArtifactAdapter
+    {
+        if (empty($this->objects[__FUNCTION__])) {
+            $this->objects[__FUNCTION__] = GithubActionArtifactAdapter::new(
+                $this->io(),
+                $this->httpClient(),
+                $this->archiveDownloaderFactory()
+            );
+        }
+
+        /** @var GithubActionArtifactAdapter $adapter */
         $adapter = $this->objects[__FUNCTION__];
 
         return $adapter;
@@ -399,12 +473,15 @@ final class Factory
     public function preCompilationHandler(): Handler
     {
         if (empty($this->objects[__FUNCTION__])) {
-            $this->objects[__FUNCTION__] = Handler::new($this->hashBuilder(), $this->io())
-                ->registerAdapter($this->archiveDownloaderAdapter());
+            $handler = Handler::new($this->hashBuilder(), $this->io(), $this->filesystem());
+            $handler = $handler
+                ->registerAdapter($this->archiveDownloaderAdapter())
+                ->registerAdapter($this->githubArtifactAdapter());
+            $this->objects[__FUNCTION__] = $handler;
         }
 
         /** @var Handler $handler */
-        $handler = $this->objects[__FUNCTION__];
+        $handler = $handler ?? $this->objects[__FUNCTION__];
 
         return $handler;
     }

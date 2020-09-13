@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\PreCompilation;
 
+use Composer\Util\Filesystem;
 use Inpsyde\AssetsCompiler\Asset\Asset;
 use Inpsyde\AssetsCompiler\Asset\HashBuilder;
 use Inpsyde\AssetsCompiler\Util\Io;
 
 class Handler
 {
+
     /**
      * @var HashBuilder
      */
@@ -31,23 +33,30 @@ class Handler
     private $io;
 
     /**
+     * @var Filesystem
+     */
+    private $filesystem;
+
+    /**
      * @param HashBuilder $hashBuilder
      * @param Io $io
+     * @param Filesystem $filesystem
      * @return Handler
      */
-    public static function new(HashBuilder $hashBuilder, Io $io): Handler
+    public static function new(HashBuilder $hashBuilder, Io $io, Filesystem $filesystem): Handler
     {
-        return new static($hashBuilder, $io);
+        return new static($hashBuilder, $io, $filesystem);
     }
 
     /**
      * @param HashBuilder $hashBuilder
      * @param Io $io
      */
-    final private function __construct(HashBuilder $hashBuilder, Io $io)
+    final private function __construct(HashBuilder $hashBuilder, Io $io, Filesystem $filesystem)
     {
         $this->hashBuilder = $hashBuilder;
         $this->io = $io;
+        $this->filesystem = $filesystem;
     }
 
     /**
@@ -71,7 +80,6 @@ class Handler
     public function tryPrecompiled(Asset $asset, array $defaultEnv): bool
     {
         $config = $asset->preCompilationConfig();
-
         $adapter = $this->findAdapter($config);
         if (!$adapter) {
             return false;
@@ -93,15 +101,15 @@ class Handler
         }
 
         $this->io->writeVerboseComment(
-            "  Attempting usage of pre-processed data for '{$name}' using '{$source}'..."
+            "Attempting usage of pre-processed data for '{$name}' using '{$source}'..."
         );
 
         $saved = $adapter->tryPrecompiled(
             $name,
             $hash,
             $source,
-            "{$path}/" . ltrim('/', $target),
-            $config->config()
+            $this->filesystem->normalizePath("{$path}/{$target}"),
+            $config->config($hash, $environment)
         );
 
         if (!$saved) {

@@ -265,7 +265,7 @@ class ParallelManager
 
             $name = $asset->name();
             $command = $this->commands[$name] ?? '';
-            $io->writeVerboseComment(" - Starting process of '{$name}' using: `{$command}`.");
+            $io->writeVerboseComment("Starting process of '{$name}' using: `{$command}`...");
 
             $process->start($this->outputHandler);
             $running->enqueue([$process, $asset]);
@@ -320,14 +320,14 @@ class ParallelManager
             if (!$process->isSuccessful()) {
                 $veryVerbose = $io->isVeryVerbose();
                 $prefix = $veryVerbose ? '' : "\n";
-                $io->writeError("{$prefix} - Failed processing {$name}.");
+                $io->writeError("{$prefix}Failed processing {$name}.");
                 $veryVerbose and $this->writeProcessError($process, $io);
                 $erroneous->enqueue([$process, $asset]);
                 $stopAnyRunning or $stopAnyRunning = $stopOnFailure;
                 continue;
             }
 
-            $io->writeVerboseInfo(" - Processing of {$name} done successfully.");
+            $io->writeVerboseInfo("Processing of {$name} done successfully.");
             $successful->enqueue([$process, $asset]);
         }
 

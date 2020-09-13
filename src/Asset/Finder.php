@@ -106,14 +106,14 @@ class Finder
         /** @var array<int, string> $rootLevelIncludeNames */
         $rootLevelIncludeNames = array_keys($rootLevelIncludePackagesConfig);
 
-        /** @var PackageInterface[] $composerPackages */
-        $composerPackages = $repository->getPackages();
+        /** @var PackageInterface[] $packages */
+        $packages = $repository->getPackages();
 
-        foreach ($composerPackages as $composerPackage) {
+        foreach ($packages as $package) {
             /** @var string $name */
-            $name = $composerPackage->getName();
+            $name = $package->getName();
             if (
-                $composerPackage === $root
+                $package === $root
                 || isset($found[$name])
                 || $this->nameMatches($name, ...$excludeNames)[0]
             ) {
@@ -138,7 +138,7 @@ class Finder
             }
 
             $asset = $assetsFactory->attemptFactory(
-                $composerPackage,
+                $package,
                 $rootLevelPackageConfig,
                 $this->defaults
             );

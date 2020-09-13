@@ -17,7 +17,7 @@
     "require": {
         "php": ">= 7.2",
         "ext-json": "*",
-        "composer-plugin-api": "^1|^2"
+        "composer-plugin-api": "^1"
     },
     "autoload": {
         "psr-4": {
@@ -31,11 +31,11 @@
         }
     },
     "require-dev": {
+        "composer/composer": "^1",
         "phpunit/phpunit": "^8",
         "mockery/mockery": "^1",
         "inpsyde/php-coding-standards": "^1@dev",
         "vimeo/psalm": "^3",
-        "composer/composer": "^1.0",
         "mikey179/vfsstream": "^1.6"
     },
     "scripts": {

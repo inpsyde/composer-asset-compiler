@@ -165,7 +165,8 @@ class Processor
                 continue;
             }
 
-            $this->io->writeVerboseComment(" Start installation dependencies for '{$name}'.");
+            $action = $asset->isUpdate() ? 'updating' : 'installation';
+            $this->io->writeVerboseComment("Starting dependencies {$action} for '{$name}'...");
             $installedDeps = $this->doDependencies($asset);
 
             if (!$installedDeps && $stopOnFailure) {
@@ -220,13 +221,14 @@ class Processor
         $name = $asset->name();
 
         if ($this->locker->isLocked($asset)) {
-            $this->io->writeVerboseComment(" Not processing '{$name}' because already processed.");
+            $this->io->writeVerbose("Not processing '{$name}' because already processed.");
 
             return true;
         }
 
         if ($this->preCompiler->tryPrecompiled($asset, $this->config->defaultEnv())) {
-            $this->io->writeVerboseComment(" Not processing '{$name}' because pre-processed.");
+            $this->io->writeInfo("Used pre-processed assets for '{$name}'.");
+            $this->locker->lock($asset);
 
             return true;
         }
@@ -246,8 +248,6 @@ class Processor
             return true;
         }
 
-        $this->io->writeVerboseComment($isUpdate ? '  - updating...' : '  - installing...');
-
         $command = $isUpdate
             ? $this->commands->updateCmd($this->io)
             : $this->commands->installCmd($this->io);
@@ -266,18 +266,18 @@ class Processor
     {
         $dir = rtrim((string)$this->filesystem->normalizePath($baseDir), '/') . "/node_modules";
         if (!is_dir($dir)) {
-            $this->io->writeVerboseComment(" - '{$dir}' not found, nothing to wipe.");
+            $this->io->writeVerbose("  '{$dir}' not found, nothing to wipe.");
 
             return null;
         }
 
-        $this->io->writeVerboseComment(" - wiping '{$dir}'...");
+        $this->io->writeVerboseComment("  wiping '{$dir}'...");
 
         /** @var bool $doneWipe */
         $doneWipe = $this->filesystem->removeDirectory($dir);
         $doneWipe
-            ? $this->io->writeVerboseInfo('   success!')
-            : $this->io->writeVerboseError('   failed!');
+            ? $this->io->writeVerboseInfo('  success!')
+            : $this->io->writeVerboseError('  failed!');
 
         return $doneWipe;
     }
@@ -290,14 +290,14 @@ class Processor
     private function handleResults(Results $results, array $toWipe): bool
     {
         if ($results->isEmpty()) {
-            $this->io->writeComment(' Nothing else to process.');
+            $this->io->write('Nothing else to process.');
 
             return true;
         }
 
         if ($results->timedOut()) {
             $this->io->writeError(
-                ' Could not complete processing of assets because timeout of reached.'
+                'Could not complete processing of assets because timeout of reached.'
             );
         }
 
@@ -305,7 +305,7 @@ class Processor
         if ($notExecuted > 0) {
             $total = $results->total();
             $this->io->writeError(
-                " Processing for {$notExecuted} assets out of {$total} did NOT completed."
+                "Processing for {$notExecuted} assets out of {$total} did NOT completed."
             );
         }
 

@@ -92,7 +92,7 @@ class Factory
             return null;
         }
 
-        if (!$rootLevelPackageConfig || $rootLevelPackageConfig->usePackageLevelOrDefault()) {
+        if (!$config || $config->usePackageLevelOrDefault()) {
             $packageLevelConfig = Config::forComposerPackage($package, $this->envResolver);
 
             // If no package-level and no root-level config there's nothing we can do.

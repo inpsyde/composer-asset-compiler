@@ -107,7 +107,7 @@ final class RootConfig
      */
     public function autoRun(): bool
     {
-        $config = $this->resolveByEnv(self::AUTO_RUN, false, true);
+        $config = $this->resolveByEnv(self::AUTO_RUN, false, false);
 
         return (bool)filter_var($config, FILTER_VALIDATE_BOOLEAN);
     }
@@ -227,7 +227,6 @@ final class RootConfig
     {
         // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
         // phpcs:enable Inpsyde.CodeQuality.ArgumentTypeDeclaration
-
         $config = $this->raw[$key] ?? null;
         if ($config === null) {
             return $default;

@@ -4,60 +4,47 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\PreCompilation;
 
-use Composer\Downloader\ArchiveDownloader;
-use Composer\Downloader\RarDownloader;
-use Composer\Downloader\TarDownloader;
-use Composer\Downloader\XzDownloader;
-use Composer\Downloader\ZipDownloader;
 use Composer\Package\Package;
+use Inpsyde\AssetsCompiler\Util\ArchiveDownloader;
+use Inpsyde\AssetsCompiler\Util\ArchiveDownloaderFactory;
 use Inpsyde\AssetsCompiler\Util\Io;
 
 class ArchiveDownloaderAdapter implements Adapter
 {
-    private const ZIP = 'zip';
-    private const RAR = 'rar';
-    private const XZ = 'xz'; // phpcs:ignore
-    private const TAR = 'tar';
-    private const ARCHIVES = [
-        self::ZIP,
-        self::RAR,
-        self::XZ,
-        self::TAR,
-    ];
-
-    /**
-     * @var array<string, ArchiveDownloader>
-     */
-    private $downloaders = [];
-
     /**
      * @var Io
      */
     private $io;
 
     /**
-     * @var \Composer\Config
+     * @var ArchiveDownloaderFactory
      */
-    private $config;
+    private $downloaderFactory;
 
     /**
      * @param Io $io
-     * @param \Composer\Config $config
+     * @param ArchiveDownloaderFactory $downloaderFactory
      * @return ArchiveDownloaderAdapter
      */
-    public static function new(Io $io, \Composer\Config $config): ArchiveDownloaderAdapter
-    {
-        return new static($io, $config);
+    public static function new(
+        Io $io,
+        ArchiveDownloaderFactory $downloaderFactory
+    ): ArchiveDownloaderAdapter {
+
+        return new self($io, $downloaderFactory);
     }
 
     /**
      * @param Io $io
-     * @param \Composer\Config $config
+     * @param ArchiveDownloaderFactory $downloaderFactory
      */
-    final private function __construct(Io $io, \Composer\Config $config)
-    {
+    private function __construct(
+        Io $io,
+        ArchiveDownloaderFactory $downloaderFactory
+    ) {
+
         $this->io = $io;
-        $this->config = $config;
+        $this->downloaderFactory = $downloaderFactory;
     }
 
     /**
@@ -83,11 +70,12 @@ class ArchiveDownloaderAdapter implements Adapter
     ): bool {
 
         $type = $this->determineType($config, $source);
-        if (!$type || !in_array($type, self::ARCHIVES, true)) {
+
+        if (!ArchiveDownloaderFactory::isValidType($type ?? '')) {
             $typeName = is_string($type) ? $type : gettype($type);
             $message = ($type === null)
                 ? "Could not determine archive type for {$source}."
-                : "{$typeName} is not a valid archive type.";
+                : "'{$typeName}' is not a valid archive type.";
             $this->io->writeVerboseError("  {$message}");
 
             return false;
@@ -104,9 +92,7 @@ class ArchiveDownloaderAdapter implements Adapter
             $package->setDistUrl($distUrl);
             $package->setTargetDir($targetDir);
 
-            $this->factoryDownloader($type)->download($package, $targetDir, false);
-
-            return true;
+            return $this->downloaderFactory->create($type)->download($package, $targetDir);
         } catch (\Throwable $throwable) {
             $this->io->writeVerboseError('  ' . $throwable->getMessage());
 
@@ -128,14 +114,14 @@ class ArchiveDownloaderAdapter implements Adapter
 
         switch (strtolower((string)(pathinfo($source, PATHINFO_EXTENSION) ?: ''))) {
             case 'rar':
-                return self::RAR;
+                return ArchiveDownloader::RAR;
             case 'tar':
-                return self::TAR;
+                return ArchiveDownloader::TAR;
             case 'xz':
-                return self::XZ;
+                return ArchiveDownloader::XZ;
         }
 
-        return self::ZIP;
+        return ArchiveDownloader::ZIP;
     }
 
     /**
@@ -145,7 +131,7 @@ class ArchiveDownloaderAdapter implements Adapter
      */
     private function sanitizeAndMaybeAuthorizeSource(string $source, array $config): ?string
     {
-        if (filter_var($source, FILTER_VALIDATE_URL)) {
+        if (!filter_var($source, FILTER_VALIDATE_URL)) {
             $this->io->writeVerboseError("  '{$source}' is not a valid URL.");
 
             return null;
@@ -201,36 +187,5 @@ class ArchiveDownloaderAdapter implements Adapter
         }
 
         return $pass ? "{$schema}{$user}:{$pass}@{$url}" : "{$schema}{$user}@{$url}";
-    }
-
-    /**
-     * @param string $type
-     * @return ArchiveDownloader
-     */
-    private function factoryDownloader(string $type): ArchiveDownloader
-    {
-        if (!empty($this->downloaders[$type])) {
-            return $this->downloaders[$type];
-        }
-
-        switch ($type) {
-            case self::RAR:
-                $downloader = new RarDownloader($this->io->composerIo(), $this->config);
-                break;
-            case self::TAR:
-                $downloader = new TarDownloader($this->io->composerIo(), $this->config);
-                break;
-            case self::XZ:
-                $downloader = new XzDownloader($this->io->composerIo(), $this->config);
-                break;
-            case self::ZIP:
-            default:
-                $downloader = new ZipDownloader($this->io->composerIo(), $this->config);
-                break;
-        }
-
-        $this->downloaders[$type] = $downloader;
-
-        return $downloader;
     }
 }

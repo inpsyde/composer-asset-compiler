@@ -28,7 +28,7 @@ class Config
     public const NONE = 'none';
 
     private const FORCE_DEFAULTS = 'force-defaults';
-    private const BY_PACKAGE_OR_DEFAULTS = 'by-defaults';
+    private const BY_PACKAGE_OR_DEFAULTS = 'package-or-defaults';
     private const DISABLED = 'disabled';
 
     private const DEPENDENCIES_OPTIONS = [self::INSTALL, self::UPDATE, self::NONE];
@@ -120,14 +120,12 @@ class Config
         switch (true) {
             case ($raw === false):
             case ($raw === self::DISABLED):
-                $raw = [self::DEPENDENCIES => self::NONE];
-                break;
             case ($raw === self::FORCE_DEFAULTS):
             case ($raw === self::BY_PACKAGE_OR_DEFAULTS):
                 $raw = [];
                 break;
             case (is_string($raw)):
-                [self::DEPENDENCIES => self::INSTALL, self::SCRIPT => $raw];
+                $raw = [self::DEPENDENCIES => self::INSTALL, self::SCRIPT => $raw];
                 break;
         }
 
@@ -335,7 +333,7 @@ class Config
             return;
         }
 
-        $byEnv = $this->envResolver->resolveConfig($this->raw);
+        $byEnv = $this->envResolver->resolveConfig($config);
 
         if ($byEnv && is_array($byEnv)) {
             $config = $byEnv;

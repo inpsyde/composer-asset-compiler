@@ -81,20 +81,7 @@ final class Config
             return null;
         }
 
-        $replace = ['hash' => $hash, 'env' => $this->envResolver->env()];
-        $source = preg_replace_callback(
-            '~\{{2}\s*(hash|env)\s*\}{2}~i',
-            static function (array $matches) use ($replace): string {
-                return $replace[(string)($matches[1] ?? '')] ?? '';
-            },
-            $this->parsed[self::SOURCE]
-        );
-
-        if (!$source) {
-            return null;
-        }
-
-        return EnvResolver::replaceEnvVariables($source, $defaultEnv);
+        return $this->replaceEnvVars($this->parsed[self::SOURCE], $hash, $defaultEnv) ?: null;
     }
 
     /**
@@ -124,13 +111,23 @@ final class Config
     /**
      * @return array
      */
-    public function config(): array
+    public function config(string $hash, array $defaultEnv): array
     {
         if (!$this->parse()) {
             return [];
         }
 
-        return $this->parsed[self::CONFIG];
+        $raw = $this->parsed[self::CONFIG];
+        $config = [];
+        foreach ($raw as $key => $value) {
+            if ($value && is_string($value)) {
+                $value = $this->replaceEnvVars($value, $hash, $defaultEnv);
+            }
+
+            $config[$key] = $value;
+        }
+
+        return $config;
     }
 
     /**
@@ -162,10 +159,25 @@ final class Config
             return false;
         }
 
-        $source = $this->raw[self::SOURCE] ?? null;
-        $target = $this->raw[self::TARGET] ?? null;
-        $adapter = $this->raw[self::ADAPTER] ?? null;
-        $config = $this->raw[self::CONFIG] ?? [];
+        $config = $this->raw;
+        if (!$config) {
+            return false;
+        }
+
+        $byEnv = $this->envResolver->resolveConfig($config);
+
+        if ($byEnv && is_array($byEnv)) {
+            $config = $byEnv;
+        }
+
+        if ($byEnv === null) {
+            $config = $this->envResolver->removeEnvConfig($config);
+        }
+
+        $source = $config[self::SOURCE] ?? null;
+        $target = $config[self::TARGET] ?? null;
+        $adapter = $config[self::ADAPTER] ?? null;
+        $config = $config[self::CONFIG] ?? [];
 
         $this->valid = $source
             && $target
@@ -204,5 +216,30 @@ final class Config
         }
 
         return true;
+    }
+
+    /**
+     * @param string $original
+     * @param string $hash
+     * @param array $defaultEnv
+     * @return string
+     */
+    private function replaceEnvVars(string $original, string $hash, array $defaultEnv): string
+    {
+        $replace = ['hash' => $hash, 'env' => $this->envResolver->env()];
+
+        $replaced = preg_replace_callback(
+            '~\$\{\s*(hash|env)\s*\}~i',
+            static function (array $matches) use ($replace): string {
+                return $replace[(string)($matches[1] ?? '')] ?? '';
+            },
+            $original
+        );
+
+        if (!$replaced || !is_string($replaced)) {
+            return '';
+        }
+
+        return EnvResolver::replaceEnvVariables($replaced, $defaultEnv);
     }
 }
