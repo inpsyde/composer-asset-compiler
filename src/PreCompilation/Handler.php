@@ -101,7 +101,7 @@ class Handler
         }
 
         $this->io->writeVerboseComment(
-            "Attempting usage of pre-processed data for '{$name}' using '{$source}'..."
+            "Attempting usage of pre-processed data for '{$name}' using {$adapter} adapter..."
         );
 
         $saved = $adapter->tryPrecompiled(
@@ -113,7 +113,10 @@ class Handler
         );
 
         if (!$saved) {
-            $this->io->writeVerbose("  Could not use pre-processed assets for '{$name}'.");
+            $this->io->writeVerbose(
+                "  Could not use pre-processed assets for '{$name}'",
+                '  will now install using default configuration.'
+            );
 
             return false;
         }
