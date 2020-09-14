@@ -16,7 +16,7 @@ class HttpClient
     private $io;
 
     /**
-     * @var HttpDownloader|RemoteFilesystem
+     * @var RemoteFilesystem
      */
     private $client;
 
@@ -54,11 +54,13 @@ class HttpClient
         try {
             if ($authorization) {
                 isset($options['http']) or $options['http'] = [];
+                /** @psalm-suppress MixedArrayAssignment */
                 isset($options['http']['headers']) or $options['http']['headers'] = [];
+                /** @psalm-suppress MixedArrayAssignment */
                 $options['http']['headers'][] = "Authorization: {$authorization}";
             }
 
-            $origin = RemoteFilesystem::getOrigin($url);
+            $origin = (string)RemoteFilesystem::getOrigin($url);
             $result = $this->client->getContents($origin, $url, false, $options);
             if (!$result || !is_string($result)) {
                 throw new \Exception("Could not obtain a response from '{$url}'.");

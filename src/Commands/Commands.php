@@ -91,6 +91,7 @@ final class Commands
         foreach (self::SUPPORTED_DEFAULTS as $name => $data) {
             $discover = (string)($data[self::DISCOVER] ?? '');
 
+            $out = null;
             if ($discover && ($executor->execute($discover, $out, $workingDir) === 0)) {
                 return static::fromDefault($name, $defaultEnvironment);
             }

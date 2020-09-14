@@ -92,10 +92,11 @@ class Factory
             return null;
         }
 
+        /** @var Config|null $config */
         if (!$config || $config->usePackageLevelOrDefault()) {
             $packageLevelConfig = Config::forComposerPackage($package, $this->envResolver);
 
-            // If no package-level and no root-level config there's nothing we can do.
+            // If no root-level config and no package-level config there's nothing we can do.
             if (!$rootLevelPackageConfig && !$packageLevelConfig->isValid()) {
                 return null;
             }
@@ -103,6 +104,7 @@ class Factory
             $config = $packageLevelConfig;
         }
 
+        /** @var Config|null $config */
         $validConfig = $config && $config->isRunnable();
 
         // If we have no config and no default, no way we can create a valid package.
@@ -110,10 +112,12 @@ class Factory
             return null;
         }
 
+        /** @var Config|null $config */
         if (!$config || $config->isForcedDefault()) {
-            /** @var Config $config */
             $config = $defaults->toConfig();
         }
+
+        /** @var Config $config */
 
         $installPath = ($package instanceof RootPackageInterface)
             ? $this->rootDir

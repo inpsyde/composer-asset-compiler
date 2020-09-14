@@ -100,8 +100,9 @@ class Handler
             return false;
         }
 
+        $adapterId = $adapter->id();
         $this->io->writeVerboseComment(
-            "Attempting usage of pre-processed data for '{$name}' using {$adapter} adapter..."
+            "Attempting usage of pre-processed data for '{$name}' using {$adapterId} adapter..."
         );
 
         $saved = $adapter->tryPrecompiled(

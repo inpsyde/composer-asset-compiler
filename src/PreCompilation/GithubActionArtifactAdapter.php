@@ -156,11 +156,11 @@ class GithubActionArtifactAdapter implements Adapter
         if ($token) {
             $user = $config[self::TOKEN_USER] ?? $owner;
             $authString = "https://{$user}:{$token}@";
-            $endpoint = preg_replace('~^https://(.+)~', $authString . '$1', $endpoint);
+            $endpoint = (string)preg_replace('~^https://(.+)~', $authString . '$1', $endpoint);
         }
 
         $response = $this->client->get($endpoint);
-        $json = ($response && is_string($response)) ? json_decode($response, true) : null;
+        $json = $response ? json_decode($response, true) : null;
         if (!$json || !is_array($json) || empty($json['artifacts'])) {
             throw new \Exception("Could not obtain a valid API response from {$endpoint}.");
         }
@@ -181,10 +181,12 @@ class GithubActionArtifactAdapter implements Adapter
             return '';
         }
 
+        /** @var string $archiveUrl */
+
         if ($authString) {
             $archiveUrl = preg_replace('~^https://(.+)~', $authString . '$1', $archiveUrl);
         }
 
-        return $archiveUrl;
+        return (string)$archiveUrl;
     }
 }

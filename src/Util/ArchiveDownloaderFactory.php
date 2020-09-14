@@ -10,8 +10,6 @@ use Composer\Downloader\TarDownloader;
 use Composer\Downloader\XzDownloader;
 use Composer\Downloader\ZipDownloader;
 use Composer\Util\Filesystem;
-use Composer\Util\HttpDownloader;
-use Composer\Util\Loop;
 use Composer\Util\ProcessExecutor;
 use Composer\Util\RemoteFilesystem;
 

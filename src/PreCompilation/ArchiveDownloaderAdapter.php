@@ -81,6 +81,8 @@ class ArchiveDownloaderAdapter implements Adapter
             return false;
         }
 
+        /** @var string $type */
+
         $distUrl = $this->sanitizeAndMaybeAuthorizeSource($source, $config);
         if (!$distUrl) {
             return false;

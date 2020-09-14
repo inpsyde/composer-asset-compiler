@@ -64,6 +64,8 @@ final class Config
 
     /**
      * @return bool
+     *
+     * @psalm-assert-if-true EnvResolver $this->envResolver
      */
     public function isValid(): bool
     {
@@ -226,6 +228,10 @@ final class Config
      */
     private function replaceEnvVars(string $original, string $hash, array $defaultEnv): string
     {
+        if (!$this->isValid()) {
+            return $original;
+        }
+
         $replace = ['hash' => $hash, 'env' => $this->envResolver->env()];
 
         $replaced = preg_replace_callback(
@@ -236,10 +242,6 @@ final class Config
             $original
         );
 
-        if (!$replaced || !is_string($replaced)) {
-            return '';
-        }
-
-        return EnvResolver::replaceEnvVariables($replaced, $defaultEnv);
+        return $replaced ? EnvResolver::replaceEnvVariables($replaced, $defaultEnv) : '';
     }
 }
