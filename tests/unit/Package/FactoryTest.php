@@ -330,6 +330,48 @@ JSON;
     /**
      * @test
      */
+    public function testCreateWithOnlyScript(): void
+    {
+        $factory = $this->factoryFactory('develop');
+
+        $package = new Package('test/test-package', '1.0.0.0', 'v1');
+        $package->setExtra(['composer-asset-compiler' => "build"]);
+
+        $asset = $factory->attemptFactory($package, null, Defaults::empty());
+
+        static::assertTrue($asset->isValid());
+        static::assertSame(['build'], $asset->script());
+        static::assertTrue($asset->isInstall());
+    }
+
+    /**
+     * @test
+     */
+    public function testCreateWithScriptAnNoDependencies(): void
+    {
+        $factory = $this->factoryFactory('develop');
+
+        $package = new Package('test/test-package', '1.0.0.0', 'v1');
+        $package->setExtra(
+            [
+                'composer-asset-compiler' => [
+                    "dependencies" => "none",
+                    "script" => "build",
+                ],
+            ]
+        );
+
+        $asset = $factory->attemptFactory($package, null, Defaults::empty());
+
+        static::assertTrue($asset->isValid());
+        static::assertSame(['build'], $asset->script());
+        static::assertFalse($asset->isInstall());
+        static::assertFalse($asset->isUpdate());
+    }
+
+    /**
+     * @test
+     */
     public function testForRootPackage(): void
     {
         $factory = $this->factoryFactory();
