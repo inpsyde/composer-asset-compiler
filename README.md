@@ -25,17 +25,13 @@ It means that **in version control we *don't* have to keep compiled frontend ass
 
 ## Build is done via javascript tools
 
-Even if the technology we use to collect the packages is Composer, so it is PHP, the only sane way
-to "build" frontend assets is to use frontend technology.
+Even if the technology we use to collect the packages is Composer, so it is PHP, the only sane way to "build" frontend assets is to use frontend technology.
 
-What we do is to use Composer to run shell commands that will execute the frontend tools used to 
-build assets.
+What we do is to use Composer to run shell commands that will execute the frontend tools used to build assets.
 
-In other words, we assume that the running system has a frontend dependency manager (_npm_, _Yarn_) 
-and from Composer we execute commands like `npm install` (or `yarn`) to resolve the dependencies.
+In other words, we assume that the running system has a frontend dependency manager (_npm_, _Yarn_) and from Composer we execute commands like `npm install` (or `yarn`) to resolve the dependencies.
 
-Resolving dependencies will likely not be enough. In fact, normally we need to also execute a 
-task runner like _gulp.js_ or _Grunt_, or some builder like _webpack_ to *build* the installed dependencies.
+Resolving dependencies will likely not be enough. In fact, normally we need to also execute a task runner like _gulp.js_ or _Grunt_, or some builder like _webpack_ to *build* the installed dependencies.
 
 To solve the issue we decided to leverage `package.json` scripts.
 
@@ -59,10 +55,10 @@ But how can this Composer plugin programmatically determine which packages have 
 
 It uses two strategies, that can be combined:
 
-- via configuration in Composer **root** package `composer.json` it is possible to list the packages that need processing (no matter how deep in the dependencies tree). For the rest of this README this kind of configuration is named "**root-level configuration**".
-- via configuration in *each* package `composer.json` it is possible to "signal" to the outer root package that the assets the current package ships needs building. For the rest of this README this kind of configuration is named "**package-level configuration**".
+- via **configuration in Composer root package** `composer.json` it is possible to list the packages that need processing (no matter how deep in the dependencies tree). For the rest of this README this kind of configuration is named "**root-level configuration**".
+- via **configuration in each package** `composer.json` it is possible to "signal" to the outer root package that the assets the current package ships needs building. For the rest of this README this kind of configuration is named "**package-level configuration**".
 
-Both root-level and package-level configuration are not only used to determine which packages as to be compiled, but also what is needed to compile them.
+Both *root-level* and *package-level* configuration are not only used to determine which packages as to be compiled, but also what is needed to compile them.
 
 It worth noting that the Composer root package is still a package, that might need processing of frontend assets it ships. In fact, Composer root package can contain both root-level and package-level configuration.
 
@@ -86,7 +82,7 @@ Both root-level and package-level configuration are done in the same way: by add
 
 ## Package-level configuration
 
-The possible configuration at package level are based on four properties:
+The possible configuration at package level are based on following properties:
 
 | Configuration property | Description                                                  |
 | ---------------------- | ------------------------------------------------------------ |
@@ -94,6 +90,7 @@ The possible configuration at package level are based on four properties:
 | `dependencies`         | Determine how to install / update package dependencies       |
 | `script`               | Determine which script(s) to execute to build the package assets |
 | `env`                  | Provides advanced environment-based configuration for `dependencies` and `script` configuration. |
+| `pre-compiled`         | An object with information on where to store "pre-compiled" assets to speed up deployments. |
 
 In the next section there will be detailed documentation of each of them.
 
@@ -128,7 +125,7 @@ Let's assume, for example, that we need the `WEBPACK_ENV` environment to be defi
     "extra": {
         "composer-asset-compiler": {
             "default-env": {
-              "WEBPACK_ENV": "development"
+                "WEBPACK_ENV": "development"
             }
         }
     }
@@ -147,10 +144,9 @@ The **`dependencies`** configuration property defines how to proceed for the fir
 
 The value for this property can be:
 
-- `"install"`, which means *"install frontend dependencies"*
+- `"install"`, which means *"install frontend dependencies"* (this is the default)
 - `"update"`, which means *"update frontend dependencies"*
-
-Anything else, means *"do not install nor update frontend dependencies for this package"*.
+- `"none"`, which means *"do not install nor update frontend dependencies"*
 
 This plugins support both *npm* and *Yarn*. The table below summarizes the actual command executed when using the two different configuration values, depending on the dependency manager in use:
 
@@ -169,7 +165,7 @@ It has been said how the command executed are launched from Composer. The PHP pa
 
 As part of that component there's the  `IO` object that carries some information that are set from the user input.
 
-Among all possible parameters that is possible to pass to Composer command, there are two kinds that also affects how the frontend building commands are executed. Those are:
+Among all possible parameters that is possible to pass to Composer command, there are two groups of parameters that also affects how the frontend building commands are executed. Those are:
 
 - "interactivity" parameter `--no-interaction` / `-n`
 - "verbosity" parameters: `--verbose` / `-v` and `--quiet` / `-q`
@@ -207,19 +203,19 @@ For example, assuming a configuration in `composer.json` that looks like this:
 }
 ```
 
-After the package has been installed via Composer, the plugin will install dependencies with either *npm* or *Yarn* and after that will execute the `"build"` script, that should be defined in `package.json`.
+After the package has been installed via Composer, the plugin will install dependencies with either *npm* or *Yarn* and after that, it will execute the `"build"` script, that should be defined in `package.json`.
 
-The actual command run will depend on the package manager used:
+The actual command being run will depend on the package manager used:
 
 | Asset compiled config | npm             | Yarn         |
 | --------------------- | --------------- | ------------ |
-| `"script": "build"`   | `npm run build` | `yarn build` |
+| `{"script": "build"}` | `npm run build` | `yarn build` |
 
 It is possible to instruct the asset compiler to execute _multiple_ scripts, by using an array. In that case, scripts will be executed in sequence.
 
-| Asset compiled config        | npm                             | Yarn                      |
-| ---------------------------- | ------------------------------- | ------------------------- |
-| `"script": ["test", build"]` | `npm run test && npm run build` | `yarn test && yarn build` |
+| Asset compiled config          | npm                             | Yarn                      |
+| ------------------------------ | ------------------------------- | ------------------------- |
+| `{"script": ["test", build"]}` | `npm run test && npm run build` | `yarn test && yarn build` |
 
 
 
@@ -239,7 +235,7 @@ yarn encore prod
 # or `npm run encore prod`
 ```
 
-The compiler  **`script`** configuration, has support for environment variables placeholders, that are replaced with the value of actual variables before being ran.
+The script`** configuration, has support for environment variables placeholders, that are replaced with the value of actual variables before being ran.
 
 Which means that we can have a configuration like this:
 
@@ -247,17 +243,17 @@ Which means that we can have a configuration like this:
 {
     "extra": {
         "composer-asset-compiler": {
-          	"dependencies": "install",
+            "dependencies": "install",
             "script": "encore ${ENCORE_ENV}",
-          	"default-env": {
-              	"ENCORE_ENV": "dev"
+            "default-env": {
+                "ENCORE_ENV": "dev"
             }
         }
     }
 }
 ```
 
-the placeholder` ${ENCORE_ENV}` will be replaced, before the script is executed, with the value of the `ENCORE_ENV` environment variable, meaning that we can set it to `"prod"` in production environment, ending up in a command that will be:
+the placeholder `${ENCORE_ENV}` will be replaced, before the script is executed, with the value of the `ENCORE_ENV` environment variable, meaning that we can set it to `"prod"` in production environment, ending up in a command that will be:
 
 ```shell
 yarn encore prod
@@ -276,9 +272,9 @@ Let's assume a package has a `package.json` that contains:
 
 ```json
 {
-  "scripts": {
-    	"tasks": "gulp"
-	}
+    "scripts": {
+        "tasks": "gulp"
+    }
 }
 ```
 
@@ -312,8 +308,8 @@ Back to previous example, assuming the same `package.json` on top of this sectio
 {
     "extra": {
         "composer-asset-compiler": {
-          	"dependencies": "install",
-            "script": "tasks -- build",
+            "dependencies": "install",
+            "script": "tasks -- build"
         }
     }
 }
@@ -329,7 +325,7 @@ Given the same `package.json`, but an assets compiler configuration like this:
 {
     "extra": {
         "composer-asset-compiler": {
-          	"dependencies": "install",
+            "dependencies": "install",
             "script": "tasks -- build:${GULP_ENV}",
             "default-env": {
                 "GULP_ENV": "dev"
@@ -381,13 +377,16 @@ For example:
 {
     "extra": {
         "composer-asset-compiler": {
-          	"dependencies": "install",
+            "dependencies": "install",
             "env": {
-              	"staging": {
-                  	"script": ["build", "tests"]
+                "staging": {
+                    "script": [
+                        "build",
+                        "tests"
+                    ]
                 },
                 "production": {
-                  	"script": "build"
+                    "script": "build"
                 }
             }
         }
@@ -419,13 +418,16 @@ For example, the previous snippet would be better written like this:
 {
     "extra": {
         "composer-asset-compiler": {
-          	"dependencies": "install",
+            "dependencies": "install",
             "env": {
-              	"staging": {
-                  	"script": ["build", "tests"]
+                "staging": {
+                    "script": [
+                        "build",
+                        "tests"
+                    ]
                 },
                 "$default": {
-                  	"script": "build"
+                    "script": "build"
                 }
             }
         }
@@ -433,7 +435,7 @@ For example, the previous snippet would be better written like this:
 }
 ```
 
-Finally, it worth to be noted that advanced environment-based configuration can be combined with the other techniques previously documented, like passing arguments to scripts and the usage of placeholders for environment variables.
+Finally, it worth noting that advanced environment-based configuration can be combined with the other techniques previously documented, like passing arguments to scripts and the usage of placeholders for environment variables.
 
 For example, the following example leverages all of them:
 
@@ -441,16 +443,19 @@ For example, the following example leverages all of them:
 {
     "extra": {
         "composer-asset-compiler": {
-          	"dependencies": "install",
+            "dependencies": "install",
             "default-env": {
                 "GULP_ENV": "dev"
             },
             "env": {
-              	"staging": {
-                  	"script": ["tasks -- build:${GULP_ENV}", "tests"]
+                "staging": {
+                    "script": [
+                        "tasks -- build:${GULP_ENV}",
+                        "tests"
+                    ]
                 },
                 "$default": {
-                  	"script": "tasks -- build:${GULP_ENV}"
+                    "script": "tasks -- build:${GULP_ENV}"
                 }
             }
         }
@@ -514,20 +519,23 @@ For example, we can have a root-level configuration that looks like this:
 {
     "extra": {
         "composer-asset-compiler": {
-          	"env": {
-              	"$default": {
-                  	"script": ["build", "test"]
+            "env": {
+                "$default": {
+                    "script": [
+                        "build",
+                        "test"
+                    ]
                 },
                 "production": {
-                  	"script": "build"
+                    "script": "build"
                 }
             },
-          	"auto-run": {
-              	"env": {
-                  	"$default": true,
-                  	"production": false
-              	}
-            } 
+            "auto-run": {
+                "env": {
+                    "$default": true,
+                    "production": false
+                }
+            }
         }
     }
 }
@@ -553,7 +561,7 @@ With a configuration that looks like this:
 {
     "extra": {
         "composer-asset-compiler": {
-          	"auto-run": false
+            "auto-run": false
         }
     }
 }
@@ -585,17 +593,17 @@ For example:
 {
     "extra": {
         "composer-asset-compiler": {
-          	"auto-discover": false,
+            "auto-discover": false,
             "default-env": {
                 "ENCORE_ENV": "dev"
             },
             "packages": {
                 "some-vendor/some-package": {
-                		"dependencies": "install",
+                    "dependencies": "install",
                     "script": "build"
                 },
                 "another-vendor/another-package": {
-                		"dependencies": "install",
+                    "dependencies": "install",
                     "script": "encore ${ENCORE_ENV}"
                 }
             }
@@ -616,13 +624,13 @@ For example:
 {
     "extra": {
         "composer-asset-compiler": {
-          	"auto-discover": false,
+            "auto-discover": false,
             "default-env": {
                 "ENCORE_ENV": "dev"
             },
             "packages": {
                 "inpsyde/client-*": {
-                		"dependencies": "install",
+                    "dependencies": "install",
                     "script": "encore ${ENCORE_ENV}"
                 }
             }
@@ -649,7 +657,7 @@ For example:
         "composer-asset-compiler": {
             "packages": {
                 "some-vendor/foo-*": false
-						}
+            }
         }
     }
 }
@@ -671,22 +679,22 @@ Let's take this example:
         "composer-asset-compiler": {
             "packages": {
                 "some-vendor/foo-*": {
-                		"dependencies": "install",
-                		"script": "build"
+                    "dependencies": "install",
+                    "script": "build"
                 },
                 "other-vendor/bar-*": {
-                		"dependencies": "install",
-                		"script": "build"
+                    "dependencies": "install",
+                    "script": "build"
                 },
                 "yet-another/some-name": {
-                		"dependencies": "install",
-                		"script": "build"
+                    "dependencies": "install",
+                    "script": "build"
                 },
                 "last/set-*": {
-                		"dependencies": "install",
-                		"script": "build"
+                    "dependencies": "install",
+                    "script": "build"
                 }
-						}
+            }
         }
     }
 }
@@ -700,16 +708,16 @@ For example, the snippet above can be re-written in a less verbose way like this
 {
     "extra": {
         "composer-asset-compiler": {
-        		"defaults": {
-								"dependencies": "install",
-								"script": "build"
-						},
+            "defaults": {
+                "dependencies": "install",
+                "script": "build"
+            },
             "packages": {
                 "some-vendor/foo-*": true,
                 "other-vendor/bar-*": true,
                 "yet-another/some-name": true,
                 "last/set-*": true
-						}
+            }
         }
     }
 }
@@ -727,14 +735,14 @@ For example:
 {
     "extra": {
         "composer-asset-compiler": {
-        		"defaults": {
-								"dependencies": "install",
-								"script": "build"
-						},
+            "defaults": {
+                "dependencies": "install",
+                "script": "build"
+            },
             "packages": {
                 "some-vendor/foo-*": "force-default",
                 "other-vendor/bar-*": "force-default"
-						}
+            }
         }
     }
 }
@@ -766,7 +774,7 @@ When that happen, but one knows that one of the two is available or when for any
 {
     "extra": {
         "composer-asset-compiler": {
-        		"commands": "npm"
+            "commands": "npm"
         }
     }
 }
@@ -783,9 +791,9 @@ For example:
 {
     "extra": {
         "composer-asset-compiler": {
-        		"commands": {
-              	"env": {
-                  	"docker": "npm"
+            "commands": {
+                "env": {
+                    "docker": "npm"
                 }
             }
         }
@@ -807,7 +815,7 @@ For example, when the settings is  `{ "commands": "npm" }`, the *mapped object* 
 
 ```json
 {
-		"commands": {
+    "commands": {
         "dependencies": {
             "install": "npm install",
             "update": "npm update --no-save"
@@ -821,7 +829,7 @@ and  when the settings is  `{ "commands": "yarn" }` it looks like this:
 
 ```json
 {
-  	"commands": {
+    "commands": {
         "dependencies": {
             "install": "yarn",
             "update": "yarn upgrade"
@@ -835,8 +843,8 @@ After the `"commands"` objects is being created according to the package manager
 
 ```json
 {
-		"dependencies": "install",
-		"script": "build"
+    "dependencies": "install",
+    "script": "build"
 }
 ```
 
@@ -852,7 +860,7 @@ For example, in root `composer.json` it is possible to write a configuration lik
 {
     "extra": {
         "composer-asset-compiler": {
-        		"commands": {
+            "commands": {
                 "dependencies": {
                     "install": "yarn install --silent --frozen-lockfile",
                     "update": "yarn install --silent --force"
@@ -878,7 +886,7 @@ When an error happen for a package, it is possible to instruct the compiler to c
 {
     "extra": {
         "composer-asset-compiler": {
-        		"stop-on-failure": false
+            "stop-on-failure": false
         }
     }
 }
