@@ -36,20 +36,28 @@ final class Asset
     private $valid;
 
     /**
+     * @var string|null
+     */
+    private $version;
+
+    /**
      * @param string $name
      * @param Config $config
      * @param string|null $folder
+     * @param string|null $version
      * @return Asset
      */
-    public static function new(string $name, Config $config, ?string $folder = null): Asset
-    {
-        $asset = new static($name);
-        if (!$config->isRunnable()) {
-            return $asset;
-        }
+    public static function new(
+        string $name,
+        Config $config,
+        ?string $folder = null,
+        ?string $version = null
+    ): Asset {
 
+        $asset = new static($name);
         $asset->folder = $folder ? rtrim($folder, '/') : null;
         $asset->config = $config;
+        $asset->version = $version;
 
         return $asset;
     }
@@ -121,6 +129,14 @@ final class Asset
     public function path(): ?string
     {
         return $this->folder;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function version(): ?string
+    {
+        return $this->version;
     }
 
     /**

@@ -12,8 +12,9 @@ declare(strict_types=1);
 namespace Inpsyde\AssetsCompiler\Tests\Unit\Package;
 
 use Composer\Installer\InstallationManager;
+use Composer\Package\Package;
 use Composer\Package\PackageInterface;
-use Composer\Package\RootPackageInterface;
+use Composer\Package\RootPackage;
 use Composer\Util\Filesystem;
 use Inpsyde\AssetsCompiler\Commands\Commands;
 use Inpsyde\AssetsCompiler\Asset\Config;
@@ -44,20 +45,18 @@ class FactoryTest extends TestCase
 	"script": "destroy"
 }
 JSON;
-        /** @var PackageInterface|\Mockery\MockInterface $composerPackage */
-        $composerPackage = \Mockery::mock(PackageInterface::class);
-        $composerPackage->shouldReceive('getName')->andReturn('test/test-package');
+        $package = new Package('test/test-package', '1.0.0.0', 'v1');
 
-        $package = $factory->attemptFactory(
-            $composerPackage,
+        $asset = $factory->attemptFactory(
+            $package,
             $this->factoryConfig($json),
             $this->factoryDefault()
         );
 
-        static::assertTrue($package->isValid());
-        static::assertTrue($package->isUpdate());
-        static::assertFalse($package->isInstall());
-        static::assertSame(['destroy'], $package->script());
+        static::assertTrue($asset->isValid());
+        static::assertTrue($asset->isUpdate());
+        static::assertFalse($asset->isInstall());
+        static::assertSame(['destroy'], $asset->script());
     }
 
     /**
@@ -83,21 +82,20 @@ JSON;
 
         $factory = $this->factoryFactory('meh');
 
-        /** @var PackageInterface|\Mockery\MockInterface $composerPackage */
-        $composerPackage = \Mockery::mock(PackageInterface::class);
-        $composerPackage->shouldReceive('getName')->andReturn('test/test-package');
-        $composerPackage->shouldReceive('getExtra')->andReturn(json_decode($json, true));
+        $package = new Package('test/test-package', '1.0.0.0', 'v1');
+        $package->setExtra(json_decode($json, true));
 
-        $package = $factory->attemptFactory(
-            $composerPackage,
+        $asset = $factory->attemptFactory(
+            $package,
             null,
             $this->factoryDefault()
         );
 
-        static::assertTrue($package->isValid());
-        static::assertFalse($package->isUpdate());
-        static::assertTrue($package->isInstall());
-        static::assertSame(["hello", "world"], $package->script());
+        static::assertTrue($asset->isValid());
+        static::assertFalse($asset->isUpdate());
+        static::assertTrue($asset->isInstall());
+        static::assertSame(["hello", "world"], $asset->script());
+        static::assertSame('v1', $asset->version());
     }
 
     /**
@@ -113,20 +111,19 @@ JSON;
 	"script": "destroy"
 }
 JSON;
-        /** @var PackageInterface|\Mockery\MockInterface $composerPackage */
-        $composerPackage = \Mockery::mock(PackageInterface::class);
-        $composerPackage->shouldReceive('getName')->andReturn('test/test-package');
+        $package = new Package('test/test-package', '1.0.0.0', 'v1');
+        $package->setExtra(json_decode($json, true));
 
-        $package = $factory->attemptFactory(
-            $composerPackage,
+        $asset = $factory->attemptFactory(
+            $package,
             $this->factoryConfig($json),
             $this->factoryDefault()
         );
 
-        static::assertTrue($package->isValid());
-        static::assertTrue($package->isUpdate());
-        static::assertFalse($package->isInstall());
-        static::assertSame(['destroy'], $package->script());
+        static::assertTrue($asset->isValid());
+        static::assertTrue($asset->isUpdate());
+        static::assertFalse($asset->isInstall());
+        static::assertSame(['destroy'], $asset->script());
     }
 
     /**
@@ -142,20 +139,18 @@ JSON;
 	"script": "destroy"
 }
 JSON;
-        /** @var PackageInterface|\Mockery\MockInterface $composerPackage */
-        $composerPackage = \Mockery::mock(PackageInterface::class);
-        $composerPackage->shouldReceive('getName')->andReturn('test/test-package');
+        $package = new Package('test/test-package', '1.0.0.0', 'v1');
 
-        $package = $factory->attemptFactory(
-            $composerPackage,
+        $asset = $factory->attemptFactory(
+            $package,
             $this->factoryConfig($json),
             Defaults::empty()
         );
 
-        static::assertTrue($package->isValid());
-        static::assertTrue($package->isUpdate());
-        static::assertFalse($package->isInstall());
-        static::assertSame(['destroy'], $package->script());
+        static::assertTrue($asset->isValid());
+        static::assertTrue($asset->isUpdate());
+        static::assertFalse($asset->isInstall());
+        static::assertSame(['destroy'], $asset->script());
     }
 
     /**
@@ -171,20 +166,18 @@ JSON;
 	"script": "destroy"
 }
 JSON;
-        /** @var PackageInterface|\Mockery\MockInterface $composerPackage */
-        $composerPackage = \Mockery::mock(PackageInterface::class);
-        $composerPackage->shouldReceive('getName')->andReturn('test/test-package');
+        $package = new Package('test/test-package', '1.0.0.0', 'v1');
 
-        $package = $factory->attemptFactory(
-            $composerPackage,
+        $asset = $factory->attemptFactory(
+            $package,
             $this->factoryConfig($json),
             Defaults::empty()
         );
 
-        static::assertTrue($package->isValid());
-        static::assertTrue($package->isUpdate());
-        static::assertFalse($package->isInstall());
-        static::assertSame(['destroy'], $package->script());
+        static::assertTrue($asset->isValid());
+        static::assertTrue($asset->isUpdate());
+        static::assertFalse($asset->isInstall());
+        static::assertSame(['destroy'], $asset->script());
     }
 
     /**
@@ -194,10 +187,8 @@ JSON;
     {
         $factory = $this->factoryFactory();
 
-        /** @var PackageInterface|\Mockery\MockInterface $composerPackage */
-        $composerPackage = \Mockery::mock(PackageInterface::class);
-        $composerPackage->shouldReceive('getName')->andReturn('test/test-package');
-        $composerPackage->shouldReceive('getExtra')->andReturn(
+        $package = new Package('test/test-package', '1.0.0.0', 'v1');
+        $package->setExtra(
             [
                 'composer-asset-compiler' => [
                     'script' => 'this_is_nice',
@@ -205,10 +196,10 @@ JSON;
             ]
         );
 
-        $package = $factory->attemptFactory($composerPackage, null, $this->factoryDefault());
+        $asset = $factory->attemptFactory($package, null, $this->factoryDefault());
 
-        static::assertTrue($package->isValid());
-        static::assertSame(['this_is_nice'], $package->script());
+        static::assertTrue($asset->isValid());
+        static::assertSame(['this_is_nice'], $asset->script());
     }
 
     /**
@@ -218,10 +209,8 @@ JSON;
     {
         $factory = $this->factoryFactory();
 
-        /** @var PackageInterface|\Mockery\MockInterface $composerPackage */
-        $composerPackage = \Mockery::mock(PackageInterface::class);
-        $composerPackage->shouldReceive('getName')->andReturn('test/test-package');
-        $composerPackage->shouldReceive('getExtra')->andReturn(
+        $package = new Package('test/test-package', '1.0.0.0', 'v1');
+        $package->setExtra(
             [
                 'composer-asset-compiler' => [
                     'script' => 'this_is_nice',
@@ -229,10 +218,10 @@ JSON;
             ]
         );
 
-        $package = $factory->attemptFactory($composerPackage, null, Defaults::empty());
+        $asset = $factory->attemptFactory($package, null, Defaults::empty());
 
-        static::assertTrue($package->isValid());
-        static::assertSame(['this_is_nice'], $package->script());
+        static::assertTrue($asset->isValid());
+        static::assertSame(['this_is_nice'], $asset->script());
     }
 
     /**
@@ -242,10 +231,8 @@ JSON;
     {
         $factory = $this->factoryFactory('develop');
 
-        /** @var PackageInterface|\Mockery\MockInterface $composerPackage */
-        $composerPackage = \Mockery::mock(PackageInterface::class);
-        $composerPackage->shouldReceive('getName')->andReturn('test/test-package');
-        $composerPackage->shouldReceive('getExtra')->andReturn(
+        $package = new Package('test/test-package', '1.0.0.0', 'v1');
+        $package->setExtra(
             [
                 'composer-asset-compiler' => [
                     'env' => [
@@ -257,10 +244,10 @@ JSON;
             ]
         );
 
-        $package = $factory->attemptFactory($composerPackage, null, $this->factoryDefault());
+        $asset = $factory->attemptFactory($package, null, $this->factoryDefault());
 
-        static::assertTrue($package->isValid());
-        static::assertSame(['this_is_very_nice'], $package->script());
+        static::assertTrue($asset->isValid());
+        static::assertSame(['this_is_very_nice'], $asset->script());
     }
 
     /**
@@ -270,16 +257,14 @@ JSON;
     {
         $factory = $this->factoryFactory('develop');
 
-        /** @var PackageInterface|\Mockery\MockInterface $composerPackage */
-        $composerPackage = \Mockery::mock(PackageInterface::class);
-        $composerPackage->shouldReceive('getName')->andReturn('test/test-package');
-        $composerPackage->shouldReceive('getExtra')->andReturn([]);
+        $package = new Package('test/test-package', '1.0.0.0', 'v1');
+        $package->setExtra([]);
 
         $defaults = $this->factoryDefault();
 
-        $package = $factory->attemptFactory($composerPackage, null, $defaults);
+        $asset = $factory->attemptFactory($package, null, $defaults);
 
-        static::assertNull($package);
+        static::assertNull($asset);
     }
 
     /**
@@ -289,14 +274,12 @@ JSON;
     {
         $factory = $this->factoryFactory('develop');
 
-        /** @var PackageInterface|\Mockery\MockInterface $composerPackage */
-        $composerPackage = \Mockery::mock(PackageInterface::class);
-        $composerPackage->shouldReceive('getName')->andReturn('test/test-package');
-        $composerPackage->shouldReceive('getExtra')->andReturn([]);
+        $package = new Package('test/test-package', '1.0.0.0', 'v1');
+        $package->setExtra([]);
 
-        $package = $factory->attemptFactory($composerPackage, null, Defaults::empty());
+        $asset = $factory->attemptFactory($package, null, Defaults::empty());
 
-        static::assertNull($package);
+        static::assertNull($asset);
     }
 
     /**
@@ -306,10 +289,8 @@ JSON;
     {
         $factory = $this->factoryFactory('develop');
 
-        /** @var PackageInterface|\Mockery\MockInterface $composerPackage */
-        $composerPackage = \Mockery::mock(PackageInterface::class);
-        $composerPackage->shouldReceive('getName')->andReturn('test/test-package');
-        $composerPackage->shouldReceive('getExtra')->andReturn(
+        $package = new Package('test/test-package', '1.0.0.0', 'v1');
+        $package->setExtra(
             [
                 'composer-asset-compiler' => [
                     'default-env' => [
@@ -327,22 +308,22 @@ JSON;
             ]
         );
 
-        $package = $factory->attemptFactory($composerPackage, null, Defaults::empty());
+        $asset = $factory->attemptFactory($package, null, Defaults::empty());
 
-        static::assertTrue($package->isValid());
-        static::assertSame('prod', $package->env()['ENCORE_ENV']);
+        static::assertTrue($asset->isValid());
+        static::assertSame('prod', $asset->env()['ENCORE_ENV']);
 
-        $scripts = $package->script();
+        $scripts = $asset->script();
         static::assertSame(['encore ${ENCORE_ENV}'], $scripts);
         $script = array_pop($scripts);
 
         $commandsNoEnv = Commands::fromDefault('yarn', []);
-        static::assertSame('yarn encore prod', $commandsNoEnv->scriptCmd($script, $package->env()));
+        static::assertSame('yarn encore prod', $commandsNoEnv->scriptCmd($script, $asset->env()));
 
         $commandsWithEnv = Commands::fromDefault('yarn', ['ENCORE_ENV' => 'dev']);
         static::assertSame(
             'yarn encore prod',
-            $commandsWithEnv->scriptCmd($script, $package->env())
+            $commandsWithEnv->scriptCmd($script, $asset->env())
         );
     }
 
@@ -359,13 +340,9 @@ JSON;
 	"script": "test"
 }
 JSON;
-        /** @var PackageInterface|\Mockery\MockInterface $composerPackage */
-        $rootPackage = \Mockery::mock(RootPackageInterface::class);
-        $rootPackage->shouldReceive('getName')->andReturn('test/root-package');
+        $rootPackage = new RootPackage('test/root-package', '1.0.0.0', 'v1');
 
-        /** @var PackageInterface|\Mockery\MockInterface $composerPackage */
-        $noRootPackage = \Mockery::mock(RootPackageInterface::class);
-        $noRootPackage->shouldReceive('getName')->andReturn('test/some-package');
+        $noRootPackage = new Package('test/some-package', '1.0.0.0', 'v1');
 
         $rootDir = vfsStream::setup('rootDir');
         $rootDir->addChild((new vfsStreamFile('package.json'))->withContent('{}'));

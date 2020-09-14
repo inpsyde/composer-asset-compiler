@@ -77,13 +77,15 @@ final class Config
      * @param array $defaultEnv
      * @return string|null
      */
-    public function source(string $hash, array $defaultEnv): ?string
+    public function source(string $hash, array $defaultEnv, ?string $version = null): ?string
     {
         if (!$this->parse()) {
             return null;
         }
 
-        return $this->replaceEnvVars($this->parsed[self::SOURCE], $hash, $defaultEnv) ?: null;
+        $rawSource = $this->parsed[self::SOURCE];
+
+        return $this->replaceEnvVars($rawSource, $hash, $version, $defaultEnv) ?: null;
     }
 
     /**
@@ -113,7 +115,7 @@ final class Config
     /**
      * @return array
      */
-    public function config(string $hash, array $defaultEnv): array
+    public function config(string $hash, array $defaultEnv, ?string $version = null): array
     {
         if (!$this->parse()) {
             return [];
@@ -123,7 +125,7 @@ final class Config
         $config = [];
         foreach ($raw as $key => $value) {
             if ($value && is_string($value)) {
-                $value = $this->replaceEnvVars($value, $hash, $defaultEnv);
+                $value = $this->replaceEnvVars($value, $hash, $version, $defaultEnv);
             }
 
             $config[$key] = $value;
@@ -206,17 +208,6 @@ final class Config
             self::CONFIG => $config,
         ];
 
-        if ($adapter === null) {
-            // When there's no adapter we need to ensure we'll get a valid URL as source.
-            $url = $this->source(sha1(''), []);
-            if (!$url || !filter_var($url, FILTER_VALIDATE_URL)) {
-                $this->valid = false;
-                $this->parsed = null;
-
-                return false;
-            }
-        }
-
         return true;
     }
 
@@ -226,18 +217,29 @@ final class Config
      * @param array $defaultEnv
      * @return string
      */
-    private function replaceEnvVars(string $original, string $hash, array $defaultEnv): string
-    {
+    private function replaceEnvVars(
+        string $original,
+        string $hash,
+        ?string $version,
+        array $defaultEnv
+    ): string {
+
         if (!$this->isValid()) {
             return $original;
         }
 
-        $replace = ['hash' => $hash, 'env' => $this->envResolver->env()];
+        $replace = [
+            'hash' => $hash,
+            'env' => $this->envResolver->env(),
+            'version' => $version,
+        ];
 
         $replaced = preg_replace_callback(
-            '~\$\{\s*(hash|env)\s*\}~i',
+            '~\$\{\s*(hash|env|version)\s*\}~i',
             static function (array $matches) use ($replace): string {
-                return $replace[(string)($matches[1] ?? '')] ?? '';
+                $key = strtolower((string)($matches[1] ?? ''));
+
+                return $replace[$key] ?? '';
             },
             $original
         );

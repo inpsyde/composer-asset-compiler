@@ -91,8 +91,9 @@ class Handler
         }
 
         $name = $asset->name();
+        $version = $asset->version();
         $environment = array_merge(array_filter($defaultEnv), array_filter($asset->env()));
-        $source = $config->source($hash, $environment);
+        $source = $config->source($hash, $environment, $version);
         $path = $asset->path();
         $target = $config->target();
 
@@ -110,7 +111,7 @@ class Handler
             $hash,
             $source,
             $this->filesystem->normalizePath("{$path}/{$target}"),
-            $config->config($hash, $environment)
+            $config->config($hash, $environment, $version)
         );
 
         if (!$saved) {

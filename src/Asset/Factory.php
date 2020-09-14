@@ -125,6 +125,6 @@ class Factory
 
         $path = (string)$this->filesystem->normalizePath($installPath);
 
-        return Asset::new($package->getName(), $config, $path);
+        return Asset::new($package->getName(), $config, $path, $package->getPrettyVersion());
     }
 }
