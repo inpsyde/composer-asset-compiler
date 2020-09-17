@@ -69,13 +69,32 @@ class ArchiveDownloader
     public function download(PackageInterface $package, string $path): bool
     {
         try {
-            $this->downloader->download($package, $path, false);
+            $tempDir = dirname($path) . '/.tmp' . substr(md5(uniqid($path, true)), 0, 8);
+            $this->filesystem->ensureDirectoryExists($tempDir);
+            $this->downloader->download($package, $tempDir, false);
+            $this->filesystem->ensureDirectoryExists($path);
+            foreach (glob("{$tempDir}/*") as $item) {
+                if (!is_dir($item) && !is_file($item)) {
+                    continue;
+                }
+
+                $itemPath = $this->filesystem->normalizePath("{$path}/" . basename($item));
+                if (is_dir($itemPath) || is_file($item)) {
+                    $this->filesystem->remove($itemPath);
+                }
+
+                $this->filesystem->copy($item, $itemPath);
+            }
 
             return true;
         } catch (\Throwable $throwable) {
             $this->io->writeVerboseError('  ' . $throwable->getMessage());
 
             return false;
+        } finally {
+            if (isset($tempDir)) {
+                $this->filesystem->removeDirectory($tempDir);
+            }
         }
     }
 }
