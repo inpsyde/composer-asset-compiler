@@ -12,7 +12,6 @@ use Inpsyde\AssetsCompiler\Util\Io;
 class GithubReleaseZipAdapter implements Adapter
 {
     private const REPO = 'repository';
-    private const FILE_FORMAT = 'file-format';
     private const TOKEN = 'token';
     private const TOKEN_USER = 'user';
 
@@ -139,8 +138,7 @@ class GithubReleaseZipAdapter implements Adapter
 
         $auth = ($user && $token) ? "{$user}:{$token}@" : '';
 
-        $format = $config[self::FILE_FORMAT] ?? 'assets';
-        $source = "https://{$auth}github.com/{$repo}/releases/download/{$version}/{$format}.zip";
+        $source = "https://{$auth}github.com/{$repo}/releases/download/{$version}/{$source}.zip";
         if (!filter_var($source, FILTER_VALIDATE_URL)) {
             return null;
         }
