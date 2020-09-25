@@ -183,6 +183,7 @@ class ArchiveDownloaderAdapter implements Adapter
                 ?? $config['auth']['pass']
                 ?? $config['auth']['secret']
                 ?? $config['auth']['pwd']
+                ?? $config['auth']['token']
                 ?? '';
             is_string($pass) or $pass = '';
             $pass and $pass = rawurlencode($pass);
