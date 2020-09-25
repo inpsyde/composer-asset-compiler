@@ -25,6 +25,7 @@ use Inpsyde\AssetsCompiler\Asset\Processor;
 use Inpsyde\AssetsCompiler\Asset\RootConfig;
 use Inpsyde\AssetsCompiler\PreCompilation\ArchiveDownloaderAdapter;
 use Inpsyde\AssetsCompiler\PreCompilation\GithubActionArtifactAdapter;
+use Inpsyde\AssetsCompiler\PreCompilation\GithubReleaseZipAdapter;
 use Inpsyde\AssetsCompiler\PreCompilation\Handler;
 use Inpsyde\AssetsCompiler\Process\Factory as ProcessFactory;
 use Inpsyde\AssetsCompiler\Process\ParallelManager;
@@ -468,6 +469,24 @@ final class Factory
     }
 
     /**
+     * @return GithubReleaseZipAdapter
+     */
+    public function githubReleaseZipAdapter(): GithubReleaseZipAdapter
+    {
+        if (empty($this->objects[__FUNCTION__])) {
+            $this->objects[__FUNCTION__] = GithubReleaseZipAdapter::new(
+                $this->io(),
+                $this->archiveDownloaderFactory()
+            );
+        }
+
+        /** @var GithubReleaseZipAdapter $adapter */
+        $adapter = $this->objects[__FUNCTION__];
+
+        return $adapter;
+    }
+
+    /**
      * @return Handler
      */
     public function preCompilationHandler(): Handler
@@ -476,7 +495,8 @@ final class Factory
             $handler = Handler::new($this->hashBuilder(), $this->io(), $this->filesystem());
             $handler = $handler
                 ->registerAdapter($this->archiveDownloaderAdapter())
-                ->registerAdapter($this->githubArtifactAdapter());
+                ->registerAdapter($this->githubArtifactAdapter())
+                ->registerAdapter($this->githubReleaseZipAdapter());
             $this->objects[__FUNCTION__] = $handler;
         }
 

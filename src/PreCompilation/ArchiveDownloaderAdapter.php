@@ -56,9 +56,12 @@ class ArchiveDownloaderAdapter implements Adapter
     }
 
     /**
+     * @param string $name
+     * @param string $hash
      * @param string $source
      * @param string $targetDir
      * @param array $config
+     * @param string|null $version
      * @return bool
      */
     public function tryPrecompiled(
@@ -66,7 +69,8 @@ class ArchiveDownloaderAdapter implements Adapter
         string $hash,
         string $source,
         string $targetDir,
-        array $config
+        array $config,
+        ?string $version
     ): bool {
 
         $type = $this->determineType($config, $source);

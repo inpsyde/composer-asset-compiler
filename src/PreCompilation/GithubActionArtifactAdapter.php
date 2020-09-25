@@ -71,9 +71,12 @@ class GithubActionArtifactAdapter implements Adapter
     }
 
     /**
+     * @param string $name
+     * @param string $hash
      * @param string $source
      * @param string $targetDir
      * @param array $config
+     * @param string|null $version
      * @return bool
      */
     public function tryPrecompiled(
@@ -81,7 +84,8 @@ class GithubActionArtifactAdapter implements Adapter
         string $hash,
         string $source,
         string $targetDir,
-        array $config
+        array $config,
+        ?string $version
     ): bool {
 
         try {
@@ -135,7 +139,7 @@ class GithubActionArtifactAdapter implements Adapter
         $safe = filter_var($endpoint, FILTER_SANITIZE_URL);
         $safe && is_string($safe) or $safe = null;
 
-        return $safe ? [$safe, $userRepo[1]] : [null, null];
+        return $safe ? [$safe, reset($userRepo) ?: null] : [null, null];
     }
 
     /**
