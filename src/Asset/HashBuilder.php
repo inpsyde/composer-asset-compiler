@@ -75,8 +75,6 @@ final class HashBuilder
 
         $data = [
             $hashes,
-            $this->envType,
-            $asset->isUpdate() ? 'update' : 'install',
             EnvResolver::replaceEnvVariables(
                 implode(' ', $asset->script()),
                 array_merge(array_filter($this->environment), array_filter($asset->env()))
