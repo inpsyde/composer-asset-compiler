@@ -476,6 +476,7 @@ final class Factory
         if (empty($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = GithubReleaseZipAdapter::new(
                 $this->io(),
+                $this->httpClient(),
                 $this->archiveDownloaderFactory()
             );
         }

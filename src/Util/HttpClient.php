@@ -55,9 +55,9 @@ class HttpClient
             if ($authorization) {
                 isset($options['http']) or $options['http'] = [];
                 /** @psalm-suppress MixedArrayAssignment */
-                isset($options['http']['headers']) or $options['http']['headers'] = [];
+                isset($options['http']['header']) or $options['http']['header'] = [];
                 /** @psalm-suppress MixedArrayAssignment */
-                $options['http']['headers'][] = "Authorization: {$authorization}";
+                $options['http']['header'][] = "Authorization: {$authorization}";
             }
 
             $origin = (string)RemoteFilesystem::getOrigin($url);
