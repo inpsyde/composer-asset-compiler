@@ -35,7 +35,7 @@ class GithubReleaseZipAdapter implements Adapter
      * @param Io $io
      * @param HttpClient $client
      * @param ArchiveDownloaderFactory $archiveDownloaderFactory
-     * @return GithubActionArtifactAdapter
+     * @return GithubReleaseZipAdapter
      */
     public static function new(
         Io $io,

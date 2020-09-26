@@ -7,6 +7,7 @@ namespace Inpsyde\AssetsCompiler\Util;
 use Composer\Downloader\ArchiveDownloader as ComposerArchiveDownloader;
 use Composer\Package\PackageInterface;
 use Composer\Util\Filesystem;
+use Symfony\Component\Finder\Finder;
 
 class ArchiveDownloader
 {
@@ -73,20 +74,23 @@ class ArchiveDownloader
             $this->filesystem->ensureDirectoryExists($tempDir);
             $this->downloader->download($package, $tempDir, false);
             $this->filesystem->ensureDirectoryExists($path);
-            foreach (glob("{$tempDir}/*") as $item) {
-                if (!is_dir($item) && !is_file($item)) {
-                    continue;
+
+            $finder = new Finder();
+            $finder->in($tempDir)->ignoreVCS(true)->ignoreUnreadableDirs()->depth('== 0');
+
+            $errors = 0;
+            /** @var \Symfony\Component\Finder\SplFileInfo $item */
+            foreach ($finder as $item) {
+                $basename = $item->getBasename();
+                $targetPath = $this->filesystem->normalizePath("{$path}/{$basename}");
+                if (is_dir($targetPath) || is_file($targetPath)) {
+                    $this->filesystem->remove($targetPath);
                 }
 
-                $itemPath = $this->filesystem->normalizePath("{$path}/" . basename($item));
-                if (is_dir($itemPath) || is_file($item)) {
-                    $this->filesystem->remove($itemPath);
-                }
-
-                $this->filesystem->copy($item, $itemPath);
+                $this->filesystem->copy($item->getPathname(), $targetPath) or $errors++;
             }
 
-            return true;
+            return $errors === 0;
         } catch (\Throwable $throwable) {
             $this->io->writeVerboseError('  ' . $throwable->getMessage());
 
