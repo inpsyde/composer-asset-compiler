@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Inpsyde\AssetsCompiler\PreCompilation;
 
 use Composer\Package\Package;
+use Inpsyde\AssetsCompiler\Asset\Asset;
 use Inpsyde\AssetsCompiler\Util\ArchiveDownloader;
 use Inpsyde\AssetsCompiler\Util\ArchiveDownloaderFactory;
 use Inpsyde\AssetsCompiler\Util\HttpClient;
@@ -67,25 +68,23 @@ class GithubActionArtifactAdapter implements Adapter
     }
 
     /**
-     * @param string $name
+     * @param Asset $asset
      * @param string $hash
      * @param string $source
      * @param string $targetDir
      * @param array $config
-     * @param string|null $version
      * @return bool
      */
     public function tryPrecompiled(
-        string $name,
+        Asset $asset,
         string $hash,
         string $source,
         string $targetDir,
-        array $config,
-        ?string $version
+        array $config
     ): bool {
 
         try {
-            $ghConfig = GitHubConfig::new($config);
+            $ghConfig = GitHubConfig::new($config, $asset->env());
 
             [$endpoint, $owner] = $this->buildEndpoint($source, $ghConfig);
             if (!$endpoint || !$owner) {
@@ -97,7 +96,7 @@ class GithubActionArtifactAdapter implements Adapter
             $distUrl = $this->retrieveArchiveUrl($source, $endpoint, $owner, $ghConfig);
 
             $type = ArchiveDownloader::ZIP;
-            $package = new Package($name, 'stable', 'stable');
+            $package = new Package($asset->name(), 'stable', 'stable');
             $package->setDistType($type);
             $package->setDistUrl($distUrl);
             $package->setTargetDir($targetDir);

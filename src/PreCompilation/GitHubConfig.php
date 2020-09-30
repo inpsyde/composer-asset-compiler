@@ -21,19 +21,19 @@ class GitHubConfig
      * @param array $config
      * @return GitHubConfig
      */
-    public static function new(array $config): GitHubConfig
+    public static function new(array $config, array $env = []): GitHubConfig
     {
-        return new self($config);
+        return new self($config, $env);
     }
 
     /**
      * @param array $config
      */
-    private function __construct(array $config)
+    private function __construct(array $config, array $env)
     {
-        $token = $config[self::TOKEN] ?? EnvResolver::readEnv('GITHUB_USER_TOKEN') ?? null;
-        $user = $config[self::TOKEN_USER] ?? EnvResolver::readEnv('GITHUB_USER') ?? null;
-        $repo = $config[self::REPO] ?? EnvResolver::readEnv('GITHUB_REPOSITORY') ?? null;
+        $token = $config[self::TOKEN] ?? EnvResolver::readEnv('GITHUB_USER_TOKEN', $env) ?? null;
+        $user = $config[self::TOKEN_USER] ?? EnvResolver::readEnv('GITHUB_USER', $env) ?? null;
+        $repo = $config[self::REPO] ?? EnvResolver::readEnv('GITHUB_REPOSITORY', $env) ?? null;
 
         $this->config = [
             self::TOKEN => $token && is_string($token) ? $token : null,
@@ -47,7 +47,7 @@ class GitHubConfig
      */
     public function token(): ?string
     {
-        $this->config[self::TOKEN];
+        return $this->config[self::TOKEN];
     }
 
     /**
@@ -55,7 +55,7 @@ class GitHubConfig
      */
     public function user(): ?string
     {
-        $this->config[self::TOKEN_USER];
+        return $this->config[self::TOKEN_USER];
     }
 
     /**
@@ -63,6 +63,6 @@ class GitHubConfig
      */
     public function repo(): ?string
     {
-        $this->config[self::REPO];
+        return $this->config[self::REPO];
     }
 }

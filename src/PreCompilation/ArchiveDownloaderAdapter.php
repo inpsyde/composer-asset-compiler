@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Inpsyde\AssetsCompiler\PreCompilation;
 
 use Composer\Package\Package;
+use Inpsyde\AssetsCompiler\Asset\Asset;
 use Inpsyde\AssetsCompiler\Util\ArchiveDownloader;
 use Inpsyde\AssetsCompiler\Util\ArchiveDownloaderFactory;
 use Inpsyde\AssetsCompiler\Util\Io;
@@ -56,21 +57,19 @@ class ArchiveDownloaderAdapter implements Adapter
     }
 
     /**
-     * @param string $name
+     * @param Asset $asset
      * @param string $hash
      * @param string $source
      * @param string $targetDir
      * @param array $config
-     * @param string|null $version
      * @return bool
      */
     public function tryPrecompiled(
-        string $name,
+        Asset $asset,
         string $hash,
         string $source,
         string $targetDir,
-        array $config,
-        ?string $version
+        array $config
     ): bool {
 
         $type = $this->determineType($config, $source);
@@ -93,7 +92,7 @@ class ArchiveDownloaderAdapter implements Adapter
         }
 
         try {
-            $package = new Package($name, 'stable', 'stable');
+            $package = new Package($asset->name(), 'stable', 'stable');
             $package->setDistType($type);
             $package->setDistUrl($distUrl);
             $package->setTargetDir($targetDir);

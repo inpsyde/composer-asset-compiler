@@ -90,7 +90,6 @@ class Handler
             return false;
         }
 
-        $name = $asset->name();
         $version = $asset->version();
         $environment = array_merge(array_filter($defaultEnv), array_filter($asset->env()));
         $source = $config->source($hash, $environment, $version);
@@ -101,18 +100,19 @@ class Handler
             return false;
         }
 
+        $name = $asset->name();
+
         $adapterId = $adapter->id();
         $this->io->writeVerboseComment(
             "Attempting usage of pre-processed data for '{$name}' using {$adapterId} adapter..."
         );
 
         $saved = $adapter->tryPrecompiled(
-            $name,
+            $asset,
             $hash,
             $source,
             $this->filesystem->normalizePath("{$path}/{$target}"),
-            $config->config($hash, $environment, $version),
-            $version
+            $config->config($hash, $environment, $version)
         );
 
         if (!$saved) {

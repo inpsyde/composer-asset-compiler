@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\PreCompilation;
 
+use Inpsyde\AssetsCompiler\Asset\Asset;
+
 interface Adapter
 {
 
@@ -13,20 +15,18 @@ interface Adapter
     public function id(): string;
 
     /**
-     * @param string $name
+     * @param Asset $asset
      * @param string $hash
      * @param string $source
      * @param string $targetDir
      * @param array $config
-     * @param string|null $version
      * @return bool
      */
     public function tryPrecompiled(
-        string $name,
+        Asset $asset,
         string $hash,
         string $source,
         string $targetDir,
-        array $config,
-        ?string $version
+        array $config
     ): bool;
 }
