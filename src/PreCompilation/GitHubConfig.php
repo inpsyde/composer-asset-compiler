@@ -31,9 +31,18 @@ class GitHubConfig
      */
     private function __construct(array $config, array $env)
     {
-        $token = $config[self::TOKEN] ?? EnvResolver::readEnv('GITHUB_USER_TOKEN', $env) ?? null;
-        $user = $config[self::TOKEN_USER] ?? EnvResolver::readEnv('GITHUB_USER_NAME', $env) ?? null;
-        $repo = $config[self::REPO] ?? EnvResolver::readEnv('GITHUB_REPOSITORY', $env) ?? null;
+        $user = $config[self::TOKEN_USER]
+            ?? EnvResolver::readEnv('GITHUB_USER_NAME', $env)
+            ?? EnvResolver::readEnv('GITHUB_ACTOR', $env)
+            ?? null;
+        $token = $config[self::TOKEN]
+            ?? EnvResolver::readEnv('GITHUB_API_TOKEN', $env)
+            ?? EnvResolver::readEnv('GITHUB_TOKEN', $env)
+            ?? null;
+        $repo = $config[self::REPO]
+            ?? EnvResolver::readEnv('GITHUB_API_REPOSITORY', $env)
+            ?? EnvResolver::readEnv('GITHUB_REPOSITORY', $env)
+            ?? null;
 
         $this->config = [
             self::TOKEN => $token && is_string($token) ? $token : null,
