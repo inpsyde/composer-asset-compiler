@@ -7,6 +7,6 @@ if (!file_exists(dirname(__DIR__)  . '/vendor/autoload.php')) {
 }
 
 putenv('TESTS_DIR=' . __DIR__);
-putenv('FIXTURES_DIR=' . __DIR__ . '/fixtures');
+putenv('RESOURCES_DIR=' . __DIR__ . '/resources');
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';

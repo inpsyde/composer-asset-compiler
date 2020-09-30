@@ -12,10 +12,6 @@ use Inpsyde\AssetsCompiler\Util\Io;
 
 class GithubReleaseZipAdapter implements Adapter
 {
-    private const REPO = 'repository';
-    private const TOKEN = 'token';
-    private const TOKEN_USER = 'user';
-
     /**
      * @var Io
      */
@@ -95,14 +91,16 @@ class GithubReleaseZipAdapter implements Adapter
                 return false;
             }
 
-            [$endpoint, $owner] = $this->buildEndpoint($source, $config, $version);
+            $ghConfig = GitHubConfig::new($config);
+
+            [$endpoint, $owner] = $this->buildEndpoint($source, $ghConfig, $version);
             if (!$endpoint || !$owner) {
                 $this->io->writeVerboseError('  Invalid configuration for GitHub release zip.');
 
                 return false;
             }
 
-            $distUrl = $this->retrieveArchiveUrl($source, $endpoint, $owner, $config);
+            $distUrl = $this->retrieveArchiveUrl($source, $endpoint, $owner, $ghConfig);
 
             $type = ArchiveDownloader::ZIP;
             $package = new Package($name, 'stable', 'stable');
@@ -130,17 +128,17 @@ class GithubReleaseZipAdapter implements Adapter
 
     /**
      * @param string $source
-     * @param array $config
+     * @param GitHubConfig $config
      * @param string $version
      * @return array{string,string}|array{null,null}
      */
-    private function buildEndpoint(string $source, array $config, string $version): array
+    private function buildEndpoint(string $source, GitHubConfig $config, string $version): array
     {
         if (!$source) {
             return [null, null];
         }
 
-        $repo = $config[self::REPO] ?? null;
+        $repo = $config->repo();
         $userRepo = ($repo && is_string($repo)) ? explode('/', $repo) : null;
         if (!$userRepo || count($userRepo) !== 2) {
             return [null, null];
@@ -159,21 +157,21 @@ class GithubReleaseZipAdapter implements Adapter
 
     /**
      * @param string $source
-     * @param array $config
+     * @param GitHubConfig $config
      * @return string
      */
     private function retrieveArchiveUrl(
         string $assetsName,
         string $endpoint,
         string $owner,
-        array $config
+        GitHubConfig $config
     ): string {
 
-        $token = $config[self::TOKEN] ?? null;
-        $repo = $config[self::REPO] ?? '';
+        $token = $config->token();
+        $repo = $config->repo() ?? '';
         $authString = '';
         if ($token) {
-            $user = $config[self::TOKEN_USER] ?? $owner;
+            $user = $config->user() ?? $owner;
             $authString = "https://{$user}:{$token}@";
             $endpoint = (string)preg_replace('~^https://(.+)~', $authString . '$1', $endpoint);
         }

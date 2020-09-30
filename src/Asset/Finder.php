@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\Asset;
 
+use Composer\Installer\InstallationManager;
 use Composer\Package\PackageInterface;
 use Composer\Package\RootPackageInterface;
 use Composer\Repository\RepositoryInterface;
@@ -18,6 +19,7 @@ use Inpsyde\AssetsCompiler\Util\EnvResolver;
 
 class Finder
 {
+
     /**
      * @var array
      */
@@ -34,6 +36,11 @@ class Finder
     private $defaults;
 
     /**
+     * @var string
+     */
+    private $rootDir;
+
+    /**
      * @var bool
      */
     private $stopOnFailure;
@@ -42,6 +49,7 @@ class Finder
      * @param array $packageData
      * @param EnvResolver $envResolver
      * @param Defaults $defaults
+     * @param string $rootDir
      * @param bool $stopOnFailure
      * @return Finder
      */
@@ -49,28 +57,32 @@ class Finder
         array $packageData,
         EnvResolver $envResolver,
         Defaults $defaults,
+        string $rootDir,
         bool $stopOnFailure
     ): Finder {
 
-        return new static($packageData, $envResolver, $defaults, $stopOnFailure);
+        return new self($packageData, $envResolver, $defaults, $rootDir, $stopOnFailure);
     }
 
     /**
      * @param array $packageData
      * @param EnvResolver $envResolver
      * @param Defaults $defaults
+     * @param string $rootDir
      * @param bool $stopOnFailure
      */
-    final private function __construct(
+    private function __construct(
         array $packageData,
         EnvResolver $envResolver,
         Defaults $defaults,
+        string $rootDir,
         bool $stopOnFailure
     ) {
 
         $this->packagesData = $envResolver->removeEnvConfig($packageData);
         $this->envResolver = $envResolver;
         $this->defaults = $defaults;
+        $this->rootDir = $rootDir;
         $this->stopOnFailure = $stopOnFailure;
     }
 
@@ -165,7 +177,12 @@ class Finder
         Factory $assetFactory
     ): ?Asset {
 
-        $packageConfig = Config::forComposerPackage($root, $this->envResolver);
+        $packageConfig = Config::forComposerPackage(
+            $root,
+            $this->envResolver,
+            "{$this->rootDir}/" . RootConfig::CONFIG_FILE
+        );
+
         if (!$packageConfig->isRunnable()) {
             return null;
         }

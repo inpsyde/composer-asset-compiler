@@ -17,7 +17,6 @@ use Composer\Util\Filesystem;
 use Composer\Util\ProcessExecutor;
 use Inpsyde\AssetsCompiler\Commands\Finder;
 use Inpsyde\AssetsCompiler\Asset\Config;
-use Inpsyde\AssetsCompiler\Asset\Asset;
 use Inpsyde\AssetsCompiler\Asset\RootConfig;
 use Inpsyde\AssetsCompiler\Tests\TestCase;
 use Inpsyde\AssetsCompiler\Util\EnvResolver;
@@ -196,7 +195,8 @@ class FinderTest extends TestCase
         $config = RootConfig::new(
             $package,
             EnvResolver::new('test', true),
-            new Filesystem()
+            new Filesystem(),
+            __DIR__
         );
 
         return Finder::new(

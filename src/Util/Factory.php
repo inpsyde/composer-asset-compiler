@@ -227,7 +227,8 @@ final class Factory
             $this->objects[__FUNCTION__] = RootConfig::new(
                 $this->composerRootPackage(),
                 $this->envResolver(),
-                $this->filesystem()
+                $this->filesystem(),
+                $this->rootFolder()
             );
         }
 
@@ -345,6 +346,7 @@ final class Factory
                 $this->config()->packagesData(),
                 $this->envResolver(),
                 $this->defaults(),
+                $this->rootFolder(),
                 $this->config()->stopOnFailure()
             );
         }
@@ -356,19 +358,27 @@ final class Factory
     }
 
     /**
+     * @return string
+     */
+    public function rootFolder(): string
+    {
+        /** @var \Composer\Config\ConfigSourceInterface $source */
+        $source = $this->composerConfig()->getConfigSource();
+
+        return $this->filesystem()->normalizePath(dirname((string)$source->getName()));
+    }
+
+    /**
      * @return AssetFactory
      */
     public function assetFactory(): AssetFactory
     {
         if (empty($this->objects[__FUNCTION__])) {
-            /** @var \Composer\Config\ConfigSourceInterface $source */
-            $source = $this->composerConfig()->getConfigSource();
-
             $this->objects[__FUNCTION__] = AssetFactory::new(
                 $this->envResolver(),
                 $this->filesystem(),
                 $this->composer->getInstallationManager(),
-                dirname((string)$source->getName())
+                $this->rootFolder()
             );
         }
 

@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\Asset;
 
+use Composer\Json\JsonFile;
 use Composer\Package\PackageInterface;
 use Composer\Package\RootPackageInterface;
 use Inpsyde\AssetsCompiler\Util\EnvResolver;
@@ -108,14 +109,18 @@ class Config
     /**
      * @param PackageInterface $package
      * @param EnvResolver $envResolver
+     * @param string $configFile
      * @return Config
      */
     public static function forComposerPackage(
         PackageInterface $package,
-        EnvResolver $envResolver
+        EnvResolver $envResolver,
+        string $configFile
     ): Config {
 
-        $raw = $package->getExtra()[self::EXTRA_KEY] ?? [];
+        $raw = file_exists($configFile)
+            ? JsonFile::parseJson(file_get_contents($configFile))
+            : $package->getExtra()[self::EXTRA_KEY] ?? [];
 
         switch (true) {
             case ($raw === false):

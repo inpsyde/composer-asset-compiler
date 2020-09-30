@@ -11,12 +11,14 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\Asset;
 
+use Composer\Json\JsonFile;
 use Composer\Package\RootPackageInterface;
 use Composer\Util\Filesystem;
 use Inpsyde\AssetsCompiler\Util\EnvResolver;
 
 final class RootConfig
 {
+
     public const AUTO_RUN = 'auto-run';
     public const COMMANDS = 'commands';
     public const DEFAULTS = 'defaults';
@@ -26,6 +28,8 @@ final class RootConfig
     public const AUTO_DISCOVER = 'auto-discover';
     public const MAX_PROCESSES = 'max-processes';
     public const PROCESSES_POLL = 'processes-poll';
+
+    public const CONFIG_FILE = 'assets-compiler.json';
 
     private const WIPE_FORCE = 'force';
 
@@ -53,15 +57,17 @@ final class RootConfig
      * @param RootPackageInterface $package
      * @param EnvResolver $envResolver
      * @param Filesystem $filesystem
+     * @param string $rootDir
      * @return RootConfig
      */
     public static function new(
         RootPackageInterface $package,
         EnvResolver $envResolver,
-        Filesystem $filesystem
+        Filesystem $filesystem,
+        string $rootDir
     ): RootConfig {
 
-        return new static($package, $envResolver, $filesystem);
+        return new static($package, $envResolver, $filesystem, $rootDir);
     }
 
     /**
@@ -72,12 +78,17 @@ final class RootConfig
     private function __construct(
         RootPackageInterface $package,
         EnvResolver $envResolver,
-        Filesystem $filesystem
+        Filesystem $filesystem,
+        string $rootDir
     ) {
 
-        $data = $package->getExtra()[Config::EXTRA_KEY] ?? null;
+        $configFile = "{$rootDir}/" . self::CONFIG_FILE;
+        $data = file_exists($configFile)
+            ? JsonFile::parseJson(file_get_contents($configFile))
+            : $package->getExtra()[Config::EXTRA_KEY] ?? null;
+
         $this->raw = is_array($data) ? $data : [];
-        $this->rootPackageConfig = Config::forComposerPackage($package, $envResolver);
+        $this->rootPackageConfig = Config::forComposerPackage($package, $envResolver, $configFile);
         $this->envResolver = $envResolver;
         $this->filesystem = $filesystem;
     }

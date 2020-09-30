@@ -12,10 +12,6 @@ use Inpsyde\AssetsCompiler\Util\Io;
 
 class GithubActionArtifactAdapter implements Adapter
 {
-    private const REPO = 'repository';
-    private const TOKEN = 'token';
-    private const TOKEN_USER = 'user';
-
     /**
      * @var Io
      */
@@ -89,14 +85,16 @@ class GithubActionArtifactAdapter implements Adapter
     ): bool {
 
         try {
-            [$endpoint, $owner] = $this->buildEndpoint($source, $config);
+            $ghConfig = GitHubConfig::new($config);
+
+            [$endpoint, $owner] = $this->buildEndpoint($source, $ghConfig);
             if (!$endpoint || !$owner) {
                 $this->io->writeVerboseError('  Invalid configuration for GitHub artifact.');
 
                 return false;
             }
 
-            $distUrl = $this->retrieveArchiveUrl($source, $endpoint, $owner, $config);
+            $distUrl = $this->retrieveArchiveUrl($source, $endpoint, $owner, $ghConfig);
 
             $type = ArchiveDownloader::ZIP;
             $package = new Package($name, 'stable', 'stable');
@@ -115,16 +113,16 @@ class GithubActionArtifactAdapter implements Adapter
 
     /**
      * @param string $source
-     * @param array $config
+     * @param GitHubConfig $config
      * @return array{string,string}|array{null,null}
      */
-    private function buildEndpoint(string $source, array $config): array
+    private function buildEndpoint(string $source, GitHubConfig $config): array
     {
         if (!$source) {
             return [null, null];
         }
 
-        $repo = $config[self::REPO] ?? null;
+        $repo = $config->repo();
         $userRepo = ($repo && is_string($repo)) ? explode('/', $repo) : null;
         if (!$userRepo || count($userRepo) !== 2) {
             return [null, null];
@@ -143,22 +141,24 @@ class GithubActionArtifactAdapter implements Adapter
     }
 
     /**
-     * @param string $source
-     * @param array $config
+     * @param string $artifactName
+     * @param string $endpoint
+     * @param string $owner
+     * @param GitHubConfig $config
      * @return string
      */
     private function retrieveArchiveUrl(
         string $artifactName,
         string $endpoint,
         string $owner,
-        array $config
+        GitHubConfig $config
     ): string {
 
-        $token = $config[self::TOKEN] ?? null;
-        $repo = $config[self::REPO] ?? '';
+        $token = $config->token();
+        $repo = $config->repo() ?? '';
         $authString = '';
         if ($token) {
-            $user = $config[self::TOKEN_USER] ?? $owner;
+            $user = $config->user() ?? $owner;
             $authString = "https://{$user}:{$token}@";
             $endpoint = (string)preg_replace('~^https://(.+)~', $authString . '$1', $endpoint);
         }

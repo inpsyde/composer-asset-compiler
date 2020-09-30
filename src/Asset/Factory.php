@@ -92,9 +92,19 @@ class Factory
             return null;
         }
 
+        /** @var Config $config */
+
+        $installPath = ($package instanceof RootPackageInterface)
+            ? $this->rootDir
+            : $this->installationManager->getInstallPath($package);
+
         /** @var Config|null $config */
         if (!$config || $config->usePackageLevelOrDefault()) {
-            $packageLevelConfig = Config::forComposerPackage($package, $this->envResolver);
+            $packageLevelConfig = Config::forComposerPackage(
+                $package,
+                $this->envResolver,
+                "{$installPath}/" . RootConfig::CONFIG_FILE
+            );
 
             // If no root-level config and no package-level config there's nothing we can do.
             if (!$rootLevelPackageConfig && !$packageLevelConfig->isValid()) {
@@ -116,12 +126,6 @@ class Factory
         if (!$config || $config->isForcedDefault()) {
             $config = $defaults->toConfig();
         }
-
-        /** @var Config $config */
-
-        $installPath = ($package instanceof RootPackageInterface)
-            ? $this->rootDir
-            : $this->installationManager->getInstallPath($package);
 
         $path = (string)$this->filesystem->normalizePath($installPath);
 

@@ -258,24 +258,55 @@ JSON;
     }
 
     /**
+     * @test
+     */
+    public function testLoadConfigFromFile(): void
+    {
+        $config = $this->factoryConfig(null, 'test', false, getenv('RESOURCES_DIR'));
+
+        $packages = $config->packagesData();
+        $autoDiscover = $config->autoDiscover();
+        $autoRun = $config->autoRun();
+        [$command, $isDefault] = $config->commands();
+        $defaults = $config->defaults();
+        $defaultEnv = $config->defaultEnv();
+        $stopOnFailure = $config->stopOnFailure();
+        $maxProcesses = $config->maxProcesses();
+        $processesPoll = $config->processesPoll();
+
+        static::assertIsArray($packages);
+        static::assertFalse($autoDiscover);
+        static::assertFalse($autoRun);
+        static::assertSame('npm', $command);
+        static::assertTrue($isDefault);
+        static::assertNull($defaults);
+        static::assertSame([], $defaultEnv);
+        static::assertTrue($stopOnFailure);
+        static::assertSame(4, $maxProcesses);
+        static::assertSame(100000, $processesPoll);
+    }
+
+    /**
      * @param string $json
      * @param string|null $env
      * @param bool $isDev
      * @return RootConfig
      */
     private function factoryConfig(
-        string $json,
+        ?string $json,
         ?string $env = 'test',
-        bool $isDev = false
+        bool $isDev = false,
+        ?string $rootDir = null
     ): RootConfig {
 
         $root = new RootPackage('company/my-root-package', '1.0', '1.0.0.0');
-        $root->setExtra((array)json_decode($json, true));
+        $json and $root->setExtra((array)json_decode($json, true));
 
         return RootConfig::new(
             $root,
             EnvResolver::new($env, $isDev),
-            $this->filesystem
+            $this->filesystem,
+            $rootDir ?? __DIR__
         );
     }
 }

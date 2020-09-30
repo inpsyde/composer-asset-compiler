@@ -197,7 +197,7 @@ class FinderTest extends TestCase
         $envResolver = EnvResolver::new($env, $isDev);
         $filesystem = new Filesystem();
 
-        $config = RootConfig::new($root, $envResolver, $filesystem);
+        $config = RootConfig::new($root, $envResolver, $filesystem, __DIR__);
 
         $packagesJson = (new vfsStreamFile('package.json'))->withContent('{}');
         $dir = vfsStream::setup('exampleDir');
@@ -215,6 +215,7 @@ class FinderTest extends TestCase
             $config->packagesData(),
             $envResolver,
             Defaults::new(Config::forAssetConfigInRoot($config->defaults(), $envResolver)),
+            __DIR__,
             $config->stopOnFailure()
         );
 
