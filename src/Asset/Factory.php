@@ -86,10 +86,18 @@ class Factory
         Defaults $defaults
     ): ?Asset {
 
-        $config = $rootLevelPackageConfig;
-
-        if ($config && $config->isForcedDefault() && !$defaults->isValid()) {
+        $defaultForced = $rootLevelPackageConfig && $rootLevelPackageConfig->isForcedDefault();
+        $defaultConfig = $defaults->isValid() ? $defaults->toConfig() : null;
+        if ($defaultForced && !$defaultConfig->isRunnable()) {
             return null;
+        }
+
+        /** @var Config|null $config */
+        $config = null;
+        if ($defaultForced) {
+            $config = $defaultConfig;
+        } elseif ($rootLevelPackageConfig && $rootLevelPackageConfig->isRunnable()) {
+            $config = $rootLevelPackageConfig;
         }
 
         /** @var Config $config */
@@ -99,32 +107,28 @@ class Factory
             : $this->installationManager->getInstallPath($package);
 
         /** @var Config|null $config */
-        if (!$config || $config->usePackageLevelOrDefault()) {
+        if (
+            !$config
+            && (!$rootLevelPackageConfig || $rootLevelPackageConfig->usePackageLevelOrDefault())
+        ) {
             $packageLevelConfig = Config::forComposerPackage(
                 $package,
                 $this->envResolver,
                 "{$installPath}/" . RootConfig::CONFIG_FILE
             );
 
+            $config = ($packageLevelConfig && $packageLevelConfig->isRunnable())
+                ? $packageLevelConfig
+                : $defaultConfig;
+
             // If no root-level config and no package-level config there's nothing we can do.
-            if (!$rootLevelPackageConfig && !$packageLevelConfig->isValid()) {
+            if (!$config) {
                 return null;
             }
-
-            $config = $packageLevelConfig;
         }
 
-        /** @var Config|null $config */
-        $validConfig = $config && $config->isRunnable();
-
-        // If we have no config and no default, no way we can create a valid package.
-        if (!$validConfig && !$defaults->isValid()) {
+        if (!$config || !$config->isRunnable()) {
             return null;
-        }
-
-        /** @var Config|null $config */
-        if (!$config || $config->isForcedDefault()) {
-            $config = $defaults->toConfig();
         }
 
         $path = (string)$this->filesystem->normalizePath($installPath);

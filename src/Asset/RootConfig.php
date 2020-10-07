@@ -145,6 +145,10 @@ final class RootConfig
     public function defaults(): ?array
     {
         $config = $this->resolveByEnv(self::DEFAULTS, true, null);
+        if ($config && is_string($config)) {
+            $config = [Config::DEPENDENCIES => Config::INSTALL, Config::SCRIPT => $config];
+        }
+
         if (!$config || !is_array($config)) {
             return null;
         }
