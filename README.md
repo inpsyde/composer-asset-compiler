@@ -78,6 +78,8 @@ Both root-level and package-level configuration are done in the same way: by add
 }
 ```
 
+Alternatively it is possible to create a file named **`assets-compiler.json`** in the package root and Composer Asset Compiler will get configuration from there.
+
 
 
 ## Package-level configuration
@@ -465,6 +467,97 @@ For example, the following example leverages all of them:
 
 
 
+### Pre-compilation
+
+Installing and "compiling" assets for a package might be a time-consuming task.
+
+When this operarion needs to be done per each package required in a project, the deployment time might suffer a lot from that.
+
+To speed-up deployment, Composer Asset Compiler support the *"pre-compilation" workflow*, which can be summarized like this:
+
+- When a change happens in a package that needs asset compiling, an automated process (for example GitHub action, Travis, etc...) uses Composer Asset Compiler to compile assets for that package and store them somewhere accessible later
+- When a project requires that package, it recognizes that the assets for that package are already compiled and instead of installing and compiling dependencies will download the pre-compiled assets and make use of them.
+
+#### Assets hash
+
+The first issue with this workflow is to ensure that the pre-compiled assets are up-to-date with the changes in the package.
+
+One way to do that is to use release versions: when the version *x.y* of a package is created, assets could be compiled and saved as "release attachments" (see for example the documentation for GitHub).
+
+Another way is to make use of "assets hash". This is an hasch that Composer Asset Compiler can create based on:
+
+- the Composer Asset Compiler configuration
+- `package.json` content
+- Content of any of the file `package-lock.json`, `npm-shrinkwrap.json`, and `yarn.lock` assuming they are found.
+
+The asset can be calculated with a cusom command shipped by Composer Asset compiler, that is: `composer assets-hash`.
+
+#### Adapters
+
+The second issue with this workflow is that we need a reliable place where to store compiled assets.
+
+Composer Asset Compiler has the concept of "pre-compilation adapters", each adpater can retrieve compiled assets from different sources.
+
+At the moment, the supported adapters are the following:
+
+| ID                   | Description                                                  |
+| -------------------- | ------------------------------------------------------------ |
+| "archive"            | Downloads assets from archives at arbitrary URLs             |
+| "gh-action-artifact" | Downloads assets from [GitHub Actions artifacts](https://docs.github.com/en/free-pro-team@latest/actions/guides/storing-workflow-data-as-artifacts) |
+| "gh-release-zip"     | Downloads assets stored in [GitHub releases assets](https://docs.github.com/en/free-pro-team@latest/rest/reference/repos#get-a-release-asset) |
+
+Each of the adapters has the following configurations:
+
+- `source` The name or the URL of the file used as source for pre-compiled assets. can inlcude placeholdres like `${hash}` or `${version}` to dynamically rever to the hash or the version of the package. What this config has to contain depends on the adapter in use.
+- `target`, it is the relative path where to save the precompiled assets
+- `adapter`, the ID of the chosen adapater
+- `config`, an object of settings that are specific for each adapter
+
+#### Usage example
+
+For example, let's assume the following configuration is placed in the `assets-compiler.json` file in a package root folder:
+
+```json
+{
+    "script": "gulp",
+    "pre-compiled": {
+        "env": {
+            "root": {
+                "adapter": false
+            },
+            "$default": {
+                "source": "assets-${hash}",
+                "target": "./assets/",
+                "adapter": "gh-action-artifact",
+                "config": {
+                    "user": "john-doe",
+                    "token": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "repository": "john-doe/some-package"
+                }
+            }
+        }
+    }
+}
+```
+
+When the Composer Asset Compiler environment will be `root`, there's no pre-compilation adapter, so Composer Asset Compiler will install and compile assets as usual (in this case executing `gulp`).
+
+In all the other cases, before compiling assets, Composer Asset Compiler will attempt using pre-compiled assets stored in a GitHub action artifact whose name is `assets-${hash}.zip` (where `${hash}` is replaced by the result of `composer assets-hash`) in the repository `john-doe/some-package`, and using GitHub API credentials stored in `config.user` and `config.token`.
+
+If the artifact  is found, the adapter will download it and unzip in the `./assets/` folder and will do nothing else for the package.
+
+#### Config by env variables
+
+Both the artifact that deal with GitHub, also support configuration via environment variables, to avoid placing secrets in JSON files.
+
+For example:
+
+- the token can be stored in the env variable `GITHUB_API_TOKEN`.
+- the user can be stored in the env variable `GITHUB_USER_NAME`.
+- the repository can be  stored in the env variable `GITHUB_API_REPOSITORY`.
+
+
+
 ## Root-level configuration
 
 The root Composer package is, at any effect, a Composer package, meaning that all the package-level configuration described above will apply to root package as well.
@@ -485,7 +578,7 @@ The following table summarize them:
 
 | Configuration property | By env | Default  | Description                                                  |
 | ---------------------- | ------ | -------- | ------------------------------------------------------------ |
-| `auto-run`             | *yes*  | `true`   | Whether to start compilation of assets automatically after `composer install` / `composer update` are completed. |
+| `auto-run`             | *yes*  | `false`  | Whether to start compilation of assets automatically after `composer install` / `composer update` are completed. |
 | `packages`             | *no*   | `{}`     | The packages to process.                                     |
 | `auto-discover`        | *no*   | `true`   | Determine whether to search installed Composer dependencies for packages to find packages to process. |
 | `defaults`             | *yes*  | `{}`     | Default values for `dependencies` and `script` configuration for packages that don't provide them. |
