@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Inpsyde\AssetsCompiler\Util;
 
 use Composer\Composer;
+use Composer\Util\Http\Response;
+use Composer\Util\HttpDownloader;
 use Composer\Util\RemoteFilesystem;
 
 class HttpClient
@@ -16,7 +18,7 @@ class HttpClient
     private $io;
 
     /**
-     * @var RemoteFilesystem
+     * @var HttpDownloader|RemoteFilesystem
      */
     private $client;
 
@@ -37,6 +39,15 @@ class HttpClient
     private function __construct(Io $io, Composer $composer)
     {
         $this->io = $io;
+        if (is_callable([\Composer\Factory::class, 'createHttpDownloader'])) {
+            $this->client = \Composer\Factory::createHttpDownloader(
+                $io->composerIo(),
+                $composer->getConfig()
+            );
+
+            return;
+        }
+
         $this->client = \Composer\Factory::createRemoteFilesystem(
             $io->composerIo(),
             $composer->getConfig()
@@ -60,8 +71,19 @@ class HttpClient
                 $options['http']['header'][] = "Authorization: {$authorization}";
             }
 
-            $origin = (string)RemoteFilesystem::getOrigin($url);
-            $result = $this->client->getContents($origin, $url, false, $options);
+            $result = null;
+            if ($this->client instanceof HttpDownloader) {
+                /** @var Response $response */
+                $response = $this->client->get($url, $options);
+                $statusCode = $response->getStatusCode();
+                if ($statusCode > 199 && $statusCode < 300) {
+                    $result = $response->getBody();
+                }
+            } elseif ($this->client instanceof RemoteFilesystem) {
+                $origin = (string)RemoteFilesystem::getOrigin($url);
+                $result = $this->client->getContents($origin, $url, false, $options);
+            }
+
             if (!$result || !is_string($result)) {
                 throw new \Exception("Could not obtain a response from '{$url}'.");
             }

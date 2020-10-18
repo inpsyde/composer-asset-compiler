@@ -13,11 +13,12 @@
             "email": "g.mazzapica@inpsyde.com"
         }
     ],
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "require": {
         "php": ">= 7.2",
         "ext-json": "*",
-        "composer-plugin-api": "^1"
+        "composer-plugin-api": "^1 || ^2"
     },
     "autoload": {
         "psr-4": {
@@ -31,7 +32,7 @@
         }
     },
     "require-dev": {
-        "composer/composer": "^1",
+        "composer/composer": "^2",
         "phpunit/phpunit": "^8",
         "mockery/mockery": "^1",
         "inpsyde/php-coding-standards": "^1@dev",
