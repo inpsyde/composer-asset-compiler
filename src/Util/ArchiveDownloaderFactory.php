@@ -5,13 +5,9 @@ declare(strict_types=1);
 namespace Inpsyde\AssetsCompiler\Util;
 
 use Composer\Composer;
-use Composer\Downloader\RarDownloader;
-use Composer\Downloader\TarDownloader;
-use Composer\Downloader\XzDownloader;
-use Composer\Downloader\ZipDownloader;
 use Composer\Util\Filesystem;
 use Composer\Util\ProcessExecutor;
-use Composer\Util\RemoteFilesystem;
+use Composer\Util\SyncHelper;
 
 class ArchiveDownloaderFactory
 {
@@ -48,9 +44,14 @@ class ArchiveDownloaderFactory
     private $filesystem;
 
     /**
-     * @var RemoteFilesystem
+     * @var \Composer\Downloader\DownloadManager
      */
-    private $downloader;
+    private $downloadManager;
+
+    /**
+     * @var \Composer\Util\Loop|null
+     */
+    private $loop;
 
     /**
      * @param string $type
@@ -93,12 +94,12 @@ class ArchiveDownloaderFactory
 
         $this->io = $io;
         $this->config = $composer->getConfig();
+        $this->downloadManager = $composer->getDownloadManager();
+        if (is_callable([$composer, 'getLoop']) && class_exists(SyncHelper::class)) {
+            $this->loop = $composer->getLoop();
+        }
         $this->process = $executor;
         $this->filesystem = $filesystem;
-        $this->downloader = \Composer\Factory::createRemoteFilesystem(
-            $io->composerIo(),
-            $this->config
-        );
     }
 
     /**
@@ -115,31 +116,11 @@ class ArchiveDownloaderFactory
             throw new \Exception(sprintf("Invalid archive type: '%s'.", $type));
         }
 
-        $io = $this->io->composerIo();
-        $config =  $this->config;
-        $params = [$io, $config, null, null, $this->process, $this->downloader, $this->filesystem];
+        $downloader = $this->downloadManager->getDownloader($type);
 
-        switch (strtolower($type)) {
-            case ArchiveDownloader::RAR:
-                $downloader = new RarDownloader(...$params);
-                break;
-            case ArchiveDownloader::TAR:
-                $downloader = new TarDownloader(...$params);
-                break;
-            case ArchiveDownloader::XZ:
-                $downloader = new XzDownloader(...$params);
-                break;
-            case ArchiveDownloader::ZIP:
-            default:
-                $downloader = new ZipDownloader(...$params);
-                break;
-        }
-
-        $this->downloaders[$type] = ArchiveDownloader::new(
-            $downloader,
-            $this->io,
-            $this->filesystem
-        );
+        $this->downloaders[$type] = $this->loop
+            ? ArchiveDownloader::viaLoop($this->loop, $downloader, $this->io, $this->filesystem)
+            : ArchiveDownloader::forV1($downloader, $this->io, $this->filesystem);
 
         return $this->downloaders[$type];
     }
