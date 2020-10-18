@@ -87,13 +87,13 @@ class Factory
     ): ?Asset {
 
         $defaultForced = false;
-        $defaultAllowed = false;
+        $packageOrDefaultAllowed = false;
         if ($rootLevelPackageConfig) {
             $defaultForced = $rootLevelPackageConfig->isForcedDefault();
-            $defaultAllowed = $rootLevelPackageConfig->usePackageLevelOrDefault();
+            $packageOrDefaultAllowed = $rootLevelPackageConfig->usePackageLevelOrDefault();
         }
 
-        $defaultConfig = (($defaultForced || $defaultAllowed) && $defaults->isValid())
+        $defaultConfig = (($defaultForced || $packageOrDefaultAllowed) && $defaults->isValid())
             ? $defaults->toConfig()
             : null;
 
@@ -118,7 +118,7 @@ class Factory
             : $this->installationManager->getInstallPath($package);
 
         /** @var Config|null $config */
-        if (!$config) {
+        if (!$config && (!$rootLevelPackageConfig || $packageOrDefaultAllowed)) {
             $packageLevelConfig = Config::forComposerPackage(
                 $package,
                 $this->envResolver,
