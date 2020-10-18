@@ -119,7 +119,7 @@ class Config
     ): Config {
 
         $raw = file_exists($configFile)
-            ? JsonFile::parseJson(file_get_contents($configFile))
+            ? JsonFile::parseJson(file_get_contents($configFile) ?: '')
             : $package->getExtra()[self::EXTRA_KEY] ?? [];
 
         switch (true) {

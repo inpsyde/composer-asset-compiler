@@ -13,7 +13,7 @@ class GitHubConfig
     private const TOKEN_USER = 'user';
 
     /**
-     * @var array
+     * @var array<string, string|null>
      */
     private $config;
 

@@ -84,7 +84,7 @@ final class RootConfig
 
         $configFile = "{$rootDir}/" . self::CONFIG_FILE;
         $data = file_exists($configFile)
-            ? JsonFile::parseJson(file_get_contents($configFile))
+            ? JsonFile::parseJson(file_get_contents($configFile) ?: '')
             : $package->getExtra()[Config::EXTRA_KEY] ?? null;
 
         $this->raw = is_array($data) ? $data : [];

@@ -18,7 +18,7 @@ class HttpClient
     private $io;
 
     /**
-     * @var HttpDownloader|RemoteFilesystem
+     * @var HttpDownloader|RemoteFilesystem|mixed
      */
     private $client;
 
@@ -80,7 +80,9 @@ class HttpClient
                     $result = $response->getBody();
                 }
             } elseif ($this->client instanceof RemoteFilesystem) {
+                /** @psalm-suppress UndefinedMethod */
                 $origin = (string)RemoteFilesystem::getOrigin($url);
+                /** @psalm-suppress InternalMethod */
                 $result = $this->client->getContents($origin, $url, false, $options);
             }
 

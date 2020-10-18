@@ -95,6 +95,7 @@ class ArchiveDownloaderFactory
         $this->io = $io;
         $this->config = $composer->getConfig();
         $this->downloadManager = $composer->getDownloadManager();
+        /** @psalm-suppress RedundantCondition */
         if (is_callable([$composer, 'getLoop']) && class_exists(SyncHelper::class)) {
             $this->loop = $composer->getLoop();
         }

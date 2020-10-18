@@ -124,9 +124,7 @@ class Factory
                 $this->envResolver,
                 "{$installPath}/" . RootConfig::CONFIG_FILE
             );
-            if ($packageLevelConfig && $packageLevelConfig->isRunnable()) {
-                $config = $packageLevelConfig;
-            }
+            $packageLevelConfig->isRunnable() and $config = $packageLevelConfig;
         }
 
         if (!$config && $defaultConfig) {

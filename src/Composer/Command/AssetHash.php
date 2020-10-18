@@ -62,6 +62,7 @@ final class AssetHash extends BaseCommand
         // phpcs:enable
 
         try {
+            /** @var \Composer\Composer $composer */
             $composer = $this->getComposer(true, false);
             $io = $this->getIO();
             $noDev = (bool)$input->hasOption('no-dev');

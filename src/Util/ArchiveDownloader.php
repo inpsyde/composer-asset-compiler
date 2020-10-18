@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Inpsyde\AssetsCompiler\Util;
 
 use Composer\Downloader\DownloaderInterface;
+use Composer\Downloader\FileDownloader;
 use Composer\Package\PackageInterface;
 use Composer\Util\Filesystem;
 use Composer\Util\Loop;
@@ -77,16 +78,17 @@ class ArchiveDownloader
             PackageInterface $package,
             string $path
         ) use ($downloader): void {
-
-            /** @noinspection PhpParamsInspection */
-            $downloader->download($package, $path, false);
+            /** @psalm-suppress PossiblyFalseArgument */
+            ($downloader instanceof FileDownloader)
+                ? $downloader->download($package, $path, false)
+                : $downloader->download($package, $path);
         };
 
         return new self($downloadCallback, $io, $filesystem);
     }
 
     /**
-     * @param callable(PackageInterface,string):bool $downloadCallback
+     * @param callable(PackageInterface,string):void $downloadCallback
      * @param Io $io
      * @param Filesystem $filesystem
      */

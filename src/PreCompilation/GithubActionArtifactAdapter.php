@@ -122,7 +122,7 @@ class GithubActionArtifactAdapter implements Adapter
         }
 
         $repo = $config->repo();
-        $userRepo = ($repo && is_string($repo)) ? explode('/', $repo) : null;
+        $userRepo = $repo ? explode('/', $repo) : null;
         if (!$userRepo || count($userRepo) !== 2) {
             return [null, null];
         }

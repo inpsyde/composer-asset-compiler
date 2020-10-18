@@ -171,24 +171,6 @@ final class Factory
     }
 
     /**
-     * @return RemoteFilesystem
-     */
-    public function remoteFilesystem(): RemoteFilesystem
-    {
-        if (empty($this->objects[__FUNCTION__])) {
-            $this->objects[__FUNCTION__] = \Composer\Factory::createRemoteFilesystem(
-                $this->composerIo(),
-                $this->composerConfig()
-            );
-        }
-
-        /** @var RemoteFilesystem $filesystem */
-        $filesystem = $this->objects[__FUNCTION__];
-
-        return $filesystem;
-    }
-
-    /**
      * @return Io
      */
     public function io(): Io
