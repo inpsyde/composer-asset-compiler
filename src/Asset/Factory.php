@@ -86,45 +86,51 @@ class Factory
         Defaults $defaults
     ): ?Asset {
 
-        $defaultForced = $rootLevelPackageConfig && $rootLevelPackageConfig->isForcedDefault();
-        $defaultConfig = $defaults->isValid() ? $defaults->toConfig() : null;
-        if ($defaultForced && !$defaultConfig->isRunnable()) {
+        $defaultForced = false;
+        $defaultAllowed = false;
+        if ($rootLevelPackageConfig) {
+            $defaultForced = $rootLevelPackageConfig->isForcedDefault();
+            $defaultAllowed = $rootLevelPackageConfig->usePackageLevelOrDefault();
+        }
+
+        $defaultConfig = (($defaultForced || $defaultAllowed) && $defaults->isValid())
+            ? $defaults->toConfig()
+            : null;
+
+        if ($defaultForced && !$defaultConfig) {
             return null;
         }
+
+        $rootLevelConfig = ($rootLevelPackageConfig && $rootLevelPackageConfig->isRunnable())
+            ? $rootLevelPackageConfig
+            : null;
 
         /** @var Config|null $config */
         $config = null;
         if ($defaultForced) {
             $config = $defaultConfig;
-        } elseif ($rootLevelPackageConfig && $rootLevelPackageConfig->isRunnable()) {
-            $config = $rootLevelPackageConfig;
+        } elseif ($rootLevelConfig) {
+            $config = $rootLevelConfig;
         }
-
-        /** @var Config $config */
 
         $installPath = ($package instanceof RootPackageInterface)
             ? $this->rootDir
             : $this->installationManager->getInstallPath($package);
 
         /** @var Config|null $config */
-        if (
-            !$config
-            && (!$rootLevelPackageConfig || $rootLevelPackageConfig->usePackageLevelOrDefault())
-        ) {
+        if (!$config) {
             $packageLevelConfig = Config::forComposerPackage(
                 $package,
                 $this->envResolver,
                 "{$installPath}/" . RootConfig::CONFIG_FILE
             );
-
-            $config = ($packageLevelConfig && $packageLevelConfig->isRunnable())
-                ? $packageLevelConfig
-                : $defaultConfig;
-
-            // If no root-level config and no package-level config there's nothing we can do.
-            if (!$config) {
-                return null;
+            if ($packageLevelConfig && $packageLevelConfig->isRunnable()) {
+                $config = $packageLevelConfig;
             }
+        }
+
+        if (!$config && $defaultConfig) {
+            $config = $defaultConfig;
         }
 
         if (!$config || !$config->isRunnable()) {
