@@ -271,7 +271,7 @@ class Processor
             return null;
         }
 
-        $this->io->writeVerboseComment("  wiping '{$dir}'...");
+        $this->io->writeVerboseComment("Wiping '{$dir}'...");
 
         /** @var bool $doneWipe */
         $doneWipe = $this->filesystem->removeDirectory($dir);
