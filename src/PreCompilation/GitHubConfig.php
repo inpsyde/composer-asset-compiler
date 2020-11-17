@@ -33,9 +33,11 @@ class GitHubConfig
     {
         $user = $config[self::TOKEN_USER]
             ?? EnvResolver::readEnv('GITHUB_USER_NAME', $env)
+            ?? EnvResolver::readEnv('GITHUB_API_USER', $env)
             ?? EnvResolver::readEnv('GITHUB_ACTOR', $env)
             ?? null;
         $token = $config[self::TOKEN]
+            ?? EnvResolver::readEnv('GITHUB_USER_TOKEN', $env)
             ?? EnvResolver::readEnv('GITHUB_API_TOKEN', $env)
             ?? EnvResolver::readEnv('GITHUB_TOKEN', $env)
             ?? null;
