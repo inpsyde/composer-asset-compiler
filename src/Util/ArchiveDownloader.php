@@ -78,10 +78,7 @@ class ArchiveDownloader
             PackageInterface $package,
             string $path
         ) use ($downloader): void {
-            /** @psalm-suppress PossiblyFalseArgument */
-            ($downloader instanceof FileDownloader)
-                ? $downloader->download($package, $path, false)
-                : $downloader->download($package, $path);
+            $downloader->download($package, $path);
         };
 
         return new self($downloadCallback, $io, $filesystem);
