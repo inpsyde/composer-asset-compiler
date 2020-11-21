@@ -48,7 +48,7 @@ class Factory
         $this->timeout = 86400.0;
         $this->factory = $factory;
     }
-    
+
     /**
      * @param string $command
      * @param string $cwd
