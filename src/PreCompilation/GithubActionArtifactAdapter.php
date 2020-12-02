@@ -100,9 +100,8 @@ class GithubActionArtifactAdapter implements Adapter
             $package->setDistType($type);
             $package->setDistUrl($distUrl);
             $package->setTargetDir($targetDir);
-            $this->downloaderFactory->create($type)->download($package, $targetDir);
 
-            return true;
+            return $this->downloaderFactory->create($type)->download($package, $targetDir);
         } catch (\Throwable $throwable) {
             $this->io->writeVerboseError('  ' . $throwable->getMessage());
 

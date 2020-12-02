@@ -117,9 +117,8 @@ class GithubReleaseZipAdapter implements Adapter
                     ],
                 ]
             );
-            $this->downloaderFactory->create($type)->download($package, $targetDir);
 
-            return true;
+            return $this->downloaderFactory->create($type)->download($package, $targetDir);
         } catch (\Throwable $throwable) {
             $this->io->writeVerboseError('  ' . $throwable->getMessage());
 
