@@ -103,14 +103,68 @@ class LockerTest extends TestCase
     }
 
     /**
+     * @test
+     */
+    public function testIsLockedIsFalseIfIgnoreIsAll(): void
+    {
+        $dir = vfsStream::setup('exampleDir1');
+
+        $lockerIgnored = $this->factoryLocker(null, Locker::IGNORE_ALL);
+        $lockerNotIgnored = $this->factoryLocker();
+
+        $package = $this->factorPackage(['script' => 'test'], $dir->url());
+        $lockerIgnored->lock($package);
+
+        static::assertFalse($lockerIgnored->isLocked($package));
+        static::assertTrue($lockerNotIgnored->isLocked($package));
+    }
+
+    /**
+     * @test
+     */
+    public function testIsLockedIsFalseIfIgnoreByName(): void
+    {
+        $dir = vfsStream::setup('exampleDir1', 0777, [
+            'one' => [],
+            'two' => [],
+        ]);
+
+        $io = \Mockery::mock(Io::class);
+        $io->shouldReceive('writeVerboseComment')
+            ->once()
+            ->andReturnUsing(
+                static function (string $arg) {
+                    static::assertStringContainsString('ignoring', strtolower($arg));
+                    static::assertStringContainsString('test/x-y', $arg);
+                }
+            );
+
+        $lockerIgnored = $this->factoryLocker($io, 'test/x-*');
+        $lockerNotIgnored = $this->factoryLocker();
+
+        $package1 = $this->factorPackage(['script' => 'test'], $dir->url() . '/one', 'test/foo');
+        $package2 = $this->factorPackage(['script' => 'test'], $dir->url() . '/two', 'test/x-y');
+        $lockerIgnored->lock($package1);
+        $lockerIgnored->lock($package2);
+
+        static::assertTrue($lockerIgnored->isLocked($package1));
+        static::assertFalse($lockerIgnored->isLocked($package2));
+
+        static::assertTrue($lockerNotIgnored->isLocked($package1));
+        static::assertTrue($lockerNotIgnored->isLocked($package2));
+    }
+
+    /**
      * @param Io|null $io
+     * @param string $ignoreLock
      * @return Locker
      */
-    private function factoryLocker(?Io $io = null): Locker
+    private function factoryLocker(?Io $io = null, string $ignoreLock = ''): Locker
     {
         return new Locker(
             $io ?? Io::new(\Mockery::mock(IOInterface::class)),
-            HashBuilder::new('dev', [])
+            HashBuilder::new('dev', []),
+            $ignoreLock
         );
     }
 
@@ -123,7 +177,7 @@ class LockerTest extends TestCase
     private function factorPackage(
         array $settings,
         ?string $dir = null,
-        string $name = 'foo'
+        string $name = 'foo/foo'
     ): Asset {
 
         $config = Config::forAssetConfigInRoot($settings, EnvResolver::new('', false));
