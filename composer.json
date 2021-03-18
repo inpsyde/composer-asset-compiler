@@ -36,12 +36,12 @@
         "phpunit/phpunit": "^8",
         "mockery/mockery": "^1",
         "inpsyde/php-coding-standards": "^1@dev",
-        "vimeo/psalm": "^3",
+        "vimeo/psalm": "@stable",
         "mikey179/vfsstream": "^1.6"
     },
     "scripts": {
         "cs": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs",
-        "psalm": "@php ./vendor/vimeo/psalm/psalm",
+        "psalm": "@php ./vendor/vimeo/psalm/psalm --no-cache --show-info --output-format=compact",
         "tests": "@php ./vendor/phpunit/phpunit/phpunit",
         "qa": [
             "@cs",

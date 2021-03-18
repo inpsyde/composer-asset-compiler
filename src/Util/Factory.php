@@ -360,7 +360,7 @@ final class Factory
         /** @var \Composer\Config\ConfigSourceInterface $source */
         $source = $this->composerConfig()->getConfigSource();
 
-        return $this->filesystem()->normalizePath(dirname((string)$source->getName()));
+        return $this->filesystem()->normalizePath(dirname($source->getName()));
     }
 
     /**

@@ -188,7 +188,10 @@ class GithubReleaseZipAdapter implements Adapter
 
         $id = null;
         foreach ((array)$json['assets'] as $assetData) {
-            $name = is_array($assetData) ? $assetData['name'] : null;
+            if (!is_array($assetData)) {
+                continue;
+            }
+            $name = $assetData['name'] ?? null;
             $id = $name ? ($assetData['id'] ?? null) : null;
             if (($name === $assetsName) && $id) {
                 break;

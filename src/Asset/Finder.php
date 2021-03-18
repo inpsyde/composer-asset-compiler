@@ -11,7 +11,6 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\Asset;
 
-use Composer\Installer\InstallationManager;
 use Composer\Package\PackageInterface;
 use Composer\Package\RootPackageInterface;
 use Composer\Repository\RepositoryInterface;
@@ -31,7 +30,7 @@ class Finder
     private $envResolver;
 
     /**
-     * @var Defaults
+     * @var Defaults<Config|null|>
      */
     private $defaults;
 
@@ -109,7 +108,7 @@ class Finder
         $found = [];
 
         $rootAsset = $this->attemptFactoryRootPackageAsset($root, $assetsFactory);
-        $rootAsset and $found[(string)$root->getName()] = $rootAsset;
+        $rootAsset and $found[$root->getName()] = $rootAsset;
 
         if (!$rootLevelIncludePackagesConfig && !$autoDiscover) {
             return $found;

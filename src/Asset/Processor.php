@@ -264,7 +264,7 @@ class Processor
      */
     private function wipeNodeModules(string $baseDir): ?bool
     {
-        $dir = rtrim((string)$this->filesystem->normalizePath($baseDir), '/') . "/node_modules";
+        $dir = rtrim($this->filesystem->normalizePath($baseDir), '/') . "/node_modules";
         if (!is_dir($dir)) {
             $this->io->writeVerbose("  '{$dir}' not found, nothing to wipe.");
 

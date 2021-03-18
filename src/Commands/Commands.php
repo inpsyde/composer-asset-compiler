@@ -70,10 +70,10 @@ final class Commands
         $manager = strtolower($manager);
 
         if (!array_key_exists($manager, self::SUPPORTED_DEFAULTS)) {
-            return new static([], $defaultEnvironment);
+            return new self([], $defaultEnvironment);
         }
 
-        return new static(self::SUPPORTED_DEFAULTS[$manager], $defaultEnvironment);
+        return new self(self::SUPPORTED_DEFAULTS[$manager], $defaultEnvironment);
     }
 
     /**
@@ -89,7 +89,7 @@ final class Commands
     ): Commands {
 
         foreach (self::SUPPORTED_DEFAULTS as $name => $data) {
-            $discover = (string)($data[self::DISCOVER] ?? '');
+            $discover = $data[self::DISCOVER] ?? '';
 
             $out = null;
             if ($discover && ($executor->execute($discover, $out, $workingDir) === 0)) {
@@ -97,7 +97,7 @@ final class Commands
             }
         }
 
-        return new static([], $defaultEnvironment);
+        return new self([], $defaultEnvironment);
     }
 
     /**

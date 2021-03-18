@@ -169,7 +169,10 @@ class GithubActionArtifactAdapter implements Adapter
 
         $archiveUrl = null;
         foreach ((array)$json['artifacts'] as $artifactData) {
-            $name = is_array($artifactData) ? $artifactData['name'] : null;
+            if (!is_array($artifactData)) {
+                continue;
+            }
+            $name = $artifactData['name'] ?? null;
             $url = $name ? ($artifactData['archive_download_url'] ?? null) : null;
             if (($name === $artifactName) && $url && filter_var($url, FILTER_VALIDATE_URL)) {
                 $archiveUrl = $url;

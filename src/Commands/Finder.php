@@ -87,7 +87,7 @@ class Finder
                 $commands = Commands::fromDefault($config, $defaultEnv);
                 break;
             case ($config && is_array($config)):
-                $commands = Commands::new((array)$config, $defaultEnv);
+                $commands = Commands::new($config, $defaultEnv);
                 break;
         }
 

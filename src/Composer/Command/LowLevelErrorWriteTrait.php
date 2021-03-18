@@ -31,7 +31,7 @@ trait LowLevelErrorWriteTrait
 
         $line and $lines[] = "  {$line}  ";
 
-        $lenMax = max(array_map('strlen', $lines));
+        $lenMax = $lines ? max(array_map('strlen', $lines)) : 1;
         $empty = '<error>' . str_repeat(' ', $lenMax) . '</error>';
         $errors = ['', $empty];
         foreach ($lines as $line) {
