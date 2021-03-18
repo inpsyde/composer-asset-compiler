@@ -55,6 +55,11 @@ final class Factory
     private $isDev;
 
     /**
+     * @var string
+     */
+    private $ignoreLock;
+
+    /**
      * @var array<string, object>
      */
     private $objects = [];
@@ -62,34 +67,42 @@ final class Factory
     /**
      * @param Composer $composer
      * @param IOInterface $io
+     * @param string|null $env
+     * @param bool $isDev
+     * @param string $ignoreLock
      * @return Factory
      */
     public static function new(
         Composer $composer,
         IOInterface $io,
         ?string $env,
-        bool $isDev
+        bool $isDev,
+        string $ignoreLock = ''
     ): Factory {
 
-        return new static($composer, $io, $env, $isDev);
+        return new self($composer, $io, $env, $isDev, $ignoreLock);
     }
 
     /**
      * @param Composer $composer
      * @param IOInterface $io
-     * @param RootConfig $rootConfig
+     * @param string|null $env
+     * @param bool $isDev
+     * @param string $ignoreLock
      */
     private function __construct(
         Composer $composer,
         IOInterface $io,
         ?string $env,
-        bool $isDev
+        bool $isDev,
+        string $ignoreLock = ''
     ) {
 
         $this->composer = $composer;
         $this->io = $io;
         $this->env = $env ?? EnvResolver::assetsCompilerEnv();
         $this->isDev = $isDev;
+        $this->ignoreLock = $ignoreLock;
     }
 
     /**
@@ -507,7 +520,8 @@ final class Factory
         if (empty($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = new Locker(
                 $this->io(),
-                $this->hashBuilder()
+                $this->hashBuilder(),
+                $this->ignoreLock
             );
         }
 

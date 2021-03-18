@@ -16,6 +16,7 @@ use Inpsyde\AssetsCompiler\Util\Io;
 class Locker
 {
     public const LOCK_FILE = '.composer_compiled_assets';
+    public const IGNORE_ALL = '*';
 
     /**
      * @var Io
@@ -28,13 +29,29 @@ class Locker
     private $hashBuilder;
 
     /**
+     * @var boolean
+     */
+    private $ignoreAll;
+
+    /**
+     * @var list<string>
+     */
+    private $ignored = [];
+
+    /**
      * @param Io $io
      * @param HashBuilder $hashBuilder
+     * @param string $ignoreLock
      */
-    public function __construct(Io $io, HashBuilder $hashBuilder)
+    public function __construct(Io $io, HashBuilder $hashBuilder, string $ignoreLock = '')
     {
         $this->io = $io;
         $this->hashBuilder = $hashBuilder;
+        $this->ignoreAll = ($ignoreLock === self::IGNORE_ALL);
+        if (!$this->ignoreAll && $ignoreLock) {
+            $names = array_map('trim', explode(',', $ignoreLock));
+            $this->ignored = array_values(array_filter($names));
+        }
     }
 
     /**
@@ -43,9 +60,25 @@ class Locker
      */
     public function isLocked(Asset $asset): bool
     {
-        $file = ($asset->path() ?? '') . '/' . self::LOCK_FILE;
-        if (!file_exists($file)) {
+        if ($this->ignoreAll) {
             return false;
+        }
+
+        $file = ($asset->path() ?? '') . '/' . self::LOCK_FILE;
+        if (!@file_exists($file)) {
+            return false;
+        }
+
+        $name = $asset->name();
+        foreach ($this->ignored as $ignored) {
+            if (
+                $ignored === $name
+                || fnmatch($ignored, $name, FNM_PATHNAME | FNM_PERIOD | FNM_CASEFOLD)
+            ) {
+                $this->io->writeVerboseComment("  Ignoring lock file for {$name}.");
+
+                return false;
+            }
         }
 
         $content = @file_get_contents($file);

@@ -14,6 +14,7 @@ namespace Inpsyde\AssetsCompiler\Composer\Command;
 use Composer\Command\BaseCommand;
 use Composer\Composer;
 use Composer\IO\IOInterface;
+use Inpsyde\AssetsCompiler\Asset\Locker;
 use Inpsyde\AssetsCompiler\Composer\Plugin;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -47,6 +48,12 @@ final class CompileAssets extends BaseCommand
                 InputOption::VALUE_REQUIRED,
                 'Set the environment to run command in. '
                 . 'Overrides value of COMPOSER_ASSETS_COMPILER, if set.'
+            )
+            ->addOption(
+                'ignore-lock',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Ignore lock for either all or specific packages.'
             );
     }
 
@@ -73,10 +80,20 @@ final class CompileAssets extends BaseCommand
             $plugin = new Plugin();
             $plugin->activate($composer, $io);
 
-            $noDev = (bool)$input->hasOption('no-dev');
+            $noDev = $input->hasOption('no-dev');
             $env = $input->hasOption('env') ? $input->getOption('env') : null;
 
-            $plugin->runByCommand(is_string($env) ? $env : null, !$noDev);
+            $ignoreLock = '';
+            if ($input->hasOption('ignore-lock')) {
+                $ignored = $input->getOption('ignore-lock');
+                if ($ignored === true) {
+                    $ignoreLock = Locker::IGNORE_ALL;
+                } elseif ($ignored && is_string($ignored)) {
+                    $ignoreLock = $ignored;
+                }
+            }
+
+            $plugin->runByCommand(is_string($env) ? $env : null, !$noDev, $ignoreLock);
 
             return 0;
         } catch (\Throwable $throwable) {
