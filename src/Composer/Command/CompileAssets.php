@@ -53,7 +53,8 @@ final class CompileAssets extends BaseCommand
                 'ignore-lock',
                 null,
                 InputOption::VALUE_OPTIONAL,
-                'Ignore lock for either all or specific packages.'
+                'Ignore lock for either all or specific packages.',
+                Locker::IGNORE_ALL
             );
     }
 
@@ -83,15 +84,11 @@ final class CompileAssets extends BaseCommand
             $noDev = $input->hasOption('no-dev');
             $env = $input->hasOption('env') ? $input->getOption('env') : null;
 
-            $ignoreLock = '';
-            if ($input->hasOption('ignore-lock')) {
-                $ignored = $input->getOption('ignore-lock');
-                if ($ignored === true) {
-                    $ignoreLock = Locker::IGNORE_ALL;
-                } elseif ($ignored && is_string($ignored)) {
-                    $ignoreLock = $ignored;
-                }
-            }
+            $ignoreLockRaw = $input->hasParameterOption('--ignore-lock', true)
+                ? $input->getOption('ignore-lock')
+                : null;
+            $ignoreLock = ($ignoreLockRaw && is_string($ignoreLockRaw)) ? $ignoreLockRaw : '';
+            ($ignoreLock === '*/*') and $ignoreLock = Locker::IGNORE_ALL;
 
             $plugin->runByCommand(is_string($env) ? $env : null, !$noDev, $ignoreLock);
 
