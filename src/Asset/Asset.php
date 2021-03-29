@@ -148,7 +148,6 @@ final class Asset
             return [];
         }
 
-        /** @var array<string>|null $scripts */
         $scripts = $this->config->scripts();
 
         return $scripts ?? [];

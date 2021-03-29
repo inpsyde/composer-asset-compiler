@@ -155,11 +155,6 @@ class Processor
                 throw new \Exception('Invalid data to process.');
             }
 
-            /**
-             * @var string|null $name
-             * @var string|null $path
-             * @var bool|null $shouldWipe
-             */
             [$name, $path, $shouldWipe] = $this->assetProcessInfo($asset);
             if (!$name || !$path || ($shouldWipe === null) || $this->maybeSkipAsset($asset)) {
                 continue;
@@ -273,7 +268,6 @@ class Processor
 
         $this->io->writeVerboseComment("Wiping '{$dir}'...");
 
-        /** @var bool $doneWipe */
         $doneWipe = $this->filesystem->removeDirectory($dir);
         $doneWipe
             ? $this->io->writeVerboseInfo('  success!')
@@ -311,9 +305,7 @@ class Processor
 
         $successes = $results->successes();
         while ($successes && !$successes->isEmpty()) {
-            /** @var array{Process, Asset} $success */
             $success = $successes->dequeue();
-            /** @var Asset $asset */
             [, $asset] = $success;
             $this->locker->lock($asset);
             if (!empty($toWipe[$asset->name()])) {
@@ -331,7 +323,6 @@ class Processor
      */
     private function buildScriptCommands(Asset $asset): ?array
     {
-        /** @var array<string> $scripts */
         $scripts = $asset->script();
         if (!$scripts) {
             return null;

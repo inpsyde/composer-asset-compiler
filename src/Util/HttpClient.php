@@ -73,7 +73,6 @@ class HttpClient
 
             $result = null;
             if ($this->client instanceof HttpDownloader) {
-                /** @var Response $response */
                 $response = $this->client->get($url, $options);
                 $statusCode = $response->getStatusCode();
                 if ($statusCode > 199 && $statusCode < 300) {

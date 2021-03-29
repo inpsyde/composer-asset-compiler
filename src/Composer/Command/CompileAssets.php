@@ -74,8 +74,6 @@ final class CompileAssets extends BaseCommand
         try {
             /** @var Composer $composer */
             $composer = $this->getComposer(true, false);
-
-            /** @var IOInterface $io */
             $io = $this->getIO();
 
             $plugin = new Plugin();

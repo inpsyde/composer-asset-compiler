@@ -117,7 +117,6 @@ class Factory
             ? $this->rootDir
             : $this->installationManager->getInstallPath($package);
 
-        /** @var Config|null $config */
         if (!$config && (!$rootLevelPackageConfig || $packageOrDefaultAllowed)) {
             $packageLevelConfig = Config::forComposerPackage(
                 $package,

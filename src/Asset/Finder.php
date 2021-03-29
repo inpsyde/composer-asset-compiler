@@ -99,10 +99,6 @@ class Finder
         bool $autoDiscover = true
     ): array {
 
-        /**
-         * @var array<string, Config> $rootLevelIncludePackagesConfig
-         * @var array<int, string> $excludeNames
-         */
         [$rootLevelIncludePackagesConfig, $excludeNames] = $this->extractRootLevelPackagesData();
 
         $found = [];
@@ -117,11 +113,9 @@ class Finder
         /** @var array<int, string> $rootLevelIncludeNames */
         $rootLevelIncludeNames = array_keys($rootLevelIncludePackagesConfig);
 
-        /** @var PackageInterface[] $packages */
         $packages = $repository->getPackages();
 
         foreach ($packages as $package) {
-            /** @var string $name */
             $name = $package->getName();
             if (
                 $package === $root
@@ -131,10 +125,8 @@ class Finder
                 continue;
             }
 
-            /** @var string|null $rootLevelPackagePattern */
             [, $rootLevelPackagePattern] = $this->nameMatches($name, ...$rootLevelIncludeNames);
 
-            /** @var Config|null $rootLevelPackageConfig */
             $rootLevelPackageConfig = $rootLevelPackagePattern
                 ? ($rootLevelIncludePackagesConfig[$rootLevelPackagePattern] ?? null)
                 : null;

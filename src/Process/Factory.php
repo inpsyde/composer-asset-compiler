@@ -66,7 +66,6 @@ class Factory
         }
 
         if ($this->newMethod) {
-            /** @var Process $process */
             $process = Process::fromShellCommandline($command, $cwd, null, null, $this->timeout);
 
             return $process;

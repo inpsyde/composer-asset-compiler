@@ -157,7 +157,6 @@ final class Factory
     public function composerRepository(): RepositoryInterface
     {
         if (empty($this->objects[__FUNCTION__])) {
-            /** @var RepositoryManager $manager */
             $manager = $this->composer->getRepositoryManager();
             $this->objects[__FUNCTION__] = $manager->getLocalRepository();
         }
@@ -272,7 +271,6 @@ final class Factory
     public function assets(): \Iterator
     {
         if (empty($this->objects[__FUNCTION__])) {
-            /** @var array<string, Asset> $assets */
             $assets = $this->assetsFinder()->find(
                 $this->composerRepository(),
                 $this->composerRootPackage(),
@@ -315,7 +313,6 @@ final class Factory
     public function commands(): Commands
     {
         if (empty($this->objects[__FUNCTION__])) {
-            /** @var Asset|null $asset */
             $asset = $this->assets()->current();
             $path = ($asset instanceof Asset) ? $asset->path() : null;
             $this->objects[__FUNCTION__] = $path

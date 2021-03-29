@@ -209,11 +209,6 @@ class ParallelManager
 
         $running = $this->startProcessesFormStack($io, $running);
 
-        /**
-         * @var \SplQueue<array{Process, Asset}> $stillRunning
-         * @var \SplQueue<array{Process, Asset}> $successful
-         * @var \SplQueue<array{Process, Asset}> $erroneous
-         */
         [$stillRunning, $successful, $erroneous] = $this->checkRunningProcesses(
             $io,
             $stopOnFailure,
@@ -259,7 +254,6 @@ class ParallelManager
     private function startProcessesFormStack(Io $io, \SplQueue $running): \SplQueue
     {
         while (($running->count() < $this->maxParallel) && !$this->stack->isEmpty()) {
-            /** @var array{Process, Asset} $current */
             $current = $this->stack->dequeue();
             [$process, $asset] = $current;
 

@@ -289,7 +289,6 @@ class Config
         }
 
         if (is_array($this->data[self::DEF_ENV])) {
-            /** @var array<string, string> $env */
             $env = EnvResolver::sanitizeEnvVars($this->data[self::DEF_ENV]);
 
             return $env;
