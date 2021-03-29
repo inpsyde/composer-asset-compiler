@@ -117,7 +117,7 @@ class ArchiveDownloaderAdapter implements Adapter
             return is_string($type) ? strtolower($type) : null;
         }
 
-        switch (strtolower((string)(pathinfo($source, PATHINFO_EXTENSION) ?: ''))) {
+        switch (strtolower(pathinfo($source, PATHINFO_EXTENSION) ?: '')) {
             case 'rar':
                 return ArchiveDownloader::RAR;
             case 'tar':
@@ -182,11 +182,11 @@ class ArchiveDownloaderAdapter implements Adapter
         }
 
         if (!$pass) {
-            $pass = $config['auth']['password']
-                ?? $config['auth']['pass']
-                ?? $config['auth']['secret']
-                ?? $config['auth']['pwd']
-                ?? $config['auth']['token']
+            $pass = $auth['password']
+                ?? $auth['pass']
+                ?? $auth['secret']
+                ?? $auth['pwd']
+                ?? $auth['token']
                 ?? '';
             is_string($pass) or $pass = '';
             $pass and $pass = rawurlencode($pass);

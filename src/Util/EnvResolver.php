@@ -46,7 +46,7 @@ class EnvResolver
     {
         $env = getenv($name);
         if ($env) {
-            return (string)$env;
+            return $env;
         }
 
         $toCheck = [$_ENV];
@@ -93,7 +93,7 @@ class EnvResolver
     public static function sanitizeEnvVars(array $vars): array
     {
         $sanitized = [];
-        foreach ((array)$vars as $key => $value) {
+        foreach ($vars as $key => $value) {
             if (
                 $key
                 && is_string($key)
@@ -175,6 +175,6 @@ class EnvResolver
      */
     public function removeEnvConfig(array $config): array
     {
-        return (array)array_diff_key($config, [self::ENV_KEY => '']);
+        return array_diff_key($config, [self::ENV_KEY => '']);
     }
 }

@@ -106,9 +106,9 @@ class ParallelManager
         $this->factory = $factory;
         $this->maxParallel = $maxParallel >= 1 ? $maxParallel : 4;
         // sanity: between 0.005 and 2 seconds
-        $this->poll = (int)min(max($poll, 5000), 2000000);
+        $this->poll = min(max($poll, 5000), 2000000);
         // sanity: between 30 and 1800 seconds
-        $this->timeoutIncrement = (int)min(max($timeoutIncrement, 30), 1800);
+        $this->timeoutIncrement = min(max($timeoutIncrement, 30), 1800);
 
         $this->resetStatus();
     }
@@ -148,7 +148,7 @@ class ParallelManager
             return Results::empty();
         }
 
-        $this->executionStarted = (float)microtime(true);
+        $this->executionStarted = microtime(true);
 
         /** @var \SplQueue<array{Process, Asset}> $running */
         $running = new \SplQueue();
@@ -248,7 +248,7 @@ class ParallelManager
      */
     private function checkTimedOut(): bool
     {
-        return ((float)microtime(true) - $this->executionStarted) > $this->timeout;
+        return (microtime(true) - $this->executionStarted) > $this->timeout;
     }
 
     /**
@@ -339,7 +339,7 @@ class ParallelManager
      */
     private function writeProcessError(Process $process, Io $io): void
     {
-        $lines = explode("\n", trim((string)$process->getErrorOutput()));
+        $lines = explode("\n", trim($process->getErrorOutput()));
         foreach ($lines as $line) {
             $cleanLine = trim($line);
             $cleanLine and $io->writeError("   {$cleanLine}");

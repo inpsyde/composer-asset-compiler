@@ -22,20 +22,20 @@ final class Defaults
     private $config;
 
     /**
-     * @return Defaults
+     * @return Defaults<Config|null>
      */
     public static function empty(): Defaults
     {
-        return new static(null);
+        return new self(null);
     }
 
     /**
      * @param Config $config
-     * @return Defaults
+     * @return Defaults<Config|null>
      */
     public static function new(Config $config): Defaults
     {
-        return new static($config);
+        return new self($config);
     }
 
     /**

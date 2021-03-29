@@ -1066,6 +1066,24 @@ Unless very special cases it is suggested to do **not keep the lock file under v
 
 The reason is that if built assets for a package are not kept under version control (an that's likely the case otherwise the compiler makes no sense for that package) if the lock file is found the building process for that package assets would not take place, and the package at the end of installation process will have no built assets.
 
+### Ignoring lock
+
+When a lock is present, it is possible to ignore it when running the command "on demand" via the `compile-asset` command (see below).
+
+That is possible via the `--ignore-lock` command flag.
+
+The flag can take two forms:
+
+```shell
+$ composer compile-assets --ignore-lock
+```
+
+```shell
+$ composer compile-assets --ignore-lock=some-vendor/package,some-other-vendor/*
+```
+
+In the first form it ignores lock for *all* packages, in the second form it ignores lock for specific packages, eventually making use of `*` as wildcard character.
+
 
 
 ## `compile-asset` command

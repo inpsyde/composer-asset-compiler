@@ -59,7 +59,7 @@ class Io
      */
     public function isVerbose(): bool
     {
-        return (bool)$this->io->isVerbose();
+        return $this->io->isVerbose();
     }
 
     /**
@@ -67,7 +67,7 @@ class Io
      */
     public function isVeryVerbose(): bool
     {
-        return (bool)$this->io->isVeryVerbose();
+        return $this->io->isVeryVerbose();
     }
 
     /**
@@ -75,7 +75,7 @@ class Io
      */
     public function isVeryVeryVerbose(): bool
     {
-        return (bool)$this->io->isDebug();
+        return $this->io->isDebug();
     }
 
     /**
@@ -97,7 +97,7 @@ class Io
             function (): bool {
                 $output = $this->output ?? null;
                 if ($output instanceof OutputInterface) {
-                    return (bool)$output->isQuiet();
+                    return $output->isQuiet();
                 }
 
                 return false;
@@ -118,7 +118,7 @@ class Io
      */
     public function isInteractive(): bool
     {
-        return (bool)$this->io->isInteractive();
+        return $this->io->isInteractive();
     }
 
     /**

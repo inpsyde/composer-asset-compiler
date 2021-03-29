@@ -65,7 +65,7 @@ final class AssetHash extends BaseCommand
             /** @var \Composer\Composer $composer */
             $composer = $this->getComposer(true, false);
             $io = $this->getIO();
-            $noDev = (bool)$input->hasOption('no-dev');
+            $noDev = $input->hasOption('no-dev');
             $env = $input->hasOption('env') ? $input->getOption('env') : null;
             is_string($env) or $env = null;
 

@@ -105,7 +105,7 @@ final class Plugin implements
      */
     public function onAutorunBecauseInstall(Event $event): void
     {
-        $factory = Factory::new($this->composer, $this->io, null, (bool)$event->isDevMode());
+        $factory = Factory::new($this->composer, $this->io, null, $event->isDevMode());
         if ($factory->config()->autoRun()) {
             $this->mode or $this->mode = self::MODE_COMPOSER_INSTALL;
             $this->run($factory);
@@ -124,11 +124,13 @@ final class Plugin implements
     /**
      * @param string|null $env
      * @param bool $isDev
+     * @param string $ignoreLock
+     * @return void
      */
-    public function runByCommand(?string $env, bool $isDev): void
+    public function runByCommand(?string $env, bool $isDev, string $ignoreLock = ''): void
     {
         $this->mode = self::MODE_COMMAND;
-        $this->run(Factory::new($this->composer, $this->io, $env, $isDev));
+        $this->run(Factory::new($this->composer, $this->io, $env, $isDev, $ignoreLock));
     }
 
     /**
