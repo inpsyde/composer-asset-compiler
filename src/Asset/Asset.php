@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace Inpsyde\AssetsCompiler\Asset;
 
 use Inpsyde\AssetsCompiler\PreCompilation;
+use Inpsyde\AssetsCompiler\Util\EnvResolver;
 
 final class Asset
 {
@@ -166,7 +167,7 @@ final class Asset
      */
     public function preCompilationConfig(): PreCompilation\Config
     {
-        if (!$this->config) {
+        if (!$this->config || EnvResolver::readEnv('COMPOSER_ASSET_COMPILE_PRECOMPILING')) {
             return PreCompilation\Config::invalid();
         }
 
