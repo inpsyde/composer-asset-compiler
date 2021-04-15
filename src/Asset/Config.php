@@ -337,8 +337,9 @@ class Config
             return;
         }
 
-        $byEnv = $this->envResolver->resolveConfig($config);
 
+
+        $byEnv = $this->envResolver->resolveConfig($config);
         if ($byEnv && is_array($byEnv)) {
             $config = $byEnv;
         }
@@ -399,15 +400,17 @@ class Config
             return $oneScript ? [$scripts] : null;
         }
 
+        /** @var array $scripts */
+
         $byEnv = $this->envResolver->resolveConfig($scripts);
         if ($byEnv && (is_array($byEnv) || is_string($byEnv))) {
             $scripts = (array)$byEnv;
         } elseif ($byEnv === null) {
-            $scripts = $this->envResolver->removeEnvConfig($config);
+            $scripts = $this->envResolver->removeEnvConfig($scripts);
         }
 
         $allScripts = [];
-        foreach ((array)$scripts as $script) {
+        foreach ($scripts as $script) {
             ($script && is_string($script)) and $allScripts[$script] = 1;
         }
 
