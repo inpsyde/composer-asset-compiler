@@ -337,8 +337,6 @@ class Config
             return;
         }
 
-
-
         $byEnv = $this->envResolver->resolveConfig($config);
         if ($byEnv && is_array($byEnv)) {
             $config = $byEnv;
