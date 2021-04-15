@@ -112,7 +112,8 @@ class Handler
             $hash,
             $source,
             $this->filesystem->normalizePath("{$path}/{$target}"),
-            $config->config($hash, $environment, $version)
+            $config->config($hash, $environment, $version),
+            $environment
         );
 
         if (!$saved) {

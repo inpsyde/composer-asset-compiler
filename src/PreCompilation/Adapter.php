@@ -20,6 +20,7 @@ interface Adapter
      * @param string $source
      * @param string $targetDir
      * @param array $config
+     * @param array $environment
      * @return bool
      */
     public function tryPrecompiled(
@@ -27,6 +28,7 @@ interface Adapter
         string $hash,
         string $source,
         string $targetDir,
-        array $config
+        array $config,
+        array $environment
     ): bool;
 }

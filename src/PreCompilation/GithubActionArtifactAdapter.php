@@ -73,6 +73,7 @@ class GithubActionArtifactAdapter implements Adapter
      * @param string $source
      * @param string $targetDir
      * @param array $config
+     * @param array $environment
      * @return bool
      */
     public function tryPrecompiled(
@@ -80,11 +81,12 @@ class GithubActionArtifactAdapter implements Adapter
         string $hash,
         string $source,
         string $targetDir,
-        array $config
+        array $config,
+        array $environment
     ): bool {
 
         try {
-            $ghConfig = GitHubConfig::new($config, $asset->env());
+            $ghConfig = GitHubConfig::new($config, $environment);
 
             [$endpoint, $owner] = $this->buildEndpoint($source, $ghConfig);
             if (!$endpoint || !$owner) {

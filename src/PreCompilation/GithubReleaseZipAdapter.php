@@ -73,6 +73,7 @@ class GithubReleaseZipAdapter implements Adapter
      * @param string $source
      * @param string $targetDir
      * @param array $config
+     * @param array $environment
      * @return bool
      */
     public function tryPrecompiled(
@@ -80,7 +81,8 @@ class GithubReleaseZipAdapter implements Adapter
         string $hash,
         string $source,
         string $targetDir,
-        array $config
+        array $config,
+        array $environment
     ): bool {
 
         $version = $asset->version();
@@ -92,7 +94,7 @@ class GithubReleaseZipAdapter implements Adapter
                 return false;
             }
 
-            $ghConfig = GitHubConfig::new($config);
+            $ghConfig = GitHubConfig::new($config, $environment);
 
             [$endpoint, $owner] = $this->buildEndpoint($source, $ghConfig, $version);
             if (!$endpoint || !$owner) {
