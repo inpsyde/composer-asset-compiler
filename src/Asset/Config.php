@@ -368,6 +368,11 @@ class Config
             $dependencies = self::NONE;
         }
 
+        if (is_array($dependencies)) {
+            $byEnv = $this->envResolver->resolveConfig($dependencies);
+            $dependencies = ($byEnv && is_string($byEnv)) ? $byEnv : null;
+        }
+
         is_string($dependencies) and $dependencies = strtolower($dependencies);
         if (!in_array($dependencies, self::DEPENDENCIES_OPTIONS, true)) {
             $dependencies = null;
@@ -384,7 +389,7 @@ class Config
     {
         $scripts = $config[self::SCRIPT] ?? null;
 
-        $oneScript = $scripts ? is_string($scripts) : false;
+        $oneScript = $scripts && is_string($scripts);
         if (!$scripts || (!$oneScript && !is_array($scripts))) {
             $scripts = null;
         }
@@ -392,6 +397,13 @@ class Config
         if ($scripts === null || $oneScript) {
             /** @var string $scripts */
             return $oneScript ? [$scripts] : null;
+        }
+
+        $byEnv = $this->envResolver->resolveConfig($scripts);
+        if ($byEnv && (is_array($byEnv) || is_string($byEnv))) {
+            $scripts = (array)$byEnv;
+        } elseif ($byEnv === null) {
+            $scripts = $this->envResolver->removeEnvConfig($config);
         }
 
         $allScripts = [];
