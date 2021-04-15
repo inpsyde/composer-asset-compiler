@@ -167,7 +167,7 @@ final class Asset
      */
     public function preCompilationConfig(): PreCompilation\Config
     {
-        if (!$this->config || EnvResolver::readEnv('COMPOSER_ASSET_COMPILE_PRECOMPILING')) {
+        if (!$this->config || EnvResolver::readEnv('COMPOSER_ASSET_COMPILER_PRECOMPILING')) {
             return PreCompilation\Config::invalid();
         }
 
