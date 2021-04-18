@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Inpsyde\AssetsCompiler\Util;
 
 use Composer\Downloader\DownloaderInterface;
-use Composer\Downloader\FileDownloader;
 use Composer\Package\PackageInterface;
 use Composer\Util\Filesystem;
 use Composer\Util\Loop;
@@ -108,24 +107,58 @@ class ArchiveDownloader
     public function download(PackageInterface $package, string $path): bool
     {
         try {
+            $distUrl = $package->getDistUrl();
+
+            // Download callback makes use of Composer downloader, and will empty the target path.
+            // When target does not exist, that's irrelevant and we can unpack directly there.
+            if (!file_exists($path)) {
+                $this->filesystem->ensureDirectoryExists($path);
+                $this->io->writeVerboseComment(
+                    "  Downloading and unpack '{$distUrl}' in new directory '{$path}'..."
+                );
+                ($this->downloadCallback)($package, $path);
+
+                return true;
+            }
+
+            if (!is_dir($path)) {
+                throw new \Error("Could not use '{$path}' as target for unpacking '{$distUrl}'.");
+            }
+
+            // If here, target path is an existing directory. We can't use download callback to
+            // download there, or Composer will delete every existing file in it.
+            // So we first unpack in a temporary folder and then move unpacked files from the temp
+            // dir to final target dir. That's surely slower, but necessary.
+
             $tempDir = dirname($path) . '/.tmp' . substr(md5(uniqid($path, true)), 0, 8);
+            $this->io->writeVerboseComment(
+                "  Archive target path '{$path}' is an existing directory.",
+                "  Downloading and unpacking '{$distUrl}' in the temporary folder '{$tempDir}'..."
+            );
             $this->filesystem->ensureDirectoryExists($tempDir);
             ($this->downloadCallback)($package, $tempDir);
             $this->filesystem->ensureDirectoryExists($path);
 
-            $finder = new Finder();
-            $finder->in($tempDir)->ignoreVCS(true)->ignoreUnreadableDirs()->depth('== 0');
+            $finder = Finder::create()->in($tempDir)->ignoreVCS(true)->depth('== 0');
+
+            $this->io->writeVerboseComment(
+                "  Copying unpacked files from temporary folder '{$tempDir}' to '{$path}'..."
+            );
 
             $errors = 0;
             /** @var \Symfony\Component\Finder\SplFileInfo $item */
             foreach ($finder as $item) {
                 $basename = $item->getBasename();
                 $targetPath = $this->filesystem->normalizePath("{$path}/{$basename}");
-                if (is_dir($targetPath) || is_file($targetPath)) {
+                $sourcePath = $item->getPathname();
+                if (file_exists($targetPath)) {
+                    $this->io->writeVeryVerboseComment("   - removing existing '{$targetPath}'...");
                     $this->filesystem->remove($targetPath);
                 }
-
-                $this->filesystem->copy($item->getPathname(), $targetPath) or $errors++;
+                $this->io->writeVeryVerboseComment(
+                    "   - moving '{$sourcePath}' to '{$targetPath}'..."
+                );
+                $this->filesystem->copy($sourcePath, $targetPath) or $errors++;
             }
 
             return $errors === 0;
