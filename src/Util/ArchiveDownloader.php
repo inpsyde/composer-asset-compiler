@@ -113,8 +113,8 @@ class ArchiveDownloader
             // When target does not exist, that's irrelevant and we can unpack directly there.
             if (!file_exists($path)) {
                 $this->filesystem->ensureDirectoryExists($path);
-                $this->io->writeVerboseComment(
-                    "  Downloading and unpack '{$distUrl}' in new directory '{$path}'..."
+                $this->io->writeVerbose(
+                    "Downloading and unpack '{$distUrl}' in new directory '{$path}'..."
                 );
                 ($this->downloadCallback)($package, $path);
 
@@ -131,9 +131,9 @@ class ArchiveDownloader
             // dir to final target dir. That's surely slower, but necessary.
 
             $tempDir = dirname($path) . '/.tmp' . substr(md5(uniqid($path, true)), 0, 8);
-            $this->io->writeVerboseComment(
-                "  Archive target path '{$path}' is an existing directory.",
-                "  Downloading and unpacking '{$distUrl}' in the temporary folder '{$tempDir}'..."
+            $this->io->writeVerbose(
+                "Archive target path '{$path}' is an existing directory.",
+                "Downloading and unpacking '{$distUrl}' in the temporary folder '{$tempDir}'..."
             );
             $this->filesystem->ensureDirectoryExists($tempDir);
             ($this->downloadCallback)($package, $tempDir);
@@ -141,8 +141,8 @@ class ArchiveDownloader
 
             $finder = Finder::create()->in($tempDir)->ignoreVCS(true)->depth('== 0');
 
-            $this->io->writeVerboseComment(
-                "  Copying unpacked files from temporary folder '{$tempDir}' to '{$path}'..."
+            $this->io->writeVerbose(
+                "Copying unpacked files from temporary folder '{$tempDir}' to '{$path}'..."
             );
 
             $errors = 0;
@@ -152,12 +152,10 @@ class ArchiveDownloader
                 $targetPath = $this->filesystem->normalizePath("{$path}/{$basename}");
                 $sourcePath = $item->getPathname();
                 if (file_exists($targetPath)) {
-                    $this->io->writeVeryVerboseComment("   - removing existing '{$targetPath}'...");
+                    $this->io->writeVeryVerbose("   - removing existing '{$targetPath}'...");
                     $this->filesystem->remove($targetPath);
                 }
-                $this->io->writeVeryVerboseComment(
-                    "   - moving '{$sourcePath}' to '{$targetPath}'..."
-                );
+                $this->io->writeVeryVerbose("   - moving '{$sourcePath}' to '{$targetPath}'...");
                 $this->filesystem->copy($sourcePath, $targetPath) or $errors++;
             }
 
