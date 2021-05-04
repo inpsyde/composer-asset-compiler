@@ -34,6 +34,12 @@ final class AssetHash extends BaseCommand
             ->setName('assets-hash')
             ->setDescription('Calculate assets hash for root package in current environment.')
             ->addOption(
+                'seed',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'A seed to be used in determining the hash.'
+            )
+            ->addOption(
                 'no-dev',
                 null,
                 InputOption::VALUE_NONE,
@@ -65,6 +71,9 @@ final class AssetHash extends BaseCommand
             /** @var \Composer\Composer $composer */
             $composer = $this->getComposer(true, false);
             $io = $this->getIO();
+            $seed = $input->hasOption('seed') ? $input->getOption('seed') : null;
+            is_string($seed) or $seed = null;
+            $seed and $seed = trim($seed);
             $noDev = $input->hasOption('no-dev');
             $env = $input->hasOption('env') ? $input->getOption('env') : null;
             is_string($env) or $env = null;
@@ -73,7 +82,7 @@ final class AssetHash extends BaseCommand
             $package = $composer->getPackage();
             $defaults = $factory->defaults();
             $asset = $factory->assetFactory()->attemptFactory($package, null, $defaults);
-            $hash = $asset ? $factory->hashBuilder()->forAsset($asset) : null;
+            $hash = $asset ? $factory->hashBuilder()->forAsset($asset, $seed) : null;
 
             if (!$hash) {
                 throw new \Error('Could not generate an hash for the package.');

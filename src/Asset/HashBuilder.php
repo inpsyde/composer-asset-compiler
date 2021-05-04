@@ -45,9 +45,10 @@ final class HashBuilder
 
     /**
      * @param Asset $asset
+     * @param string|null $seed
      * @return string|null
      */
-    public function forAsset(Asset $asset): ?string
+    public function forAsset(Asset $asset, string $seed = null): ?string
     {
         $basePath = $asset->isValid() ? $asset->path() : null;
         if (!$basePath) {
@@ -80,6 +81,8 @@ final class HashBuilder
                 array_merge(array_filter($this->environment), array_filter($asset->env()))
             ),
         ];
+
+        $seed and $data[] = $seed;
 
         $this->hashes[$key] = sha1(serialize($data));
 
