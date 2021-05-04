@@ -50,6 +50,12 @@ final class CompileAssets extends BaseCommand
                 . 'Overrides value of COMPOSER_ASSETS_COMPILER, if set.'
             )
             ->addOption(
+                'hash-seed',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'See to be used in the generation of assets-hash.'
+            )
+            ->addOption(
                 'ignore-lock',
                 null,
                 InputOption::VALUE_OPTIONAL,
@@ -82,13 +88,22 @@ final class CompileAssets extends BaseCommand
             $noDev = $input->hasOption('no-dev');
             $env = $input->hasOption('env') ? $input->getOption('env') : null;
 
+            $seed = $input->hasOption('hash-seed') ? $input->getOption('hash-seed') : null;
+            is_string($seed) or $seed = null;
+            $seed and $seed = trim($seed);
+
             $ignoreLockRaw = $input->hasParameterOption('--ignore-lock', true)
                 ? $input->getOption('ignore-lock')
                 : null;
             $ignoreLock = ($ignoreLockRaw && is_string($ignoreLockRaw)) ? $ignoreLockRaw : '';
             ($ignoreLock === '*/*') and $ignoreLock = Locker::IGNORE_ALL;
 
-            $plugin->runByCommand(is_string($env) ? $env : null, !$noDev, $ignoreLock);
+            $plugin->runByCommand(
+                is_string($env) ? $env : null,
+                !$noDev,
+                $ignoreLock,
+                $seed ?: null
+            );
 
             return 0;
         } catch (\Throwable $throwable) {

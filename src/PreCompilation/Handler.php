@@ -75,9 +75,10 @@ class Handler
     /**
      * @param Asset $asset
      * @param array $defaultEnv
+     * @param string|null $hashSeed
      * @return bool
      */
-    public function tryPrecompiled(Asset $asset, array $defaultEnv): bool
+    public function tryPrecompiled(Asset $asset, array $defaultEnv, ?string $hashSeed = null): bool
     {
         $config = $asset->preCompilationConfig();
         $adapter = $this->findAdapter($config);
@@ -85,7 +86,7 @@ class Handler
             return false;
         }
 
-        $hash = $this->hashBuilder->forAsset($asset);
+        $hash = $this->hashBuilder->forAsset($asset, $hashSeed);
         if (!$hash) {
             return false;
         }

@@ -125,19 +125,27 @@ final class Plugin implements
      * @param string|null $env
      * @param bool $isDev
      * @param string $ignoreLock
+     * @param string|null $hashSeed
      * @return void
      */
-    public function runByCommand(?string $env, bool $isDev, string $ignoreLock = ''): void
-    {
+    public function runByCommand(
+        ?string $env,
+        bool $isDev,
+        string $ignoreLock = '',
+        ?string $hashSeed = null
+    ): void {
+
         $this->mode = self::MODE_COMMAND;
-        $this->run(Factory::new($this->composer, $this->io, $env, $isDev, $ignoreLock));
+        $this->run(Factory::new($this->composer, $this->io, $env, $isDev, $ignoreLock), $hashSeed);
     }
 
     /**
      * @param Factory $factory
+     * @param string|null $hashSeed
      * @return void
+     * @throws \Exception
      */
-    private function run(Factory $factory): void
+    private function run(Factory $factory, ?string $hashSeed = null): void
     {
         $exit = 0;
         $this->convertErrorsToExceptions();
@@ -153,7 +161,7 @@ final class Plugin implements
                 return;
             }
 
-            $factory->assetsProcessor()->process($assets) or $exit = 1;
+            $factory->assetsProcessor()->process($assets, $hashSeed) or $exit = 1;
         } catch (\Throwable $throwable) {
             $exit = 1;
             /** @psalm-suppress DocblockTypeContradiction */

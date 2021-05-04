@@ -141,9 +141,11 @@ class Processor
 
     /**
      * @param \Iterator $assets
+     * @param string|null $hashSeed
      * @return bool
+     * @throws \Exception
      */
-    public function process(\Iterator $assets): bool
+    public function process(\Iterator $assets, ?string $hashSeed = null): bool
     {
         $toWipe = [];
         $stopOnFailure = $this->config->stopOnFailure();
@@ -156,7 +158,10 @@ class Processor
             }
 
             [$name, $path, $shouldWipe] = $this->assetProcessInfo($asset);
-            if (!$name || !$path || ($shouldWipe === null) || $this->maybeSkipAsset($asset)) {
+            if (!$name || !$path || ($shouldWipe === null)) {
+                continue;
+            }
+            if ($this->maybeSkipAsset($asset, $hashSeed)) {
                 continue;
             }
 
@@ -209,19 +214,20 @@ class Processor
 
     /**
      * @param Asset $asset
+     * @param string|null $hashSeed
      * @return bool
      */
-    private function maybeSkipAsset(Asset $asset): bool
+    private function maybeSkipAsset(Asset $asset, ?string $hashSeed = null): bool
     {
         $name = $asset->name();
 
-        if ($this->locker->isLocked($asset)) {
+        if ($this->locker->isLocked($asset, $hashSeed)) {
             $this->io->writeVerbose("Not processing '{$name}' because already processed.");
 
             return true;
         }
 
-        if ($this->preCompiler->tryPrecompiled($asset, $this->config->defaultEnv())) {
+        if ($this->preCompiler->tryPrecompiled($asset, $this->config->defaultEnv(), $hashSeed)) {
             $this->io->writeInfo("Used pre-processed assets for '{$name}'.");
             $this->locker->lock($asset);
 
