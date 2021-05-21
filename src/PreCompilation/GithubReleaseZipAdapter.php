@@ -106,7 +106,7 @@ class GithubReleaseZipAdapter implements Adapter
             $distUrl = $this->retrieveArchiveUrl($source, $endpoint, $owner, $ghConfig);
 
             $type = ArchiveDownloader::ZIP;
-            $package = new Package($asset->name(), 'stable', 'stable');
+            $package = new Package($asset->name() . '-assets', 'release-zip', 'release-zip');
             $package->setDistType($type);
             $package->setDistUrl($distUrl);
             $package->setTargetDir($targetDir);
