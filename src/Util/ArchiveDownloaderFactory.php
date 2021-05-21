@@ -136,9 +136,11 @@ class ArchiveDownloaderFactory
     private function factoryDownloader(string $type): DownloaderInterface
     {
         $downloader = $this->downloadManager->getDownloader($type);
-        if (!($downloader instanceof FileDownloader)) {
+        if (!($downloader instanceof FileDownloader) || $this->io->isVeryVerbose()) {
             return $downloader;
         }
+
+        // When it's not very verbose we silence FileDownloader ConsoleIO
 
         static $replacer;
         $replacer or $replacer = function (): void {
