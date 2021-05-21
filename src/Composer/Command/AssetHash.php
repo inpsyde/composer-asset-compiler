@@ -85,7 +85,7 @@ final class AssetHash extends BaseCommand
             $hash = $asset ? $factory->hashBuilder()->forAsset($asset, $seed) : null;
 
             if (!$hash) {
-                throw new \Error('Could not generate an hash for the package.');
+                throw new \Error('Could not generate a hash for the package.');
             }
 
             $output->write(
