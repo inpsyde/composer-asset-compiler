@@ -508,9 +508,9 @@ At the moment, the supported adapters are the following:
 
 Each of the adapters has the following configuration options:
 
-- `source`: the name or the URL of the file used as source for pre-compiled assets. can include placeholders like `${hash}` or `${version}` to dynamically refer to the hash or the version of the package. What this config has to contain depends on the adapter in use.
+- `source`: the name or the URL of the file used as source for pre-compiled assets. can include placeholders like `${hash}`, `${ref}` or `${version}` to dynamically refer to, respectively, the hash, the Git commit reference, or the version of the package. What this config has to contain depends on the adapter in use.
 - `target`: the relative path where to save the precompiled assets
-- `adapter`: the ID of the chosen adapater
+- `adapter`: the ID of the chosen adapter
 - `config`: an object of settings that are specific for each adapter
 
 #### Usage example
@@ -526,7 +526,7 @@ For example, let's assume the following configuration is placed in the `assets-c
                 "adapter": false
             },
             "$default": {
-                "source": "assets-${hash}",
+                "source": "assets-${ref}",
                 "target": "./assets/",
                 "adapter": "gh-action-artifact",
                 "config": {
@@ -542,7 +542,7 @@ For example, let's assume the following configuration is placed in the `assets-c
 
 When the Composer Asset Compiler environment will be `root`, there's no pre-compilation adapter, so Composer Asset Compiler will install and compile assets as usual (in this case executing `gulp`).
 
-In all the other cases, before compiling assets, Composer Asset Compiler will attempt using pre-compiled assets stored in a GitHub action artifact whose name is `assets-${hash}.zip` (where `${hash}` is replaced by the result of `composer assets-hash`) in the repository `john-doe/some-package`, and using GitHub API credentials stored in `config.user` and `config.token`.
+In all the other cases, before compiling assets, Composer Asset Compiler will attempt using pre-compiled assets stored in a GitHub action artifact whose name is `assets-${ref}.zip` (where `${ref}` is replaced by the Git SHA reference of the installed commit) in the repository `john-doe/some-package`, and using GitHub API credentials stored in `config.user` and `config.token`.
 
 If the artifact  is found, the adapter will download it and unzip in the `./assets/` folder and will do nothing else for the package.
 
