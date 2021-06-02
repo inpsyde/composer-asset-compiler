@@ -164,11 +164,9 @@ final class Plugin implements
             $factory->assetsProcessor()->process($assets, $hashSeed) or $exit = 1;
         } catch (\Throwable $throwable) {
             $exit = 1;
-            /** @psalm-suppress DocblockTypeContradiction */
             $this->handleThrowable($throwable, $io ?? null);
         } finally {
             restore_error_handler();
-            /** @psalm-suppress DocblockTypeContradiction */
             $this->finalMessage($exit, $io ?? null);
             if (($exit > 0) || ($this->mode === self::MODE_COMMAND)) {
                 exit($exit);

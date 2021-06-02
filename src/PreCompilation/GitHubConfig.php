@@ -19,6 +19,7 @@ class GitHubConfig
 
     /**
      * @param array $config
+     * @param array $env
      * @return GitHubConfig
      */
     public static function new(array $config, array $env = []): GitHubConfig
@@ -28,6 +29,7 @@ class GitHubConfig
 
     /**
      * @param array $config
+     * @param array $env
      */
     private function __construct(array $config, array $env)
     {

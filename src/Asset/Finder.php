@@ -11,7 +11,6 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\Asset;
 
-use Composer\Package\PackageInterface;
 use Composer\Package\RootPackageInterface;
 use Composer\Repository\RepositoryInterface;
 use Inpsyde\AssetsCompiler\Util\EnvResolver;

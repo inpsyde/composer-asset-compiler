@@ -18,7 +18,6 @@ use Inpsyde\AssetsCompiler\Util\EnvResolver;
 
 final class RootConfig
 {
-
     public const AUTO_RUN = 'auto-run';
     public const COMMANDS = 'commands';
     public const DEFAULTS = 'defaults';
@@ -74,6 +73,7 @@ final class RootConfig
      * @param RootPackageInterface $package
      * @param EnvResolver $envResolver
      * @param Filesystem $filesystem
+     * @param string $rootDir
      */
     private function __construct(
         RootPackageInterface $package,
@@ -232,16 +232,9 @@ final class RootConfig
      * @param bool $allowedArray
      * @param mixed $default
      * @return mixed
-     *
-     * @psalm-suppress MissingParamType
-     * @psalm-suppress MissingReturnType
-     * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
-     * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
      */
     private function resolveByEnv(string $key, bool $allowedArray, $default)
     {
-        // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
-        // phpcs:enable Inpsyde.CodeQuality.ArgumentTypeDeclaration
         $config = $this->raw[$key] ?? null;
         if ($config === null) {
             return $default;

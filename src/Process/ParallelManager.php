@@ -329,6 +329,8 @@ class ParallelManager
     }
 
     /**
+     * @param Process $process
+     * @param Io $io
      * @return void
      */
     private function writeProcessError(Process $process, Io $io): void

@@ -158,7 +158,9 @@ class GithubReleaseZipAdapter implements Adapter
     }
 
     /**
-     * @param string $source
+     * @param string $assetsName
+     * @param string $endpoint
+     * @param string $owner
      * @param GitHubConfig $config
      * @return string
      */

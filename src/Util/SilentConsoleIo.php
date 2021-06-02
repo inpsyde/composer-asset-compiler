@@ -15,11 +15,6 @@ use Composer\IO\ConsoleIO;
 class SilentConsoleIo extends ConsoleIO
 {
     /**
-     * @var ConsoleIO
-     */
-    private $consoleIo;
-
-    /**
      * @param ConsoleIO $io
      * @return SilentConsoleIo
      */
@@ -33,7 +28,6 @@ class SilentConsoleIo extends ConsoleIO
      */
     private function __construct(ConsoleIO $io)
     {
-        $this->consoleIo = $io;
         parent::__construct($io->input, $io->output, $io->helperSet);
     }
 

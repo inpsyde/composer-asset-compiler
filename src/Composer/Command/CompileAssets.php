@@ -13,7 +13,6 @@ namespace Inpsyde\AssetsCompiler\Composer\Command;
 
 use Composer\Command\BaseCommand;
 use Composer\Composer;
-use Composer\IO\IOInterface;
 use Inpsyde\AssetsCompiler\Asset\Locker;
 use Inpsyde\AssetsCompiler\Composer\Plugin;
 use Symfony\Component\Console\Input\InputInterface;
@@ -26,10 +25,6 @@ final class CompileAssets extends BaseCommand
 
     /**
      * @return void
-     *
-     * @psalm-suppress MissingReturnType
-     * @psalm-suppress MixedMethodCall
-     * @psalm-suppress MixedArgument
      */
     protected function configure()
     {
@@ -70,12 +65,10 @@ final class CompileAssets extends BaseCommand
      * @return int
      *
      * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
-     *
-     * @psalm-suppress MissingReturnType
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        // phpcs:enable
+        // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
 
         try {
             /** @var Composer $composer */

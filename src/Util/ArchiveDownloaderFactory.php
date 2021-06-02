@@ -9,7 +9,6 @@ use Composer\Downloader\DownloaderInterface;
 use Composer\Downloader\FileDownloader;
 use Composer\IO\ConsoleIO;
 use Composer\Util\Filesystem;
-use Composer\Util\ProcessExecutor;
 use Composer\Util\SyncHelper;
 
 class ArchiveDownloaderFactory
@@ -30,16 +29,6 @@ class ArchiveDownloaderFactory
      * @var Io
      */
     private $io;
-
-    /**
-     * @var \Composer\Config
-     */
-    private $config;
-
-    /**
-     * @var ProcessExecutor
-     */
-    private $process;
 
     /**
      * @var Filesystem
@@ -68,41 +57,35 @@ class ArchiveDownloaderFactory
     /**
      * @param Io $io
      * @param Composer $composer
-     * @param ProcessExecutor $executor
      * @param Filesystem $filesystem
      * @return ArchiveDownloaderFactory
      */
     public static function new(
         Io $io,
         Composer $composer,
-        ProcessExecutor $executor,
         Filesystem $filesystem
     ): ArchiveDownloaderFactory {
 
-        return new self($io, $composer, $executor, $filesystem);
+        return new self($io, $composer, $filesystem);
     }
 
     /**
      * @param Io $io
      * @param Composer $composer
-     * @param ProcessExecutor $executor
      * @param Filesystem $filesystem
      */
     private function __construct(
         Io $io,
         Composer $composer,
-        ProcessExecutor $executor,
         Filesystem $filesystem
     ) {
 
         $this->io = $io;
-        $this->config = $composer->getConfig();
         $this->downloadManager = $composer->getDownloadManager();
         /** @psalm-suppress RedundantCondition */
         if (is_callable([$composer, 'getLoop']) && class_exists(SyncHelper::class)) {
             $this->loop = $composer->getLoop();
         }
-        $this->process = $executor;
         $this->filesystem = $filesystem;
     }
 

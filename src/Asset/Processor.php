@@ -18,7 +18,6 @@ use Inpsyde\AssetsCompiler\PreCompilation;
 use Inpsyde\AssetsCompiler\Process\Results;
 use Inpsyde\AssetsCompiler\Process\ParallelManager;
 use Inpsyde\AssetsCompiler\Util\Io;
-use Symfony\Component\Process\Process;
 
 class Processor
 {
@@ -238,6 +237,7 @@ class Processor
     }
 
     /**
+     * @param Asset $asset
      * @return bool
      */
     private function doDependencies(Asset $asset): bool

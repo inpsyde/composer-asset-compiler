@@ -42,23 +42,31 @@ final class Asset
     private $version;
 
     /**
+     * @var string|null
+     */
+    private $reference;
+
+    /**
      * @param string $name
      * @param Config $config
      * @param string|null $folder
      * @param string|null $version
+     * @param string|null $reference
      * @return Asset
      */
     public static function new(
         string $name,
         Config $config,
         ?string $folder = null,
-        ?string $version = null
+        ?string $version = null,
+        ?string $reference = null
     ): Asset {
 
         $asset = new static($name);
         $asset->folder = $folder ? rtrim($folder, '/') : null;
         $asset->config = $config;
         $asset->version = $version;
+        $asset->reference = $reference;
 
         return $asset;
     }
@@ -138,6 +146,14 @@ final class Asset
     public function version(): ?string
     {
         return $this->version;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function reference(): ?string
+    {
+        return $this->reference;
     }
 
     /**

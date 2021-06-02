@@ -194,6 +194,6 @@ class GithubActionArtifactAdapter implements Adapter
             $archiveUrl = preg_replace('~^https://(.+)~', $authString . '$1', $archiveUrl);
         }
 
-        return (string)$archiveUrl;
+        return $archiveUrl ?: '';
     }
 }

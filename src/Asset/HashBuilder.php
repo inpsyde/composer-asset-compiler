@@ -9,11 +9,6 @@ use Inpsyde\AssetsCompiler\Util\EnvResolver;
 final class HashBuilder
 {
     /**
-     * @var string
-     */
-    private $envType;
-
-    /**
      * @var array
      */
     private $environment;
@@ -24,22 +19,20 @@ final class HashBuilder
     private $hashes = [];
 
     /**
-     * @param string $envType
      * @param array $environment
      * @return HashBuilder
      */
-    public static function new(string $envType, array $environment): HashBuilder
+    public static function new(array $environment): HashBuilder
     {
-        return new static($envType, $environment);
+        return new static($environment);
     }
 
     /**
      * @param string $envType
      * @param array $environment
      */
-    private function __construct(string $envType, array $environment)
+    private function __construct(array $environment)
     {
-        $this->envType = $envType;
         $this->environment = $environment;
     }
 

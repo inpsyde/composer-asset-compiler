@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Inpsyde\AssetsCompiler\Util;
 
 use Composer\Composer;
-use Composer\Util\Http\Response;
 use Composer\Util\HttpDownloader;
 use Composer\Util\RemoteFilesystem;
 

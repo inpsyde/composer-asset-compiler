@@ -163,7 +163,7 @@ class LockerTest extends TestCase
     {
         return new Locker(
             $io ?? Io::new(\Mockery::mock(IOInterface::class)),
-            HashBuilder::new('dev', []),
+            HashBuilder::new([]),
             $ignoreLock
         );
     }

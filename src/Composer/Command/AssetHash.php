@@ -23,10 +23,6 @@ final class AssetHash extends BaseCommand
 
     /**
      * @return void
-     *
-     * @psalm-suppress MissingReturnType
-     * @psalm-suppress MixedMethodCall
-     * @psalm-suppress MixedArgument
      */
     protected function configure()
     {
@@ -60,8 +56,6 @@ final class AssetHash extends BaseCommand
      * @return int
      *
      * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
-     *
-     * @psalm-suppress MissingReturnType
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {

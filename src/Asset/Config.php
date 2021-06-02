@@ -83,14 +83,9 @@ class Config
      * @param mixed $config
      * @param EnvResolver $envResolver
      * @return Config
-     *
-     * @psalm-suppress MissingParamType
-     * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
      */
     public static function forAssetConfigInRoot($config, EnvResolver $envResolver): Config
     {
-        // phpcs:enable Inpsyde.CodeQuality.ArgumentTypeDeclaration
-
         if (!is_array($config) && !is_bool($config) && !is_string($config)) {
             $config = [];
         }
@@ -236,6 +231,7 @@ class Config
     }
 
     /**
+     * @param string $which
      * @return bool
      */
     public function dependenciesIs(string $which): bool
@@ -357,6 +353,7 @@ class Config
 
     /**
      * @param array $config
+     * @param bool $haveScripts
      * @return string|null
      */
     private function parseDependencies(array $config, bool $haveScripts): ?string

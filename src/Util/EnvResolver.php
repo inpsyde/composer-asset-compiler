@@ -144,12 +144,10 @@ class EnvResolver
      * @return mixed|null
      *
      * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
-     *
-     * @psalm-suppress MissingReturnType
      */
     public function resolveConfig(array $config)
     {
-        // phpcs:enable
+        // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
 
         $envs = $config[self::ENV_KEY] ?? null;
         if (!$envs || !is_array($envs)) {

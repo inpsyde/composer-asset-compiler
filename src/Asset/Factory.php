@@ -60,6 +60,7 @@ class Factory
      * @param EnvResolver $envResolver
      * @param Filesystem $filesystem
      * @param InstallationManager $installationManager
+     * @param string $rootDir
      */
     final private function __construct(
         EnvResolver $envResolver,
@@ -136,6 +137,12 @@ class Factory
 
         $path = $this->filesystem->normalizePath($installPath);
 
-        return Asset::new($package->getName(), $config, $path, $package->getPrettyVersion());
+        return Asset::new(
+            $package->getName(),
+            $config,
+            $path,
+            $package->getPrettyVersion(),
+            $package->getSourceReference() ?: $package->getDistReference()
+        );
     }
 }

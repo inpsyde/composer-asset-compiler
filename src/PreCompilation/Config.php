@@ -73,11 +73,11 @@ final class Config
     }
 
     /**
-     * @param string $hash
-     * @param array $defaultEnv
+     * @param Placeholders $placeholders
+     * @param array $environment
      * @return string|null
      */
-    public function source(string $hash, array $defaultEnv, ?string $version = null): ?string
+    public function source(Placeholders $placeholders, array $environment): ?string
     {
         if (!$this->parse()) {
             return null;
@@ -85,7 +85,7 @@ final class Config
 
         $rawSource = $this->parsed[self::SOURCE];
 
-        return $this->replaceEnvVars($rawSource, $hash, $version, $defaultEnv) ?: null;
+        return $placeholders->replace($rawSource, $environment) ?: null;
     }
 
     /**
@@ -113,9 +113,11 @@ final class Config
     }
 
     /**
+     * @param Placeholders $placeholders
+     * @param array $environment
      * @return array
      */
-    public function config(string $hash, array $defaultEnv, ?string $version = null): array
+    public function config(Placeholders $placeholders, array $environment): array
     {
         if (!$this->parse()) {
             return [];
@@ -125,7 +127,7 @@ final class Config
         $config = [];
         foreach ($raw as $key => $value) {
             if ($value && is_string($value)) {
-                $value = $this->replaceEnvVars($value, $hash, $version, $defaultEnv);
+                $value = $placeholders->replace($value, $environment);
             }
 
             $config[$key] = $value;
@@ -209,41 +211,5 @@ final class Config
         ];
 
         return true;
-    }
-
-    /**
-     * @param string $original
-     * @param string $hash
-     * @param array $defaultEnv
-     * @return string
-     */
-    private function replaceEnvVars(
-        string $original,
-        string $hash,
-        ?string $version,
-        array $defaultEnv
-    ): string {
-
-        if (!$this->isValid()) {
-            return $original;
-        }
-
-        $replace = [
-            'hash' => $hash,
-            'env' => $this->envResolver->env(),
-            'version' => $version,
-        ];
-
-        $replaced = preg_replace_callback(
-            '~\$\{\s*(hash|env|version)\s*\}~i',
-            static function (array $matches) use ($replace): string {
-                $key = strtolower((string)($matches[1] ?? ''));
-
-                return $replace[$key] ?? '';
-            },
-            $original
-        );
-
-        return $replaced ? EnvResolver::replaceEnvVariables($replaced, $defaultEnv) : '';
     }
 }

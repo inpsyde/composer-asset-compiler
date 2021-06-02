@@ -47,7 +47,6 @@ trait LowLevelErrorWriteTrait
             $output = $output->getErrorOutput();
         }
 
-        /** @psalm-suppress MixedMethodCall */
         $output->writeln($errors);
     }
 }

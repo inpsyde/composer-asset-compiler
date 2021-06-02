@@ -41,6 +41,7 @@ class Finder
     /**
      * @param RootConfig $config
      * @param ProcessExecutor $executor
+     * @param Io $io
      * @return Finder
      */
     public static function new(

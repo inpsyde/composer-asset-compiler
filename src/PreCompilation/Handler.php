@@ -7,11 +7,11 @@ namespace Inpsyde\AssetsCompiler\PreCompilation;
 use Composer\Util\Filesystem;
 use Inpsyde\AssetsCompiler\Asset\Asset;
 use Inpsyde\AssetsCompiler\Asset\HashBuilder;
+use Inpsyde\AssetsCompiler\Util\EnvResolver;
 use Inpsyde\AssetsCompiler\Util\Io;
 
 class Handler
 {
-
     /**
      * @var HashBuilder
      */
@@ -38,25 +38,44 @@ class Handler
     private $filesystem;
 
     /**
+     * @var EnvResolver
+     */
+    private $envResolver;
+
+    /**
      * @param HashBuilder $hashBuilder
      * @param Io $io
      * @param Filesystem $filesystem
+     * @param EnvResolver $envResolver
      * @return Handler
      */
-    public static function new(HashBuilder $hashBuilder, Io $io, Filesystem $filesystem): Handler
-    {
-        return new static($hashBuilder, $io, $filesystem);
+    public static function new(
+        HashBuilder $hashBuilder,
+        Io $io,
+        Filesystem $filesystem,
+        EnvResolver $envResolver
+    ): Handler {
+
+        return new static($hashBuilder, $io, $filesystem, $envResolver);
     }
 
     /**
      * @param HashBuilder $hashBuilder
      * @param Io $io
+     * @param Filesystem $filesystem
+     * @param EnvResolver $envResolver
      */
-    final private function __construct(HashBuilder $hashBuilder, Io $io, Filesystem $filesystem)
-    {
+    final private function __construct(
+        HashBuilder $hashBuilder,
+        Io $io,
+        Filesystem $filesystem,
+        EnvResolver $envResolver
+    ) {
+
         $this->hashBuilder = $hashBuilder;
         $this->io = $io;
         $this->filesystem = $filesystem;
+        $this->envResolver = $envResolver;
     }
 
     /**
@@ -91,9 +110,10 @@ class Handler
             return false;
         }
 
-        $version = $asset->version();
         $environment = array_merge(array_filter($defaultEnv), array_filter($asset->env()));
-        $source = $config->source($hash, $environment, $version);
+        $placeholders = Placeholders::new($asset, $this->envResolver->env(), $hash);
+
+        $source = $config->source($placeholders, $environment);
         $path = $asset->path();
         $target = $config->target();
 
@@ -113,7 +133,7 @@ class Handler
             $hash,
             $source,
             $this->filesystem->normalizePath("{$path}/{$target}"),
-            $config->config($hash, $environment, $version),
+            $config->config($placeholders, $environment),
             $environment
         );
 

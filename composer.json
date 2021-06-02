@@ -41,7 +41,7 @@
     },
     "scripts": {
         "cs": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs",
-        "psalm": "@php ./vendor/vimeo/psalm/psalm --no-cache --show-info --output-format=compact",
+        "psalm": "@php ./vendor/vimeo/psalm/psalm --no-cache --output-format=compact --find-unused-psalm-suppress",
         "tests": "@php ./vendor/phpunit/phpunit/phpunit",
         "qa": [
             "@cs",

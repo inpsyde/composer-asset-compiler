@@ -8,10 +8,8 @@ use Composer\Composer;
 use Composer\IO\IOInterface;
 use Composer\Package\RootPackageInterface;
 use Composer\Repository\RepositoryInterface;
-use Composer\Repository\RepositoryManager;
 use Composer\Util\Filesystem;
 use Composer\Util\ProcessExecutor;
-use Composer\Util\RemoteFilesystem;
 use Inpsyde\AssetsCompiler\Commands\Commands;
 use Inpsyde\AssetsCompiler\Commands\Finder as CommandsFinder;
 use Inpsyde\AssetsCompiler\Asset\Config;
@@ -386,10 +384,7 @@ final class Factory
     public function hashBuilder(): HashBuilder
     {
         if (empty($this->objects[__FUNCTION__])) {
-            $this->objects[__FUNCTION__] = HashBuilder::new(
-                $this->envResolver()->env(),
-                $this->config()->defaultEnv()
-            );
+            $this->objects[__FUNCTION__] = HashBuilder::new($this->config()->defaultEnv());
         }
 
         /** @var HashBuilder $builder */
@@ -422,7 +417,6 @@ final class Factory
             $this->objects[__FUNCTION__] = ArchiveDownloaderFactory::new(
                 $this->io(),
                 $this->composer(),
-                $this->processExecutor(),
                 $this->filesystem()
             );
         }
@@ -495,7 +489,12 @@ final class Factory
     public function preCompilationHandler(): Handler
     {
         if (empty($this->objects[__FUNCTION__])) {
-            $handler = Handler::new($this->hashBuilder(), $this->io(), $this->filesystem());
+            $handler = Handler::new(
+                $this->hashBuilder(),
+                $this->io(),
+                $this->filesystem(),
+                $this->envResolver()
+            );
             $handler = $handler
                 ->registerAdapter($this->archiveDownloaderAdapter())
                 ->registerAdapter($this->githubArtifactAdapter())
