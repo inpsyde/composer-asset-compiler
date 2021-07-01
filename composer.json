@@ -6,7 +6,9 @@
     "authors": [
         {
             "name": "Inpsyde GmbH",
-            "role": "company"
+            "homepage": "https://inpsyde.com/",
+            "email": "hello@inpsyde.com",
+            "role": "Company"
         },
         {
             "name": "Giuseppe Mazzapica",
