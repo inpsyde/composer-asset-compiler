@@ -33,11 +33,11 @@
     },
     "require-dev": {
         "composer/composer": "^2",
-        "phpunit/phpunit": "^8",
-        "mockery/mockery": "^1",
+        "phpunit/phpunit": "^8.5.18",
+        "mockery/mockery": "^1.4.3",
         "inpsyde/php-coding-standards": "^1@dev",
-        "vimeo/psalm": "@stable",
-        "mikey179/vfsstream": "^1.6"
+        "vimeo/psalm": ">=4.8.1@stable",
+        "mikey179/vfsstream": "^1.6.9"
     },
     "scripts": {
         "cs": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs",

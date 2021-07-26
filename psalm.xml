@@ -5,7 +5,6 @@
     usePhpDocMethodsWithoutMagicCall="true"
     strictBinaryOperands="true"
     allowPhpStormGenerics="true"
-    allowCoercionFromStringToClassConst="true"
     ignoreInternalFunctionFalseReturn="false"
     ignoreInternalFunctionNullReturn="false"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
