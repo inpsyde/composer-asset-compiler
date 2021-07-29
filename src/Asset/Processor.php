@@ -406,7 +406,7 @@ class Processor
 
         $commandsStr = implode(' && ', $assetCommands);
         $name = $asset->name();
-        $this->io->writeVerboseComment("Found {$commandsStr} compilation script for '{$name}'.");
+        $this->io->writeVerboseComment("Found <{$commandsStr}> script for '{$name}'.");
 
         return $assetCommands;
     }
