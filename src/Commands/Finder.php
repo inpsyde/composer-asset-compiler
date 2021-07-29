@@ -129,7 +129,7 @@ class Finder
                 break;
         }
 
-        if ($commands && $this->checkIsValid($commands, $rootDir, $checkValid, !$discover)) {
+        if ($commands && !$this->checkIsValid($commands, $rootDir, $checkValid, !$discover)) {
             $commands = null;
         }
 
