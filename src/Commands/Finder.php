@@ -11,7 +11,12 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\Commands;
 
+use Composer\Json\JsonFile;
+use Composer\Package\RootPackage;
+use Composer\Util\Filesystem;
 use Composer\Util\ProcessExecutor;
+use Inpsyde\AssetsCompiler\Asset\Asset;
+use Inpsyde\AssetsCompiler\Util\EnvResolver;
 use Inpsyde\AssetsCompiler\Util\Io;
 use Inpsyde\AssetsCompiler\Asset\RootConfig;
 
@@ -19,14 +24,19 @@ class Finder
 {
 
     /**
-     * @var RootConfig
-     */
-    private $config;
-
-    /**
      * @var ProcessExecutor
      */
     private $executor;
+
+    /**
+     * @var EnvResolver
+     */
+    private $envResolver;
+
+    /**
+     * @var Filesystem
+     */
+    private $filesystem;
 
     /**
      * @var Io
@@ -34,73 +44,157 @@ class Finder
     private $io;
 
     /**
-     * @var Commands|null
+     * @var array
      */
-    private $commands;
+    private $defaultEnv;
 
     /**
-     * @param RootConfig $config
+     * @var Commands|null
+     */
+    private $discovered;
+
+    /**
      * @param ProcessExecutor $executor
+     * @param EnvResolver $envResolver
+     * @param Filesystem $filesystem
      * @param Io $io
+     * @param array $defaultEnv
      * @return Finder
      */
     public static function new(
-        RootConfig $config,
         ProcessExecutor $executor,
-        Io $io
+        EnvResolver $envResolver,
+        Filesystem $filesystem,
+        Io $io,
+        array $defaultEnv
     ): Finder {
 
-        return new self($config, $executor, $io);
+        return new self($executor, $envResolver, $filesystem, $io, $defaultEnv);
+    }
+
+    /**
+     * @param ProcessExecutor $executor
+     * @param EnvResolver $envResolver
+     * @param Filesystem $filesystem
+     * @param Io $io
+     * @param array $defaultEnv
+     */
+    private function __construct(
+        ProcessExecutor $executor,
+        EnvResolver $envResolver,
+        Filesystem $filesystem,
+        Io $io,
+        array $defaultEnv
+    ) {
+
+        $this->executor = $executor;
+        $this->envResolver = $envResolver;
+        $this->filesystem = $filesystem;
+        $this->io = $io;
+        $this->defaultEnv = $defaultEnv;
     }
 
     /**
      * @param RootConfig $config
-     * @param ProcessExecutor $executor
-     * @param Io $io
+     * @return Commands
      */
-    private function __construct(RootConfig $config, ProcessExecutor $executor, Io $io)
+    public function find(RootConfig $config): Commands
     {
-        $this->config = $config;
-        $this->executor = $executor;
-        $this->io = $io;
+        $rootDir = $config->rootDir();
+        [$data, $byDefault] = $config->commands();
+        $commands = null;
+        $discover = $data === null;
+        $checkValid = true;
+
+        switch (true) {
+            case ($byDefault && is_string($data)):
+                $commands = Commands::fromDefault($data);
+                break;
+            case ($data && is_array($data)):
+                $commands = Commands::new($data);
+                break;
+            case file_exists("{$rootDir}/yarn.lock"):
+                $commands = Commands::fromDefault(Commands::YARN);
+                $discover = false;
+                $checkValid = false;
+                break;
+            case file_exists("{$rootDir}/package-lock.json"):
+            case file_exists("{$rootDir}/npm-shrinkwrap.json"):
+                $commands = Commands::fromDefault(Commands::NPM);
+                $discover = false;
+                $checkValid = false;
+                break;
+            case ($discover):
+                $commands = $this->discovered ?: Commands::discover($this->executor, $rootDir);
+                break;
+        }
+
+        if ($commands && $this->checkIsValid($commands, $rootDir, $checkValid, !$discover)) {
+            $commands = null;
+        }
+
+        if (!$commands && !$discover) {
+            $commands = $this->discovered ?: Commands::discover($this->executor, $rootDir);
+            $discover = true;
+        }
+
+        ($discover && !$this->discovered) and $this->discovered = $commands;
+
+        $this->assertValid($commands);
+
+        return $commands->withDefaultEnv($this->defaultEnv);
     }
 
     /**
-     * @param string $workingDir
+     * @param Asset $asset
      * @return Commands
      */
-    public function find(string $workingDir): Commands
+    public function findForAsset(Asset $asset): Commands
     {
-        if ($this->commands) {
-            return $this->commands;
+        $path = $asset->path();
+        if (!$path) {
+            return Commands::new([], []);
+        }
+        $composerFile = "{$path}/composer.json";
+
+        $file = new JsonFile($composerFile, null, $this->io->composerIo());
+        $data = $file->read();
+        if (!$data || !is_array($data)) {
+            throw new \Exception("Could not parse {$composerFile} as valid composer.json.");
         }
 
-        [$config, $byDefault] = $this->config->commands();
-        $defaultEnv = $this->config->defaultEnv();
-        $commands = null;
-        $discover = $config === null;
+        $version = $asset->version() ?? 'dev-master';
+        $root = new RootPackage($asset->name(), $version, $version);
+        $root->setExtra((array)($data['extra'] ?? []));
 
-        switch (true) {
-            case ($discover):
-                $commands = Commands::discover($this->executor, $workingDir, $defaultEnv);
-                break;
-            case ($byDefault && is_string($config)):
-                $commands = Commands::fromDefault($config, $defaultEnv);
-                break;
-            case ($config && is_array($config)):
-                $commands = Commands::new($config, $defaultEnv);
-                break;
+        return $this->find(RootConfig::new($root, $this->envResolver, $this->filesystem, $path));
+    }
+
+    /**
+     * @param Commands $commands
+     * @param string $cwd
+     * @param bool $checkValid
+     * @param bool $checkExecutable
+     * @return bool
+     */
+    private function checkIsValid(
+        Commands $commands,
+        string $cwd,
+        bool $checkValid,
+        bool $checkExecutable
+    ): bool {
+
+        $valid = $checkValid ? $commands->isValid() : true;
+
+        if ($valid && $checkExecutable) {
+            $valid = $commands->isExecutable($this->executor, $cwd);
         }
 
-        if ((!$commands || !$commands->isValid()) && !$discover) {
+        if (!$valid) {
             $this->io->writeError('Commands config is invalid, will try now to auto-discover.');
-            $commands = Commands::discover($this->executor, $workingDir);
         }
 
-        $this->assertValid($commands);
-        $this->commands = $commands;
-
-        return $commands;
+        return $valid;
     }
 
     /**

@@ -1,0 +1,7 @@
+{
+    "name": "inpsyde/test",
+    "type": "library",
+    "license": "MIT",
+    "minimum-stability": "dev",
+    "require": {}
+}

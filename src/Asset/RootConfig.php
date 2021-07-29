@@ -53,6 +53,11 @@ final class RootConfig
     private $rootPackageConfig;
 
     /**
+     * @var string
+     */
+    private $rootDir;
+
+    /**
      * @param RootPackageInterface $package
      * @param EnvResolver $envResolver
      * @param Filesystem $filesystem
@@ -82,7 +87,8 @@ final class RootConfig
         string $rootDir
     ) {
 
-        $configFile = "{$rootDir}/" . self::CONFIG_FILE;
+        $this->rootDir = rtrim($filesystem->normalizePath($rootDir), '/');
+        $configFile = "{$this->rootDir}/" . self::CONFIG_FILE;
         $data = file_exists($configFile)
             ? JsonFile::parseJson(file_get_contents($configFile) ?: '')
             : $package->getExtra()[Config::EXTRA_KEY] ?? null;
@@ -91,6 +97,14 @@ final class RootConfig
         $this->rootPackageConfig = Config::forComposerPackage($package, $envResolver, $configFile);
         $this->envResolver = $envResolver;
         $this->filesystem = $filesystem;
+    }
+
+    /**
+     * @return string
+     */
+    public function rootDir(): string
+    {
+        return $this->rootDir;
     }
 
     /**

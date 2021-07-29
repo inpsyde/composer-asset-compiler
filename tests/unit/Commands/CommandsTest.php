@@ -46,13 +46,19 @@ class CommandsTest extends TestCase
         static::assertSame('npm run x', $npm->scriptCmd('x'));
     }
 
+    /**
+     * @runInSeparateProcess
+     */
     public function testDiscoverYarn()
     {
         $executor = \Mockery::mock(ProcessExecutor::class);
-
         $executor->shouldReceive('execute')
             ->once()
             ->with('yarn --version', \Mockery::any(), __DIR__)
+            ->andReturn(0);
+        $executor->shouldReceive('execute')
+            ->once()
+            ->with('npm --version', \Mockery::any(), __DIR__)
             ->andReturn(0);
 
         $io = $this->factoryIo();
@@ -62,6 +68,9 @@ class CommandsTest extends TestCase
         static::assertSame('yarn', $yarn->installCmd($io));
     }
 
+    /**
+     * @runInSeparateProcess
+     */
     public function testDiscoverNpm()
     {
         $executor = \Mockery::mock(ProcessExecutor::class);
@@ -76,13 +85,16 @@ class CommandsTest extends TestCase
             ->with('npm --version', \Mockery::any(), __DIR__)
             ->andReturn(0);
 
-        $yarn = Commands::discover($executor, __DIR__);
+        $npm = Commands::discover($executor, __DIR__);
         $io = $this->factoryIo();
 
-        static::assertTrue($yarn->isValid());
-        static::assertSame('npm install', $yarn->installCmd($io));
+        static::assertTrue($npm->isValid());
+        static::assertSame('npm install', $npm->installCmd($io));
     }
 
+    /**
+     * @runInSeparateProcess
+     */
     public function testDiscoverNothing()
     {
         $executor = \Mockery::mock(ProcessExecutor::class);

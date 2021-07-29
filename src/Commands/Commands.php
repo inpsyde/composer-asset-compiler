@@ -17,14 +17,14 @@ use Inpsyde\AssetsCompiler\Util\Io;
 
 final class Commands
 {
+    public const YARN = 'yarn';
+    public const NPM = 'npm';
+
     private const DEPENDENCIES = 'dependencies';
     private const DEPENDENCIES_INSTALL = 'install';
     private const DEPENDENCIES_UPDATE = 'update';
     private const DISCOVER = 'discover';
     private const SCRIPT = 'script';
-
-    private const YARN = 'yarn';
-    private const NPM = 'npm';
 
     private const SUPPORTED_DEFAULTS = [
         self::YARN => [
@@ -46,6 +46,11 @@ final class Commands
     ];
 
     /**
+     * @var list<string>|null
+     */
+    private static $tested = null;
+
+    /**
      * @var array{update: null|string, install: null|string}
      */
     private $dependencies;
@@ -59,6 +64,30 @@ final class Commands
      * @var array
      */
     private $defaultEnvironment;
+
+    /**
+     * @param ProcessExecutor $executor
+     * @param string|null $workingDir
+     * @param array $defaultEnvironment
+     * @return list<string>
+     */
+    public static function test(ProcessExecutor $executor, ?string $workingDir = null): array
+    {
+        if (is_array(self::$tested)) {
+            return self::$tested;
+        }
+
+        self::$tested = [];
+        foreach (self::SUPPORTED_DEFAULTS as $name => $data) {
+            $discover = $data[self::DISCOVER] ?? '';
+            $out = null;
+            if ($discover && ($executor->execute($discover, $out, $workingDir) === 0)) {
+                self::$tested[] = $name;
+            }
+        }
+
+        return self::$tested;
+    }
 
     /**
      * @param string $manager
@@ -88,16 +117,12 @@ final class Commands
         array $defaultEnvironment = []
     ): Commands {
 
-        foreach (self::SUPPORTED_DEFAULTS as $name => $data) {
-            $discover = $data[self::DISCOVER] ?? '';
-
-            $out = null;
-            if ($discover && ($executor->execute($discover, $out, $workingDir) === 0)) {
-                return static::fromDefault($name, $defaultEnvironment);
-            }
+        $tested = self::test($executor, $workingDir);
+        if ($tested === []) {
+            return new self([], $defaultEnvironment);
         }
 
-        return new self([], $defaultEnvironment);
+        return static::fromDefault(reset($tested), $defaultEnvironment);
     }
 
     /**
@@ -148,6 +173,18 @@ final class Commands
     public function isValid(): bool
     {
         return !empty($this->dependencies[self::DEPENDENCIES_INSTALL]) && $this->scriptCmd('test');
+    }
+
+    /**
+     * @param array $environment
+     * @return Commands
+     */
+    public function withDefaultEnv(array $environment): Commands
+    {
+        return new self(
+            [self::DEPENDENCIES => $this->dependencies, self::SCRIPT => $this->script],
+            $environment
+        );
     }
 
     /**
@@ -205,6 +242,24 @@ final class Commands
         $cmdParams and $resolved .= " {$cmdParams}";
 
         return $resolved;
+    }
+
+    /**
+     * @param ProcessExecutor $executor
+     * @param string|null $cwd
+     * @return bool
+     */
+    public function isExecutable(ProcessExecutor $executor, ?string $cwd): bool
+    {
+        $isYarn = stripos($this->script ?? '', 'yarn') !== false;
+        $isNpm = stripos($this->script ?? '', 'npm') !== false;
+        if (!$isYarn && !$isNpm) {
+            return false;
+        }
+
+        $tested = self::test($executor, $cwd);
+
+        return in_array($isYarn ? self::YARN : self::NPM, $tested, true);
     }
 
     /**

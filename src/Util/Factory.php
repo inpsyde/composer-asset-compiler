@@ -293,9 +293,11 @@ final class Factory
     {
         if (empty($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = CommandsFinder::new(
-                $this->config(),
                 $this->processExecutor(),
-                $this->io()
+                $this->envResolver(),
+                $this->filesystem(),
+                $this->io(),
+                $this->config()->defaultEnv()
             );
         }
 
@@ -303,27 +305,6 @@ final class Factory
         $finder = $this->objects[__FUNCTION__];
 
         return $finder;
-    }
-
-    /**
-     * @return Commands
-     */
-    public function commands(): Commands
-    {
-        if (empty($this->objects[__FUNCTION__])) {
-            $asset = $this->assets()->current();
-            $path = ($asset instanceof Asset) ? $asset->path() : null;
-            $this->objects[__FUNCTION__] = $path
-                ? $this->commandsFinder()->find($path)
-                : Commands::new([], []);
-        }
-
-        /** @var Commands $commands */
-        $commands = $this->objects[__FUNCTION__];
-        /** @psalm-suppress RedundantConditionGivenDocblockType */
-        $this->commandsFinder()->assertValid($commands);
-
-        return $commands;
     }
 
     /**
@@ -598,7 +579,7 @@ final class Factory
             $this->objects[__FUNCTION__] = Processor::new(
                 $this->io(),
                 $this->config(),
-                $this->commands(),
+                $this->commandsFinder(),
                 $this->processExecutor(),
                 $this->processManager(),
                 $this->locker(),

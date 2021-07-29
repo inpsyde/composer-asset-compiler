@@ -1,0 +1,13 @@
+{
+    "name": "inpsyde/test",
+    "type": "library",
+    "license": "MIT",
+    "minimum-stability": "dev",
+    "require": {},
+    "extra": {
+        "composer-asset-compiler": {
+            "commands": "yarn",
+            "script": "run"
+        }
+    }
+}
