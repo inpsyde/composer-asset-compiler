@@ -312,6 +312,7 @@ class Processor
         }
 
         $action = $isUpdate ? 'Updating' : 'Installalling';
+        $name = $asset->name();
         $this->io->writeVerboseComment("{$action} dependencies for '{$name}' via '{$command}'...");
 
         $cwd = $asset->path();
