@@ -171,9 +171,6 @@ class Processor
                 continue;
             }
 
-            $action = $asset->isUpdate() ? 'updating' : 'installation';
-            $this->io->writeVerboseComment("Starting dependencies {$action} for '{$name}'...");
-
             $commands = $this->findCommandsForAsset($asset);
             if (!$commands->isValid() || !$commands->isExecutable($this->executor, $path)) {
                 $this->io->writeError("Could not find a package manager on the system.");
@@ -310,8 +307,15 @@ class Processor
             ? $commands->updateCmd($this->io)
             : $commands->installCmd($this->io);
 
+        if (!$command) {
+            return false;
+        }
+
+        $action = $isUpdate ? 'Updating' : 'Installalling';
+        $this->io->writeVerboseComment("{$action} dependencies for '{$name}' via '{$command}'...");
+
         $cwd = $asset->path();
-        $exitCode = $this->executor->execute($command ?? '', $this->outputHandler, $cwd);
+        $exitCode = $this->executor->execute($command, $this->outputHandler, $cwd);
 
         return $exitCode === 0;
     }
@@ -398,6 +402,9 @@ class Processor
             $command = $commands->scriptCmd($script, $assetEnv);
             $command and $assetCommands[] = $command;
         }
+
+        $commandsStr = implode(' && ', $assetCommands);
+        $this->io->writeVerboseComment("Found {$commandsStr} compilation script for '{$name}'.");
 
         return $assetCommands;
     }
