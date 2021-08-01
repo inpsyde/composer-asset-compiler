@@ -129,7 +129,7 @@ class Finder
                 break;
         }
 
-        if ($commands && !$this->checkIsValid($commands, $rootDir, $checkValid, !$discover)) {
+        if ($commands && !$this->checkIsValid($commands, $config, $checkValid, !$discover)) {
             $commands = null;
         }
 
@@ -171,28 +171,33 @@ class Finder
     }
 
     /**
-     * @param Commands $commands
-     * @param string $cwd
+     * @param Commands $commexiands
+     * @param RootConfig $config
      * @param bool $checkValid
-     * @param bool $checkExecutable
+     * @param bool $checkExec
      * @return bool
      */
     private function checkIsValid(
         Commands $commands,
-        string $cwd,
+        RootConfig $config,
         bool $checkValid,
-        bool $checkExecutable
+        bool $checkExec
     ): bool {
 
         $valid = $checkValid ? $commands->isValid() : true;
+        $configName = $config->name();
 
-        if ($valid && $checkExecutable) {
-            $valid = $commands->isExecutable($this->executor, $cwd);
+        $errors = [" 'commands' configuration is invalid for '{$configName}'."];
+
+        if ($valid && $checkExec && !$commands->isExecutable($this->executor, $config->rootDir())) {
+            $valid = false;
+            $cmdName = $commands->name();
+            $error = " '{$configName}' seems to require {$cmdName},"
+                . " but that is not available on the system.";
+            $errors = [$error, ' Will now try to discover an executable package manager.'];
         }
 
-        if (!$valid) {
-            $this->io->writeError('Commands config is invalid, will try now to auto-discover.');
-        }
+        $valid or $this->io->writeVerboseError(...$errors);
 
         return $valid;
     }

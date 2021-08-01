@@ -167,6 +167,7 @@ class CommandsTest extends TestCase
     {
         $commands = Commands::new(
             [
+                'script' => 'npm run %s',
                 'dependencies' => [
                     'install' => 'npm install --loglevel warn',
                     'update' => 'npm update -d',
