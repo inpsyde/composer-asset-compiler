@@ -22,7 +22,6 @@ use Inpsyde\AssetsCompiler\Util\Io;
 
 class Processor
 {
-
     /**
      * @var Io
      */
@@ -206,7 +205,7 @@ class Processor
 
     /**
      * @param Asset $asset
-     * @return array{string, string, bool}|array{null, null, null}
+     * @return array{string|null, string|null, bool|null}
      */
     private function assetProcessInfo(Asset $asset): array
     {
@@ -303,6 +302,11 @@ class Processor
             return true;
         }
 
+        $cwd = $asset->path();
+        if (!$cwd || !is_dir($cwd)) {
+            return false;
+        }
+
         $command = $isUpdate
             ? $commands->updateCmd($this->io)
             : $commands->installCmd($this->io);
@@ -311,14 +315,91 @@ class Processor
             return false;
         }
 
-        $action = $isUpdate ? 'Updating' : 'Installalling';
+        $action = $isUpdate ? 'Updating' : 'Installing';
         $name = $asset->name();
-        $this->io->writeVerboseComment("{$action} dependencies for '{$name}' via '{$command}'...");
+        $cmdName = $commands->name();
+        $this->io->writeVerboseComment("{$action} dependencies for '{$name}' using {$cmdName}...");
 
-        $cwd = $asset->path();
+        $command = $this->handleIsolatedCache($commands, $command, $cwd, $name);
         $exitCode = $this->executor->execute($command, $this->outputHandler, $cwd);
 
         return $exitCode === 0;
+    }
+
+    /**
+     * @param Commands $commands
+     * @param string $command
+     * @param string $cwd
+     * @param string $assetName
+     * @return string
+     */
+    private function handleIsolatedCache(
+        Commands $commands,
+        string $command,
+        string $cwd,
+        string $assetName
+    ): string {
+
+        if (!$this->config->isolatedCache()) {
+            return $command;
+        }
+
+        $isYarn = $commands->isYarn();
+        $cacheParam = $isYarn ? 'cache-folder' : 'cache';
+        if (strpos($command, " --{$cacheParam}") !== false) {
+            return $command;
+        }
+
+        static $tempDir;
+        if (!isset($tempDir)) {
+            $tempDirRaw = $this->filesystem->normalizePath(sys_get_temp_dir());
+            $tempDir = (is_dir($tempDirRaw) && is_writable($tempDirRaw))
+                ? rtrim($tempDirRaw, '/')
+                : false;
+        }
+
+        $cmdName = $commands->name();
+        $cleanCmd = $commands->cleanCacheCmd();
+        $doClean = $tempDir === false;
+        $fullPath = $doClean ? '' : "{$tempDir}/composer-asset-compiler/{$cmdName}/{$assetName}";
+        try {
+            $fullPath and $this->filesystem->ensureDirectoryExists($fullPath);
+        } catch (\Throwable $throwable) {
+            $doClean = true;
+        }
+
+        if ($doClean && !$cleanCmd) {
+            $this->io->writeVerboseError(
+                "Cache cleanup command not configured for {$cmdName}.",
+                "Isolated cache not applicable for '{$assetName}'."
+            );
+
+            return $command;
+        }
+
+        if ($doClean) {
+            $this->io->writeVerbose(
+                "Failed creating asset temporary directory.",
+                "Will now execute {$cleanCmd} to ensure isolated cache for '{$assetName}'."
+            );
+
+            $this->io->writeVerboseComment("Forcing {$cmdName} cache cleanup...");
+            $out = null;
+            if ($this->executor->execute($cleanCmd, $out, $cwd) !== 0) {
+                $this->io->writeVerboseError(
+                    "  {$cmdName} cache cleanup failed!",
+                    "  Isolated cache not applicable for '{$assetName}'."
+                );
+            }
+
+            return $command;
+        }
+
+        $this->io->writeVerbose("Will use isolated cache path '{$fullPath}' for '{$assetName}'.");
+
+        /** @var string $tempDir */
+
+        return "{$command} --{$cacheParam} {$fullPath}";
     }
 
     /**
@@ -406,7 +487,7 @@ class Processor
 
         $commandsStr = implode(' && ', $assetCommands);
         $name = $asset->name();
-        $this->io->writeVerboseComment("Found <{$commandsStr}> script for '{$name}'.");
+        $this->io->writeVerboseComment("Will compile '{$name}' using '{$commandsStr}'.");
 
         return $assetCommands;
     }

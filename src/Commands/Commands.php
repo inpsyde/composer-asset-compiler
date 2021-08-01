@@ -21,27 +21,31 @@ final class Commands
     public const NPM = 'npm';
 
     private const DEPENDENCIES = 'dependencies';
-    private const DEPENDENCIES_INSTALL = 'install';
-    private const DEPENDENCIES_UPDATE = 'update';
+    private const DEPS_INSTALL = 'install';
+    private const DEPS_UPDATE = 'update';
     private const DISCOVER = 'discover';
+    private const CLEAN_CACHE = 'clean-cache';
     private const SCRIPT = 'script';
+    private const MANAGER = 'name';
 
     private const SUPPORTED_DEFAULTS = [
         self::YARN => [
             self::DEPENDENCIES => [
-                self::DEPENDENCIES_INSTALL => 'yarn',
-                self::DEPENDENCIES_UPDATE => 'yarn upgrade',
+                self::DEPS_INSTALL => 'yarn',
+                self::DEPS_UPDATE => 'yarn upgrade',
             ],
             self::SCRIPT => 'yarn %s',
             self::DISCOVER => 'yarn --version',
+            self::CLEAN_CACHE => 'yarn cache clean',
         ],
         self::NPM => [
             self::DEPENDENCIES => [
-                self::DEPENDENCIES_INSTALL => 'npm install',
-                self::DEPENDENCIES_UPDATE => 'npm update --no-save',
+                self::DEPS_INSTALL => 'npm install',
+                self::DEPS_UPDATE => 'npm update --no-save',
             ],
             self::SCRIPT => 'npm run %s',
             self::DISCOVER => 'npm --version',
+            self::CLEAN_CACHE => 'npm cache clear --force',
         ],
     ];
 
@@ -61,9 +65,19 @@ final class Commands
     private $script;
 
     /**
+     * @var string
+     */
+    private $cacheClean;
+
+    /**
      * @var array
      */
     private $defaultEnvironment;
+
+    /**
+     * @var string|null
+     */
+    private $name;
 
     /**
      * @param ProcessExecutor $executor
@@ -141,38 +155,109 @@ final class Commands
      */
     private function __construct(array $config, array $defaultEnvironment = [])
     {
+        $this->reset();
         $this->defaultEnvironment = $defaultEnvironment;
 
-        $dependencies = $config[self::DEPENDENCIES] ?? null;
+        $dependencies = $this->parseDependencies($config);
+        if (empty($dependencies[self::DEPS_INSTALL])) {
+            $this->reset();
 
-        $install = null;
-        $update = null;
-
-        if ($dependencies && is_array($dependencies)) {
-            $install = $dependencies[self::DEPENDENCIES_INSTALL] ?? null;
-            $update = $dependencies[self::DEPENDENCIES_UPDATE] ?? null;
+            return;
         }
-
-        /** @var string|null $install */
-        /** @var string|null $update */
-
-        $this->dependencies = [
-            self::DEPENDENCIES_INSTALL => is_string($install) ? $install : null,
-            self::DEPENDENCIES_UPDATE => is_string($update) ? $update : null,
-        ];
+        $this->dependencies = $dependencies;
 
         $script = $config[self::SCRIPT] ?? null;
         if ($script && is_string($script) && substr_count($script, '%s') === 1) {
             $this->script = $script;
         }
+
+        if (!$this->isValid()) {
+            $this->reset();
+
+            return;
+        }
+
+        $manager = $config[self::MANAGER] ?? null;
+        $name = ($manager && is_string($manager)) ? strtolower(trim($manager)) : null;
+        in_array($name, [self::YARN, self::NPM], true) or $name = null;
+        $this->name = $name;
+
+        $isYarn = $this->isYarn();
+        if (!$isYarn && !$this->isNpm()) {
+            $this->reset();
+
+            return;
+        }
+
+        $clean = $config[self::CLEAN_CACHE] ?? null;
+        $defaults = self::SUPPORTED_DEFAULTS[$isYarn ? self::YARN : self::NPM];
+        $this->cacheClean = ($clean && is_string($clean)) ? $clean : $defaults[self::CLEAN_CACHE];
+    }
+
+    /**
+     * @return bool
+     *
+     * @psalm-assert-if-true non-empty-string $this->script
+     */
+    public function isValid(): bool
+    {
+        return !empty($this->dependencies[self::DEPS_INSTALL]) && $this->scriptCmd('test');
     }
 
     /**
      * @return bool
      */
-    public function isValid(): bool
+    public function isNpm(): bool
     {
-        return !empty($this->dependencies[self::DEPENDENCIES_INSTALL]) && $this->scriptCmd('test');
+        if (!$this->isValid()) {
+            return false;
+        }
+
+        if ($this->name) {
+            return $this->name === self::NPM;
+        }
+
+        if ($this->script && stripos($this->script, 'npm') !== false) {
+            $this->name = self::NPM;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isYarn(): bool
+    {
+        if (!$this->isValid()) {
+            return false;
+        }
+
+        if ($this->name) {
+            return $this->name === self::YARN;
+        }
+
+        if ($this->script && stripos($this->script, 'yarn') !== false) {
+            $this->name = self::YARN;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return string
+     */
+    public function name(): string
+    {
+        if (!$this->isValid()) {
+            return 'invalid';
+        }
+
+        return $this->isYarn() ? 'yarn' : 'npm';
     }
 
     /**
@@ -193,7 +278,7 @@ final class Commands
      */
     public function installCmd(Io $io): ?string
     {
-        return $this->maybeVerbose($this->dependencies[self::DEPENDENCIES_INSTALL], $io);
+        return $this->maybeVerbose($this->dependencies[self::DEPS_INSTALL], $io);
     }
 
     /**
@@ -202,7 +287,15 @@ final class Commands
      */
     public function updateCmd(Io $io): ?string
     {
-        return $this->maybeVerbose($this->dependencies[self::DEPENDENCIES_UPDATE], $io);
+        return $this->maybeVerbose($this->dependencies[self::DEPS_UPDATE], $io);
+    }
+
+    /**
+     * @return string
+     */
+    public function cleanCacheCmd(): string
+    {
+        return $this->cacheClean;
     }
 
     /**
@@ -226,14 +319,13 @@ final class Commands
         // then we remove `--`.
         $cmdParams = '';
         if (substr_count($command, ' -- ', 1) === 1) {
-            $isYarn = stripos($this->script, 'yarn') !== false;
             [$commandNoArgs, $cmdParams] = explode(' -- ', $command, 2);
             $commandNoArgsClean = trim($commandNoArgs);
             if ($commandNoArgsClean) {
                 $command = trim($commandNoArgsClean);
                 $cmdParams = trim($cmdParams);
             }
-            if ($cmdParams && !$isYarn) {
+            if ($cmdParams && !$this->isYarn()) {
                 $cmdParams = "-- {$cmdParams}";
             }
         }
@@ -251,15 +343,54 @@ final class Commands
      */
     public function isExecutable(ProcessExecutor $executor, ?string $cwd): bool
     {
-        $isYarn = stripos($this->script ?? '', 'yarn') !== false;
-        $isNpm = stripos($this->script ?? '', 'npm') !== false;
-        if (!$isYarn && !$isNpm) {
+        $isYarn = $this->isYarn();
+        if (!$isYarn && !$this->isNpm()) {
             return false;
         }
 
         $tested = self::test($executor, $cwd);
 
         return in_array($isYarn ? self::YARN : self::NPM, $tested, true);
+    }
+
+    /**
+     * @return void
+     */
+    private function reset(): void
+    {
+        $this->script = null;
+        $this->dependencies = [self::DEPS_INSTALL => null, self::DEPS_UPDATE => null];
+        $this->name = null;
+        $this->cacheClean = '';
+        $this->defaultEnvironment = [];
+    }
+
+    /**
+     * @param array $config
+     * @return array{update: null|string, install: null|string}
+     */
+    private function parseDependencies(array $config): array
+    {
+        $dependencies = $config[self::DEPENDENCIES] ?? null;
+        $install = null;
+        $update = null;
+        if ($dependencies && is_array($dependencies)) {
+            $install = $dependencies[self::DEPS_INSTALL] ?? null;
+            $update = $dependencies[self::DEPS_UPDATE] ?? null;
+            (($install !== '') && is_string($install)) or $install = null;
+            (($update !== '') && is_string($update)) or $update = null;
+        }
+
+        /** @var non-empty-string|null $install */
+        /** @var non-empty-string|null $update */
+
+        if (($install === null) && $update) {
+            $install = $update;
+        } elseif (($update === null) && $install) {
+            $update = $install;
+        }
+
+        return [self::DEPS_INSTALL => $install, self::DEPS_UPDATE => $update];
     }
 
     /**
@@ -273,10 +404,8 @@ final class Commands
             return $cmd;
         }
 
-        $isYarn = stripos($cmd, 'yarn') !== false;
-        $isNpm = !$isYarn && stripos($cmd, 'npm') !== false;
-
-        if (!$isYarn && !$isNpm) {
+        $isYarn = $this->isYarn();
+        if (!$isYarn && !$this->isNpm()) {
             return $cmd;
         }
 

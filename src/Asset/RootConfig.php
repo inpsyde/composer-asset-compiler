@@ -21,6 +21,7 @@ final class RootConfig
     public const AUTO_RUN = 'auto-run';
     public const COMMANDS = 'commands';
     public const DEFAULTS = 'defaults';
+    public const ISOLATED_CACHE = 'isolated-cache';
     public const PACKAGES = 'packages';
     public const STOP_ON_FAILURE = 'stop-on-failure';
     public const WIPE_NODE_MODULES = 'wipe-node-modules';
@@ -58,6 +59,11 @@ final class RootConfig
     private $rootDir;
 
     /**
+     * @var string
+     */
+    private $name;
+
+    /**
      * @param RootPackageInterface $package
      * @param EnvResolver $envResolver
      * @param Filesystem $filesystem
@@ -87,6 +93,7 @@ final class RootConfig
         string $rootDir
     ) {
 
+        $this->name = $package->getPrettyName();
         $this->rootDir = rtrim($filesystem->normalizePath($rootDir), '/');
         $configFile = "{$this->rootDir}/" . self::CONFIG_FILE;
         $data = file_exists($configFile)
@@ -97,6 +104,14 @@ final class RootConfig
         $this->rootPackageConfig = Config::forComposerPackage($package, $envResolver, $configFile);
         $this->envResolver = $envResolver;
         $this->filesystem = $filesystem;
+    }
+
+    /**
+     * @return string
+     */
+    public function name(): string
+    {
+        return $this->name;
     }
 
     /**
@@ -138,7 +153,17 @@ final class RootConfig
     }
 
     /**
-     * @return array{string|array, bool}|array{null, null}
+     * @return bool
+     */
+    public function isolatedCache(): bool
+    {
+        $isolated = $this->resolveByEnv(self::ISOLATED_CACHE, false, false);
+
+        return (bool)filter_var($isolated, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * @return array{string|array|null, bool|null}
      */
     public function commands(): array
     {
