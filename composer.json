@@ -52,6 +52,12 @@
         ]
     },
     "extra": {
-        "class": "Inpsyde\\AssetsCompiler\\Composer\\Plugin"
+        "class": "Inpsyde\\AssetsCompiler\\Composer\\Plugin",
+        "branch-alias": {
+            "dev-master": "2.x-dev",
+            "dev-v1.x": "1.x-dev",
+            "dev-v2.x": "2.x-dev",
+            "dev-v3.x": "2.x-dev"
+        }
     }
 }
