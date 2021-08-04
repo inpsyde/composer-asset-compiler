@@ -11,15 +11,12 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\Asset;
 
-use Composer\Json\JsonFile;
-use Composer\Package\RootPackageInterface;
 use Composer\Util\Filesystem;
 use Inpsyde\AssetsCompiler\Util\EnvResolver;
 
 final class RootConfig
 {
     public const AUTO_RUN = 'auto-run';
-    public const COMMANDS = 'commands';
     public const DEFAULTS = 'defaults';
     public const ISOLATED_CACHE = 'isolated-cache';
     public const PACKAGES = 'packages';
@@ -29,9 +26,17 @@ final class RootConfig
     public const MAX_PROCESSES = 'max-processes';
     public const PROCESSES_POLL = 'processes-poll';
 
-    public const CONFIG_FILE = 'assets-compiler.json';
-
     private const WIPE_FORCE = 'force';
+
+    /**
+     * @var string
+     */
+    private $name;
+
+    /**
+     * @var string
+     */
+    private $path;
 
     /**
      * @var array
@@ -49,59 +54,42 @@ final class RootConfig
     private $filesystem;
 
     /**
-     * @var Config
-     */
-    private $rootPackageConfig;
-
-    /**
-     * @var string
-     */
-    private $rootDir;
-
-    /**
-     * @var string
-     */
-    private $name;
-
-    /**
-     * @param RootPackageInterface $package
+     * @param string $name
+     * @param string $path
+     * @param array $data
      * @param EnvResolver $envResolver
      * @param Filesystem $filesystem
-     * @param string $rootDir
      * @return RootConfig
      */
     public static function new(
-        RootPackageInterface $package,
+        string $name,
+        string $path,
+        array $data,
         EnvResolver $envResolver,
-        Filesystem $filesystem,
-        string $rootDir
+        Filesystem $filesystem
     ): RootConfig {
 
-        return new static($package, $envResolver, $filesystem, $rootDir);
+        return new static($name, $path, $data, $envResolver, $filesystem);
     }
 
     /**
-     * @param RootPackageInterface $package
+     * @param string $name
+     * @param string $path
+     * @param array $data
      * @param EnvResolver $envResolver
      * @param Filesystem $filesystem
-     * @param string $rootDir
      */
     private function __construct(
-        RootPackageInterface $package,
+        string $name,
+        string $path,
+        array $data,
         EnvResolver $envResolver,
-        Filesystem $filesystem,
-        string $rootDir
+        Filesystem $filesystem
     ) {
 
-        $this->name = $package->getPrettyName();
-        $this->rootDir = rtrim($filesystem->normalizePath($rootDir), '/');
-        $configFile = "{$this->rootDir}/" . self::CONFIG_FILE;
-        $data = file_exists($configFile)
-            ? JsonFile::parseJson(file_get_contents($configFile) ?: '')
-            : $package->getExtra()[Config::EXTRA_KEY] ?? null;
-
-        $this->raw = is_array($data) ? $data : [];
-        $this->rootPackageConfig = Config::forComposerPackage($package, $envResolver, $configFile);
+        $this->name = $name;
+        $this->path = rtrim($path, '/');
+        $this->raw = $data;
         $this->envResolver = $envResolver;
         $this->filesystem = $filesystem;
     }
@@ -117,9 +105,9 @@ final class RootConfig
     /**
      * @return string
      */
-    public function rootDir(): string
+    public function path(): string
     {
-        return $this->rootDir;
+        return $this->path;
     }
 
     /**
@@ -127,7 +115,7 @@ final class RootConfig
      */
     public function packagesData(): array
     {
-        $data = $this->raw[self::PACKAGES] ?? null;
+        $data = $this->resolveByEnv(self::PACKAGES, true, []);
 
         return is_array($data) ? $data : [];
     }
@@ -137,7 +125,7 @@ final class RootConfig
      */
     public function autoDiscover(): bool
     {
-        $config = $this->raw[self::AUTO_DISCOVER] ?? true;
+        $config = $this->resolveByEnv(self::AUTO_DISCOVER, false, true);
 
         return (bool)filter_var($config, FILTER_VALIDATE_BOOLEAN);
     }
@@ -163,44 +151,14 @@ final class RootConfig
     }
 
     /**
-     * @return array{string|array|null, bool|null}
+     * @return Config|null
      */
-    public function commands(): array
+    public function defaults(): ?Config
     {
-        $config = $this->resolveByEnv(self::COMMANDS, true, null);
-        $isDefaults = is_string($config);
-        if (!$config || !$isDefaults && !is_array($config)) {
-            return [null, null];
-        }
+        $data = $this->resolveByEnv(self::DEFAULTS, true, null);
+        $config = Config::forAssetConfigInRoot($data, $this->envResolver);
 
-        /** @var string|array $config */
-
-        return [$config, $isDefaults];
-    }
-
-    /**
-     * @return array|null
-     */
-    public function defaults(): ?array
-    {
-        $config = $this->resolveByEnv(self::DEFAULTS, true, null);
-        if ($config && is_string($config)) {
-            $config = [Config::DEPENDENCIES => Config::INSTALL, Config::SCRIPT => $config];
-        }
-
-        if (!$config || !is_array($config)) {
-            return null;
-        }
-
-        return $config;
-    }
-
-    /**
-     * @return array
-     */
-    public function defaultEnv(): array
-    {
-        return $this->rootPackageConfig->defaultEnv();
+        return $config->isRunnable() ? $config : null;
     }
 
     /**
@@ -261,7 +219,7 @@ final class RootConfig
 
         // This is called when the plugin starts process the package.
         // If `node_modules` dir exists, it means that was *not* created by the plugin itself,
-        // but existed before, so we don't deleted it.
+        // but existed before, so we don't delete it.
 
         return !is_dir("{$packageFolder}/node_modules");
     }

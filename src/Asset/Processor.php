@@ -13,8 +13,8 @@ namespace Inpsyde\AssetsCompiler\Asset;
 
 use Composer\Util\Filesystem;
 use Composer\Util\ProcessExecutor;
-use Inpsyde\AssetsCompiler\Commands\Commands;
-use Inpsyde\AssetsCompiler\Commands\Finder;
+use Inpsyde\AssetsCompiler\PackageManager\PackageManager;
+use Inpsyde\AssetsCompiler\PackageManager\Finder;
 use Inpsyde\AssetsCompiler\PreCompilation;
 use Inpsyde\AssetsCompiler\Process\Results;
 use Inpsyde\AssetsCompiler\Process\ParallelManager;
@@ -28,14 +28,14 @@ class Processor
     private $io;
 
     /**
-     * @var RootConfig
+     * @var Config
      */
     private $config;
 
     /**
      * @var Finder
      */
-    private $commandsFinder;
+    private $packageManagerFinder;
 
     /**
      * @var ProcessExecutor
@@ -68,14 +68,14 @@ class Processor
     private $filesystem;
 
     /**
-     * @var Commands|null
+     * @var PackageManager|null
      */
-    private $defaultCommands;
+    private $defaultPackageManager;
 
     /**
      * @param Io $io
-     * @param RootConfig $config
-     * @param Finder $commandsFinder
+     * @param Config $config
+     * @param Finder $packageManagerFinder
      * @param ProcessExecutor $executor
      * @param ParallelManager $parallelManager
      * @param Locker $locker
@@ -86,8 +86,8 @@ class Processor
      */
     public static function new(
         Io $io,
-        RootConfig $config,
-        Finder $commandsFinder,
+        Config $config,
+        Finder $packageManagerFinder,
         ProcessExecutor $executor,
         ParallelManager $parallelManager,
         Locker $locker,
@@ -99,7 +99,7 @@ class Processor
         return new self(
             $io,
             $config,
-            $commandsFinder,
+            $packageManagerFinder,
             $executor,
             $parallelManager,
             $locker,
@@ -111,8 +111,8 @@ class Processor
 
     /**
      * @param Io $io
-     * @param RootConfig $config
-     * @param Finder $commandsFinder
+     * @param Config $config
+     * @param Finder $packageManagerFinder
      * @param ProcessExecutor $executor
      * @param ParallelManager $parallelManager
      * @param Locker $locker
@@ -122,8 +122,8 @@ class Processor
      */
     private function __construct(
         Io $io,
-        RootConfig $config,
-        Finder $commandsFinder,
+        Config $config,
+        Finder $packageManagerFinder,
         ProcessExecutor $executor,
         ParallelManager $parallelManager,
         Locker $locker,
@@ -134,7 +134,7 @@ class Processor
 
         $this->io = $io;
         $this->config = $config;
-        $this->commandsFinder = $commandsFinder;
+        $this->packageManagerFinder = $packageManagerFinder;
         $this->executor = $executor;
         $this->parallelManager = $parallelManager;
         $this->locker = $locker;
@@ -147,12 +147,16 @@ class Processor
      * @param \Iterator $assets
      * @param string|null $hashSeed
      * @return bool
-     * @throws \Exception
      */
     public function process(\Iterator $assets, ?string $hashSeed = null): bool
     {
+        $rootConfig = $this->config->rootConfig();
+        if (!$rootConfig) {
+            throw new \Error('Invalid root config.');
+        }
+
         $toWipe = [];
-        $stopOnFailure = $this->config->stopOnFailure();
+        $stopOnFailure = $rootConfig->stopOnFailure();
         $return = true;
         $processManager = $this->parallelManager;
 
@@ -162,7 +166,7 @@ class Processor
             } elseif (!($asset instanceof Asset)) {
                 continue;
             }
-            [$name, $path, $shouldWipe] = $this->assetProcessInfo($asset);
+            [$name, $path, $shouldWipe] = $this->assetProcessInfo($asset, $rootConfig);
             if (!$name || !$path || ($shouldWipe === null)) {
                 continue;
             }
@@ -170,14 +174,15 @@ class Processor
                 continue;
             }
 
-            $commands = $this->findCommandsForAsset($asset);
-            if (!$commands->isValid() || !$commands->isExecutable($this->executor, $path)) {
+            try {
+                $commands = $this->findCommandsForAsset($asset, $rootConfig);
+            } catch (\Throwable $throwable) {
                 $this->io->writeError("Could not find a package manager on the system.");
 
                 return false;
             }
 
-            $installedDeps = $this->doDependencies($asset, $commands);
+            $installedDeps = $this->doDependencies($asset, $commands, $rootConfig);
 
             if (!$installedDeps && $stopOnFailure) {
                 return false;
@@ -205,9 +210,10 @@ class Processor
 
     /**
      * @param Asset $asset
+     * @param RootConfig $root
      * @return array{string|null, string|null, bool|null}
      */
-    private function assetProcessInfo(Asset $asset): array
+    private function assetProcessInfo(Asset $asset, RootConfig $root): array
     {
         $name = $asset->name();
         $path = $asset->path();
@@ -216,9 +222,7 @@ class Processor
             return [null, null, null];
         }
 
-        $shouldWipe = $this->config->isWipeAllowedFor($path);
-
-        return [$name, $path, $shouldWipe];
+        return [$name, $path, $root->isWipeAllowedFor($path)];
     }
 
     /**
@@ -248,17 +252,18 @@ class Processor
 
     /**
      * @param Asset $asset
-     * @return Commands
+     * @param RootConfig $root
+     * @return PackageManager
+     * @throws \Throwable
      */
-    private function findCommandsForAsset(Asset $asset): Commands
+    private function findCommandsForAsset(Asset $asset, RootConfig $root): PackageManager
     {
-        $path = rtrim($asset->path() ?? '', '/');
-        $isRoot = $path && ($path === rtrim($this->config->rootDir(), '/'));
+        $isRoot = $asset->path() === $root->path();
 
         try {
             return $isRoot
-                ? $this->defaultCommands()
-                : $this->commandsFinder->findForAsset($asset);
+                ? $this->defaultPackageManager($root)
+                : $this->packageManagerFinder->findForAsset($asset);
         } catch (\Throwable $throwable) {
             if ($isRoot) {
                 throw $throwable;
@@ -269,32 +274,36 @@ class Processor
             );
             $this->io->writeError($error);
 
-            return $this->defaultCommands();
+            return $this->defaultPackageManager($root);
         }
     }
 
     /**
-     * @return Commands
+     * @param RootConfig $root
+     * @return PackageManager
      */
-    private function defaultCommands(): Commands
+    private function defaultPackageManager(RootConfig $root): PackageManager
     {
-        try {
-            $this->defaultCommands
-            or $this->defaultCommands = $this->commandsFinder->find($this->config);
-
-            return $this->defaultCommands;
-        } catch (\Throwable $throwable) {
-            return Commands::new([], []);
+        if (!$this->defaultPackageManager) {
+            $this->defaultPackageManager = $this->packageManagerFinder
+                ->findForConfig($this->config, $root->name(), $root->path());
         }
+
+        return $this->defaultPackageManager;
     }
 
     /**
      * @param Asset $asset
-     * @param Commands $commands
+     * @param PackageManager $packageManager
+     * @param RootConfig $root
      * @return bool
      */
-    private function doDependencies(Asset $asset, Commands $commands): bool
-    {
+    private function doDependencies(
+        Asset $asset,
+        PackageManager $packageManager,
+        RootConfig $root
+    ): bool {
+
         $isUpdate = $asset->isUpdate();
         $isInstall = $asset->isInstall();
 
@@ -308,8 +317,8 @@ class Processor
         }
 
         $command = $isUpdate
-            ? $commands->updateCmd($this->io)
-            : $commands->installCmd($this->io);
+            ? $packageManager->updateCmd($this->io)
+            : $packageManager->installCmd($this->io);
 
         if (!$command) {
             return false;
@@ -317,34 +326,36 @@ class Processor
 
         $action = $isUpdate ? 'Updating' : 'Installing';
         $name = $asset->name();
-        $cmdName = $commands->name();
+        $cmdName = $packageManager->name();
         $this->io->writeVerboseComment("{$action} dependencies for '{$name}' using {$cmdName}...");
 
-        $command = $this->handleIsolatedCache($commands, $command, $cwd, $name);
+        $command = $this->handleIsolatedCache($packageManager, $root, $command, $cwd, $name);
         $exitCode = $this->executor->execute($command, $this->outputHandler, $cwd);
 
         return $exitCode === 0;
     }
 
     /**
-     * @param Commands $commands
+     * @param PackageManager $packageManager
+     * @param RootConfig $root
      * @param string $command
      * @param string $cwd
      * @param string $assetName
      * @return string
      */
     private function handleIsolatedCache(
-        Commands $commands,
+        PackageManager $packageManager,
+        RootConfig $root,
         string $command,
         string $cwd,
         string $assetName
     ): string {
 
-        if (!$this->config->isolatedCache()) {
+        if (!$root->isolatedCache()) {
             return $command;
         }
 
-        $isYarn = $commands->isYarn();
+        $isYarn = $packageManager->isYarn();
         $cacheParam = $isYarn ? 'cache-folder' : 'cache';
         if (strpos($command, " --{$cacheParam}") !== false) {
             return $command;
@@ -358,8 +369,8 @@ class Processor
                 : false;
         }
 
-        $cmdName = $commands->name();
-        $cleanCmd = $commands->cleanCacheCmd();
+        $cmdName = $packageManager->name();
+        $cleanCmd = $packageManager->cleanCacheCmd();
         $doClean = $tempDir === false;
         $fullPath = $doClean ? '' : "{$tempDir}/composer-asset-compiler/{$cmdName}/{$assetName}";
         try {
@@ -468,10 +479,10 @@ class Processor
 
     /**
      * @param Asset $asset
-     * @param Commands $commands
+     * @param PackageManager $packageManager
      * @return list<string>|null
      */
-    private function buildScriptCommands(Asset $asset, Commands $commands): ?array
+    private function buildScriptCommands(Asset $asset, PackageManager $packageManager): ?array
     {
         $scripts = $asset->script();
         if (!$scripts) {
@@ -481,7 +492,7 @@ class Processor
         $assetCommands = [];
         $assetEnv = $asset->env();
         foreach ($scripts as $script) {
-            $command = $commands->scriptCmd($script, $assetEnv);
+            $command = $packageManager->scriptCmd($script, $assetEnv);
             $command and $assetCommands[] = $command;
         }
 

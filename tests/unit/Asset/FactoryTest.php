@@ -9,17 +9,17 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\AssetsCompiler\Tests\Unit\Package;
+namespace Inpsyde\AssetsCompiler\Tests\Unit\Asset;
 
 use Composer\Installer\InstallationManager;
 use Composer\Package\Package;
 use Composer\Package\PackageInterface;
 use Composer\Package\RootPackage;
 use Composer\Util\Filesystem;
-use Inpsyde\AssetsCompiler\Commands\Commands;
 use Inpsyde\AssetsCompiler\Asset\Config;
 use Inpsyde\AssetsCompiler\Asset\Defaults;
 use Inpsyde\AssetsCompiler\Asset\Factory;
+use Inpsyde\AssetsCompiler\PackageManager\PackageManager;
 use Inpsyde\AssetsCompiler\Util\EnvResolver;
 use Inpsyde\AssetsCompiler\Tests\TestCase;
 use org\bovigo\vfs\vfsStream;
@@ -317,13 +317,13 @@ JSON;
         static::assertSame(['encore ${ENCORE_ENV}'], $scripts);
         $script = array_pop($scripts);
 
-        $commandsNoEnv = Commands::fromDefault('yarn', []);
-        static::assertSame('yarn encore prod', $commandsNoEnv->scriptCmd($script, $asset->env()));
+        $yarnNoEnv = PackageManager::fromDefault('yarn', []);
+        static::assertSame('yarn encore prod', $yarnNoEnv->scriptCmd($script, $asset->env()));
 
-        $commandsWithEnv = Commands::fromDefault('yarn', ['ENCORE_ENV' => 'dev']);
+        $yarnWithEnv = PackageManager::fromDefault('yarn', ['ENCORE_ENV' => 'dev']);
         static::assertSame(
             'yarn encore prod',
-            $commandsWithEnv->scriptCmd($script, $asset->env())
+            $yarnWithEnv->scriptCmd($script, $asset->env())
         );
     }
 
@@ -419,24 +419,19 @@ JSON;
     /**
      * @param string $env
      * @param bool $isDev
+     * @param string|null $rootPath
      * @return Factory
      */
-    private function factoryFactory(
-        string $env = 'test',
-        bool $isDev = true,
-        ?string $rootPath = null
-    ): Factory {
-
+    private function factoryFactory(string $env = 'test'): Factory
+    {
         $packagesJson = (new vfsStreamFile('package.json'))->withContent('{}');
 
         $dir = vfsStream::setup('exampleDir');
         $dir->addChild($packagesJson);
 
-        if (!$rootPath) {
-            $rootDir = vfsStream::setup('rootDir');
-            $rootDir->addChild($packagesJson);
-            $rootPath = $rootDir->url();
-        }
+        $rootDir = vfsStream::setup('rootDir');
+        $rootDir->addChild($packagesJson);
+        $rootPath = $rootDir->url();
 
         $rootDir = vfsStream::setup('rootDir');
         $rootDir->addChild($packagesJson);
@@ -449,7 +444,7 @@ JSON;
 
         $filesystem = new Filesystem();
 
-        return Factory::new(EnvResolver::new($env, $isDev), $filesystem, $manager, $rootPath);
+        return Factory::new(EnvResolver::new($env, true), $filesystem, $manager, $rootPath);
     }
 
     /**

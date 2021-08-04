@@ -9,13 +9,13 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\AssetsCompiler\Commands;
+namespace Inpsyde\AssetsCompiler\PackageManager;
 
 use Composer\Util\ProcessExecutor;
 use Inpsyde\AssetsCompiler\Util\EnvResolver;
 use Inpsyde\AssetsCompiler\Util\Io;
 
-final class Commands
+final class PackageManager
 {
     public const YARN = 'yarn';
     public const NPM = 'npm';
@@ -105,31 +105,31 @@ final class Commands
 
     /**
      * @param string $manager
-     * @param array $defaultEnvironment
-     * @return Commands
+     * @param array $defaultEnv
+     * @return PackageManager
      */
-    public static function fromDefault(string $manager, array $defaultEnvironment = []): Commands
+    public static function fromDefault(string $manager, array $defaultEnv = []): PackageManager
     {
         $manager = strtolower($manager);
 
         if (!array_key_exists($manager, self::SUPPORTED_DEFAULTS)) {
-            return new self([], $defaultEnvironment);
+            return new self([], $defaultEnv);
         }
 
-        return new self(self::SUPPORTED_DEFAULTS[$manager], $defaultEnvironment);
+        return new self(self::SUPPORTED_DEFAULTS[$manager], $defaultEnv);
     }
 
     /**
      * @param ProcessExecutor $executor
      * @param string $workingDir
      * @param array $defaultEnvironment
-     * @return Commands
+     * @return PackageManager
      */
     public static function discover(
         ProcessExecutor $executor,
         string $workingDir,
         array $defaultEnvironment = []
-    ): Commands {
+    ): PackageManager {
 
         $tested = self::test($executor, $workingDir);
         if ($tested === []) {
@@ -142,11 +142,11 @@ final class Commands
     /**
      * @param array $config
      * @param array $defaultEnvironment
-     * @return Commands
+     * @return PackageManager
      */
-    public static function new(array $config, array $defaultEnvironment = []): Commands
+    public static function new(array $config, array $defaultEnvironment = []): PackageManager
     {
-        return new static($config, $defaultEnvironment);
+        return new self($config, $defaultEnvironment);
     }
 
     /**
@@ -262,9 +262,9 @@ final class Commands
 
     /**
      * @param array $environment
-     * @return Commands
+     * @return PackageManager
      */
-    public function withDefaultEnv(array $environment): Commands
+    public function withDefaultEnv(array $environment): PackageManager
     {
         return new self(
             [self::DEPENDENCIES => $this->dependencies, self::SCRIPT => $this->script],

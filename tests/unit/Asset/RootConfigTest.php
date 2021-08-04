@@ -9,40 +9,19 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\AssetsCompiler\Tests\Unit\Package;
+namespace Inpsyde\AssetsCompiler\Tests\Unit\Asset;
 
 use Composer\Package\RootPackage;
 use Composer\Util\Filesystem;
+use Inpsyde\AssetsCompiler\Asset\Config;
 use Inpsyde\AssetsCompiler\Asset\RootConfig;
 use Inpsyde\AssetsCompiler\Util\EnvResolver;
-use Inpsyde\AssetsCompiler\Util\Io;
 use Inpsyde\AssetsCompiler\Tests\TestCase;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
 
 class RootConfigTest extends TestCase
 {
-    /**
-     * @var Io|\Mockery\MockInterface
-     */
-    private $io;
-
-    /**
-     * @var Filesystem|\Mockery\MockInterface
-     */
-    private $filesystem;
-
-    /**
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->io = \Mockery::mock(Io::class);
-        $this->filesystem = \Mockery::mock(Filesystem::class)->makePartial();
-    }
-
     /**
      * @test
      */
@@ -187,13 +166,15 @@ JSON;
     }
 }
 JSON;
-        $this->filesystem
+        /** @var Filesystem $filesystem */
+        $filesystem = \Mockery::mock(Filesystem::class)->makePartial();
+        $filesystem
             ->shouldReceive('isSymlinkedDirectory')
             ->once()
             ->with(__DIR__)
             ->andReturn(true);
 
-        $config = $this->factoryConfig($json);
+        $config = $this->factoryConfig($json, 'test', __DIR__, $filesystem);
 
         static::assertFalse($config->isWipeAllowedFor(__DIR__));
         static::assertTrue($config->isWipeAllowedFor(__DIR__ . '/foo'));
@@ -262,14 +243,12 @@ JSON;
      */
     public function testLoadConfigFromFile(): void
     {
-        $config = $this->factoryConfig(null, 'test', false, getenv('RESOURCES_DIR'));
+        $config = $this->factoryConfig(null, 'test', getenv('RESOURCES_DIR'));
 
         $packages = $config->packagesData();
         $autoDiscover = $config->autoDiscover();
         $autoRun = $config->autoRun();
-        [$command, $isDefault] = $config->commands();
         $defaults = $config->defaults();
-        $defaultEnv = $config->defaultEnv();
         $stopOnFailure = $config->stopOnFailure();
         $maxProcesses = $config->maxProcesses();
         $processesPoll = $config->processesPoll();
@@ -277,36 +256,36 @@ JSON;
         static::assertIsArray($packages);
         static::assertFalse($autoDiscover);
         static::assertFalse($autoRun);
-        static::assertSame('npm', $command);
-        static::assertTrue($isDefault);
         static::assertNull($defaults);
-        static::assertSame([], $defaultEnv);
         static::assertTrue($stopOnFailure);
         static::assertSame(4, $maxProcesses);
         static::assertSame(100000, $processesPoll);
     }
 
     /**
-     * @param string $json
+     * @param string|null $json
      * @param string|null $env
-     * @param bool $isDev
+     * @param string|null $rootDir
+     * @param Filesystem|null $filesystem
      * @return RootConfig
      */
     private function factoryConfig(
         ?string $json,
-        ?string $env = 'test',
-        bool $isDev = false,
-        ?string $rootDir = null
+        string $env = 'test',
+        ?string $rootDir = null,
+        ?Filesystem $filesystem = null
     ): RootConfig {
 
-        $root = new RootPackage('company/my-root-package', '1.0', '1.0.0.0');
-        $json and $root->setExtra((array)json_decode($json, true));
+        $package = new RootPackage('company/my-root-package', '1.0.0.0', '1.0');
+        $package->setExtra($json ? (array)json_decode($json, true) : []);
 
-        return RootConfig::new(
-            $root,
-            EnvResolver::new($env, $isDev),
-            $this->filesystem,
-            $rootDir ?? __DIR__
+        $config = Config::forComposerPackage(
+            $package,
+            $rootDir ?? __DIR__,
+            EnvResolver::new($env, true),
+            $filesystem ?? new Filesystem()
         );
+
+        return $config->rootConfig();
     }
 }

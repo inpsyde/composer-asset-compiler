@@ -106,7 +106,7 @@ final class Plugin implements
     public function onAutorunBecauseInstall(Event $event): void
     {
         $factory = Factory::new($this->composer, $this->io, null, $event->isDevMode());
-        if ($factory->config()->autoRun()) {
+        if ($factory->rootConfig()->autoRun()) {
             $this->mode or $this->mode = self::MODE_COMPOSER_INSTALL;
             $this->run($factory);
         }

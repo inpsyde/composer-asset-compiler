@@ -9,7 +9,7 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\AssetsCompiler\Tests\Unit\Package;
+namespace Inpsyde\AssetsCompiler\Tests\Unit\Asset;
 
 use Composer\IO\IOInterface;
 use Inpsyde\AssetsCompiler\Asset\Config;

@@ -9,19 +9,17 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\AssetsCompiler\Tests\Unit\Commands;
+namespace Inpsyde\AssetsCompiler\Tests\Unit\PackageManager;
 
 use Composer\Installer\InstallationManager;
 use Composer\Package\Loader\ArrayLoader;
-use Composer\Package\RootPackage;
 use Composer\Util\Filesystem;
 use Composer\Util\ProcessExecutor;
 use Inpsyde\AssetsCompiler\Asset\Asset;
 use Inpsyde\AssetsCompiler\Asset\Config;
 use Inpsyde\AssetsCompiler\Asset\Defaults;
 use Inpsyde\AssetsCompiler\Asset\Factory;
-use Inpsyde\AssetsCompiler\Commands\Finder;
-use Inpsyde\AssetsCompiler\Asset\RootConfig;
+use Inpsyde\AssetsCompiler\PackageManager\Finder;
 use Inpsyde\AssetsCompiler\Tests\TestCase;
 use Inpsyde\AssetsCompiler\Util\EnvResolver;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -38,7 +36,7 @@ class FinderTest extends TestCase
     {
         $finder = $this->factoryFinder($this->factoryExecutor('yarn'));
 
-        $commands = $finder->find($this->factoryRootConfig());
+        $commands = $finder->findForConfig($this->factoryConfig(), 'x/x', __DIR__);
         $io = $this->factoryIo();
 
         static::assertTrue($commands->isValid());
@@ -54,7 +52,7 @@ class FinderTest extends TestCase
     {
         $finder = $this->factoryFinder($this->factoryExecutor('npm'));
 
-        $commands = $finder->find($this->factoryRootConfig());
+        $commands = $finder->findForConfig($this->factoryConfig(), 'x/x', __DIR__);
         $io = $this->factoryIo();
 
         static::assertTrue($commands->isValid());
@@ -70,7 +68,8 @@ class FinderTest extends TestCase
     {
         $finder = $this->factoryFinder($this->factoryExecutor('*'));
 
-        $commands = $finder->find($this->factoryRootConfig([], getenv('RESOURCES_DIR') . '/01'));
+        $config = $this->factoryConfig([], getenv('RESOURCES_DIR') . '/01');
+        $commands = $finder->findForConfig($config, 'x/x', getenv('RESOURCES_DIR') . '/01');
         $io = $this->factoryIo();
 
         static::assertTrue($commands->isValid());
@@ -86,7 +85,8 @@ class FinderTest extends TestCase
     {
         $finder = $this->factoryFinder($this->factoryExecutor('yarn'));
 
-        $commands = $finder->find($this->factoryRootConfig([], getenv('RESOURCES_DIR') . '/01'));
+        $config = $this->factoryConfig([], getenv('RESOURCES_DIR') . '/01');
+        $commands = $finder->findForConfig($config, 'x/x', getenv('RESOURCES_DIR') . '/01');
         $io = $this->factoryIo();
 
         static::assertTrue($commands->isValid());
@@ -118,7 +118,8 @@ class FinderTest extends TestCase
     {
         $finder = $this->factoryFinder($this->factoryExecutor('*'));
 
-        $commands = $finder->find($this->factoryRootConfig([], getenv('RESOURCES_DIR')));
+        $config = $this->factoryConfig([], getenv('RESOURCES_DIR'));
+        $commands = $finder->findForConfig($config, 'x/x', getenv('RESOURCES_DIR'));
         $io = $this->factoryIo();
 
         static::assertTrue($commands->isValid());
@@ -134,7 +135,7 @@ class FinderTest extends TestCase
     {
         $finder = $this->factoryFinder($this->factoryExecutor('*'));
 
-        $commands = $finder->findForAsset($this->factoryAsset(getenv('RESOURCES_DIR')));
+        $commands = $finder->findForAsset($this->factoryAsset(getenv('RESOURCES_DIR') . '/04'));
         $io = $this->factoryIo();
 
         static::assertTrue($commands->isValid());
@@ -152,7 +153,7 @@ class FinderTest extends TestCase
 
         $this->expectExceptionMessageMatches('/not found/i');
 
-        $finder->find($this->factoryRootConfig());
+        $finder->findForConfig($this->factoryConfig(), 'x/x', __DIR__);
     }
 
     /**
@@ -162,7 +163,8 @@ class FinderTest extends TestCase
     {
         $finder = $this->factoryFinder($this->factoryExecutor('*'));
 
-        $commands = $finder->find($this->factoryRootConfig([RootConfig::COMMANDS => 'yarn']));
+        $config = $this->factoryConfig([Config::PACKAGE_MANAGER => 'yarn']);
+        $commands = $finder->findForConfig($config, 'x/x', __DIR__);
         $io = $this->factoryIo();
 
         static::assertTrue($commands->isValid());
@@ -178,7 +180,8 @@ class FinderTest extends TestCase
     {
         $finder = $this->factoryFinder($this->factoryExecutor('*'));
 
-        $commands = $finder->find($this->factoryRootConfig([RootConfig::COMMANDS => 'NPM']));
+        $config = $this->factoryConfig([Config::PACKAGE_MANAGER => 'NPM']);
+        $commands = $finder->findForConfig($config, 'x/x', __DIR__);
         $io = $this->factoryIo();
 
         static::assertTrue($commands->isValid());
@@ -194,23 +197,23 @@ class FinderTest extends TestCase
     {
         $finder = $this->factoryFinder($this->factoryExecutor('*'));
 
-        $config = $this->factoryRootConfig([
-            RootConfig::COMMANDS => [
+        $config = $this->factoryConfig([
+            Config::PACKAGE_MANAGER => [
                 'dependencies' => [
-                    'install' => 'custom install',
-                    'update' => 'custom update',
+                    'install' => 'custom npm install',
+                    'update' => 'custom npm update',
                 ],
-                'script' => 'npm script %s',
+                'script' => 'custom npm script %s',
             ],
         ]);
 
-        $commands = $finder->find($config);
+        $commands = $finder->findForConfig($config, 'x/x', __DIR__);
         $io = $this->factoryIo();
 
         static::assertTrue($commands->isValid());
-        static::assertSame('custom install', $commands->installCmd($io));
-        static::assertSame('custom update', $commands->updateCmd($io));
-        static::assertStringContainsString('npm script run', $commands->scriptCmd('run'));
+        static::assertSame('custom npm install', $commands->installCmd($io));
+        static::assertSame('custom npm update', $commands->updateCmd($io));
+        static::assertStringContainsString('custom npm script run', $commands->scriptCmd('run'));
     }
 
     /**
@@ -220,15 +223,15 @@ class FinderTest extends TestCase
     {
         $finder = $this->factoryFinder($this->factoryExecutor(null));
 
-        $config = $this->factoryRootConfig([
-            RootConfig::COMMANDS => [
+        $config = $this->factoryConfig([
+            Config::PACKAGE_MANAGER => [
                 'x' => null,
                 'script' => 'custom script %s',
             ],
         ]);
 
         $this->expectExceptionMessageMatches('/not found/i');
-        $finder->find($config);
+        $finder->findForConfig($config, 'x/x', __DIR__);
     }
 
     /**
@@ -238,14 +241,14 @@ class FinderTest extends TestCase
     {
         $finder = $this->factoryFinder($this->factoryExecutor('npm'));
 
-        $config = $this->factoryRootConfig([
-            RootConfig::COMMANDS => [
+        $config = $this->factoryConfig([
+            Config::PACKAGE_MANAGER => [
                 'x' => null,
                 'script' => 'custom script %s',
             ],
         ]);
 
-        $commands = $finder->find($config);
+        $commands = $finder->findForConfig($config, 'x/x', __DIR__);
         $io = $this->factoryIo();
 
         static::assertTrue($commands->isValid());
@@ -261,7 +264,8 @@ class FinderTest extends TestCase
     {
         $finder = $this->factoryFinder($this->factoryExecutor('npm'));
 
-        $commands = $finder->find($this->factoryRootConfig([RootConfig::COMMANDS => 'meh']));
+        $config = $this->factoryConfig([Config::PACKAGE_MANAGER => 'meh']);
+        $commands = $finder->findForConfig($config, 'x/x', __DIR__);
         $io = $this->factoryIo();
 
         static::assertTrue($commands->isValid());
@@ -279,31 +283,38 @@ class FinderTest extends TestCase
 
         $this->expectExceptionMessageMatches('/not found/i');
 
-        $finder->find($this->factoryRootConfig([RootConfig::COMMANDS => 'meh']));
+        $finder->findForConfig(
+            $this->factoryConfig([Config::PACKAGE_MANAGER => 'meh']),
+            'x/x',
+            __DIR__
+        );
     }
 
     /**
-     * @param array $extra
+     * @param array $settings
      * @param string|null $dir
-     * @return RootConfig
+     * @return Config
      */
-    public function factoryRootConfig(array $extra = [], ?string $dir = null): RootConfig
+    public function factoryConfig(array $settings = [], ?string $dir = null): Config
     {
-        $package = new RootPackage('test', '1.0.0.0', '1.0');
-        $package->setExtra([Config::EXTRA_KEY => $extra]);
-
-        return RootConfig::new(
-            $package,
+        return Config::forComposerPackage(
+            (new ArrayLoader())->load([
+                'name' => 'inpsyde/test',
+                'description' => 'A test',
+                'license' => 'MIT',
+                'version' => '1.0',
+                'extra' => [Config::EXTRA_KEY => $settings],
+            ]),
+            $dir ?? __DIR__,
             EnvResolver::new('test', true),
-            new Filesystem(),
-            $dir ?? __DIR__
+            new Filesystem()
         );
     }
 
     /**
      * @param array $extra
      * @param string|null $dir
-     * @return RootConfig
+     * @return Asset
      */
     public function factoryAsset(string $dir): Asset
     {
@@ -311,7 +322,7 @@ class FinderTest extends TestCase
         if (empty($data['version'])) {
             $data['version'] = '1.0';
         }
-        $package = (new ArrayLoader())->load($data, RootPackage::class);
+        $package = (new ArrayLoader())->load($data);
 
         $manager = \Mockery::mock(InstallationManager::class);
         $manager->shouldReceive('getInstallPath')->with($package)->andReturn($dir);

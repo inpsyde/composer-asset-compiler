@@ -114,15 +114,16 @@ class Factory
             $config = $rootLevelConfig;
         }
 
-        $installPath = ($package instanceof RootPackageInterface)
+        $path = ($package instanceof RootPackageInterface)
             ? $this->rootDir
             : $this->installationManager->getInstallPath($package);
 
         if (!$config && (!$rootLevelPackageConfig || $packageOrDefaultAllowed)) {
             $packageLevelConfig = Config::forComposerPackage(
                 $package,
+                $path,
                 $this->envResolver,
-                "{$installPath}/" . RootConfig::CONFIG_FILE
+                $this->filesystem
             );
             $packageLevelConfig->isRunnable() and $config = $packageLevelConfig;
         }
@@ -135,7 +136,7 @@ class Factory
             return null;
         }
 
-        $path = $this->filesystem->normalizePath($installPath);
+        $path = $this->filesystem->normalizePath($path);
 
         return Asset::new(
             $package->getName(),

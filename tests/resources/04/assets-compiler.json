@@ -1,0 +1,41 @@
+{
+    "commands": "npm",
+    "wipe-node-modules": false,
+    "auto-discover": false,
+    "script": "gulp",
+    "packages": {
+        "vendor-one/a-package": "run",
+        "vendor-two/two-package": {
+            "script": "webpack -- --config config/webpack.config.prod.js"
+        },
+        "vendor-three/mah-*": {
+            "dependencies": "update",
+            "script": "encore ${ENCORE_ENV}"
+        }
+    },
+    "pre-compiled": {
+        "env": {
+            "precompilation": {
+                "adapter": false
+            },
+            "local": {
+                "adapter": false
+            },
+            "production": {
+                "source": "assets-${version}",
+                "target": "assets/",
+                "adapter": "gh-release-zip",
+                "config": {
+                    "repository": "some-author/some-repo",
+                    "user": "my-user",
+                    "token": "${GITHUB_USER_TOKEN}"
+                }
+            },
+            "$default": {
+                "source": "assets-${hash}",
+                "target": "assets/",
+                "adapter": "gh-action-artifact"
+            }
+        }
+    }
+}

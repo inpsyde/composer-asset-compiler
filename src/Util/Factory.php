@@ -10,8 +10,6 @@ use Composer\Package\RootPackageInterface;
 use Composer\Repository\RepositoryInterface;
 use Composer\Util\Filesystem;
 use Composer\Util\ProcessExecutor;
-use Inpsyde\AssetsCompiler\Commands\Commands;
-use Inpsyde\AssetsCompiler\Commands\Finder as CommandsFinder;
 use Inpsyde\AssetsCompiler\Asset\Config;
 use Inpsyde\AssetsCompiler\Asset\Defaults;
 use Inpsyde\AssetsCompiler\Asset\Factory as AssetFactory;
@@ -21,6 +19,7 @@ use Inpsyde\AssetsCompiler\Asset\Locker;
 use Inpsyde\AssetsCompiler\Asset\Asset;
 use Inpsyde\AssetsCompiler\Asset\Processor;
 use Inpsyde\AssetsCompiler\Asset\RootConfig;
+use Inpsyde\AssetsCompiler\PackageManager;
 use Inpsyde\AssetsCompiler\PreCompilation\ArchiveDownloaderAdapter;
 use Inpsyde\AssetsCompiler\PreCompilation\GithubActionArtifactAdapter;
 use Inpsyde\AssetsCompiler\PreCompilation\GithubReleaseZipAdapter;
@@ -211,17 +210,34 @@ final class Factory
     }
 
     /**
-     * @return RootConfig
+     * @return Config
      */
-    public function config(): RootConfig
+    public function config(): Config
     {
         if (empty($this->objects[__FUNCTION__])) {
-            $this->objects[__FUNCTION__] = RootConfig::new(
+            $this->objects[__FUNCTION__] = Config::forComposerPackage(
                 $this->composerRootPackage(),
+                $this->rootFolder(),
                 $this->envResolver(),
-                $this->filesystem(),
-                $this->rootFolder()
+                $this->filesystem()
             );
+        }
+
+        /** @var Config $config */
+        $config = $this->objects[__FUNCTION__];
+
+        return $config;
+    }
+
+    /**
+     * @return RootConfig
+     */
+    public function rootConfig(): RootConfig
+    {
+        if (empty($this->objects[__FUNCTION__])) {
+            /** @var RootConfig $root */
+            $root = $this->config()->rootConfig();
+            $this->objects[__FUNCTION__] = $root;
         }
 
         /** @var RootConfig $config */
@@ -236,10 +252,8 @@ final class Factory
     public function defaults(): Defaults
     {
         if (empty($this->objects[__FUNCTION__])) {
-            $config = $this->config()->defaults();
-            $this->objects[__FUNCTION__] = $config
-                ? Defaults::new(Config::forAssetConfigInRoot($config, $this->envResolver()))
-                : Defaults::empty();
+            $defaults = $this->rootConfig()->defaults();
+            $this->objects[__FUNCTION__] = $defaults ? Defaults::new($defaults) : Defaults::empty();
         }
 
         /** @var Defaults $defaults */
@@ -273,7 +287,7 @@ final class Factory
                 $this->composerRepository(),
                 $this->composerRootPackage(),
                 $this->assetFactory(),
-                $this->config()->autoDiscover()
+                $this->rootConfig()->autoDiscover()
             );
 
             $this->objects[__FUNCTION__] = new \ArrayIterator(array_values($assets));
@@ -287,12 +301,12 @@ final class Factory
     }
 
     /**
-     * @return CommandsFinder
+     * @return PackageManager\Finder
      */
-    public function commandsFinder(): CommandsFinder
+    public function commandsFinder(): PackageManager\Finder
     {
         if (empty($this->objects[__FUNCTION__])) {
-            $this->objects[__FUNCTION__] = CommandsFinder::new(
+            $this->objects[__FUNCTION__] = PackageManager\Finder::new(
                 $this->processExecutor(),
                 $this->envResolver(),
                 $this->filesystem(),
@@ -301,7 +315,7 @@ final class Factory
             );
         }
 
-        /** @var CommandsFinder $finder */
+        /** @var PackageManager\Finder $finder */
         $finder = $this->objects[__FUNCTION__];
 
         return $finder;
@@ -313,12 +327,14 @@ final class Factory
     public function assetsFinder(): AssetFinder
     {
         if (empty($this->objects[__FUNCTION__])) {
+            $config = $this->rootConfig();
             $this->objects[__FUNCTION__] = AssetFinder::new(
-                $this->config()->packagesData(),
+                $config->packagesData(),
                 $this->envResolver(),
+                $this->filesystem(),
                 $this->defaults(),
                 $this->rootFolder(),
-                $this->config()->stopOnFailure()
+                $config->stopOnFailure()
             );
         }
 
@@ -556,11 +572,12 @@ final class Factory
     public function processManager(): ParallelManager
     {
         if (empty($this->objects[__FUNCTION__])) {
+            $config = $this->rootConfig();
             $this->objects[__FUNCTION__] = ParallelManager::new(
                 $this->processOutputHandler(),
                 $this->processFactory(),
-                $this->config()->maxProcesses(),
-                $this->config()->processesPoll()
+                $config->maxProcesses(),
+                $config->processesPoll()
             );
         }
 

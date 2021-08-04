@@ -133,6 +133,14 @@ final class Asset
     }
 
     /**
+     * @return Config|null
+     */
+    public function config(): ?Config
+    {
+        return $this->config;
+    }
+
+    /**
      * @return string|null
      */
     public function path(): ?string

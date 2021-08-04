@@ -14,6 +14,8 @@ namespace Inpsyde\AssetsCompiler\Asset;
 use Composer\Json\JsonFile;
 use Composer\Package\PackageInterface;
 use Composer\Package\RootPackageInterface;
+use Composer\Util\Filesystem;
+use Inpsyde\AssetsCompiler\PackageManager;
 use Inpsyde\AssetsCompiler\Util\EnvResolver;
 use Inpsyde\AssetsCompiler\PreCompilation;
 
@@ -23,17 +25,17 @@ class Config
     public const DEF_ENV = 'default-env';
     public const DEPENDENCIES = 'dependencies';
     public const SCRIPT = 'script';
+    public const PACKAGE_MANAGER = 'package-manager';
     public const PRE_COMPILED = 'pre-compiled';
     public const INSTALL = 'install';
     public const UPDATE = 'update';
     public const NONE = 'none';
 
+    private const CONFIG_FILE = 'assets-compiler.json';
     private const FORCE_DEFAULTS = 'force-defaults';
     private const BY_PACKAGE_OR_DEFAULTS = 'package-or-defaults';
     private const DISABLED = 'disabled';
-
     private const DEPENDENCIES_OPTIONS = [self::INSTALL, self::UPDATE, self::NONE];
-
     private const BASE_DATA = [
         self::DEPENDENCIES => self::NONE,
         self::SCRIPT => null,
@@ -42,12 +44,13 @@ class Config
         self::BY_PACKAGE_OR_DEFAULTS => false,
         self::FORCE_DEFAULTS => false,
         self::DISABLED => false,
+        self::PACKAGE_MANAGER => null,
     ];
 
     /**
      * @var bool
      */
-    private $byPackage;
+    private $byPackage = false;
 
     /**
      * @var bool
@@ -63,6 +66,11 @@ class Config
      * @var array
      */
     private $raw;
+
+    /**
+     * @var RootConfig|null
+     */
+    private $rootConfig = null;
 
     /**
      * @var bool
@@ -90,64 +98,95 @@ class Config
             $config = [];
         }
 
-        ($config === true) and $config = [self::BY_PACKAGE_OR_DEFAULTS => true];
-        ($config === false) and $config = [self::DISABLED => true];
-        ($config === self::FORCE_DEFAULTS) and $config = [self::FORCE_DEFAULTS => true];
-        is_string($config) and $config = [
-            self::DEPENDENCIES => self::INSTALL,
-            self::SCRIPT => $config,
-        ];
-
-        return new static(false, $config, $envResolver);
+        return new static(static::parseRaw($config, $envResolver), $envResolver);
     }
 
     /**
      * @param PackageInterface $package
+     * @param string $path
      * @param EnvResolver $envResolver
-     * @param string $configFile
+     * @param Filesystem $filesystem
      * @return Config
      */
     public static function forComposerPackage(
         PackageInterface $package,
+        string $path,
         EnvResolver $envResolver,
-        string $configFile
+        Filesystem $filesystem
     ): Config {
 
+        $path = $filesystem->normalizePath($path);
+        $configFile = "{$path}/" . self::CONFIG_FILE;
         $raw = file_exists($configFile)
             ? JsonFile::parseJson(file_get_contents($configFile) ?: '')
             : $package->getExtra()[self::EXTRA_KEY] ?? [];
 
-        switch (true) {
-            case ($raw === false):
-            case ($raw === self::DISABLED):
-            case ($raw === self::FORCE_DEFAULTS):
-            case ($raw === self::BY_PACKAGE_OR_DEFAULTS):
-                $raw = [];
-                break;
-            case (is_string($raw)):
-                $raw = [self::DEPENDENCIES => self::INSTALL, self::SCRIPT => $raw];
-                break;
+        $data = static::parseRaw($raw, $envResolver);
+        $instance = new static($data, $envResolver);
+        $instance->byPackage = true;
+        if ($package instanceof RootPackageInterface) {
+            $instance->byRootPackage = true;
+            $name = $package->getName();
+            $instance->rootConfig = RootConfig::new($name, $path, $data, $envResolver, $filesystem);
         }
-
-        is_array($raw) or $raw = [];
-
-        $instance = new static(true, $raw, $envResolver);
-        $instance->byRootPackage = $package instanceof RootPackageInterface;
 
         return $instance;
     }
 
     /**
-     * @param bool $byPackage
+     * @param mixed $raw
+     * @param EnvResolver $envResolver
+     * @return array
+     */
+    private static function parseRaw($raw, EnvResolver $envResolver): array
+    {
+        $config = $raw;
+
+        $byEnv = null;
+        $noEnv = null;
+        if (is_array($raw)) {
+            $byEnv = $envResolver->resolveConfig($raw);
+            $noEnv = $envResolver->removeEnvConfig($raw);
+            $config = ($byEnv === null) ? $noEnv : $byEnv;
+        }
+
+        if (is_bool($config)) {
+            $config = $config ? [self::BY_PACKAGE_OR_DEFAULTS => true] : [self::DISABLED => true];
+        }
+
+        switch (true) {
+            case ($config === self::DISABLED):
+            case ($config === self::FORCE_DEFAULTS):
+            case ($config === self::BY_PACKAGE_OR_DEFAULTS):
+                $config = [$config => true];
+                break;
+            case (is_string($config)):
+                $config = [self::DEPENDENCIES => self::INSTALL, self::SCRIPT => $raw];
+                break;
+        }
+
+        is_array($config) or $config = [];
+
+        return ($byEnv && $noEnv) ? array_merge($noEnv, $config) : $config;
+    }
+
+    /**
      * @param bool $isRootPackage
      * @param array $raw
      * @param EnvResolver $envResolver
      */
-    final private function __construct(bool $byPackage, array $raw, EnvResolver $envResolver)
+    final private function __construct(array $raw, EnvResolver $envResolver)
     {
-        $this->byPackage = $byPackage;
         $this->raw = $raw;
         $this->envResolver = $envResolver;
+    }
+
+    /**
+     * @return RootConfig|null
+     */
+    public function rootConfig(): ?RootConfig
+    {
+        return $this->rootConfig;
     }
 
     /**
@@ -260,6 +299,24 @@ class Config
     }
 
     /**
+     * The returned instance, if any, is not guaranteed to be valid/executable.
+     *
+     * @return PackageManager\PackageManager|null
+     */
+    public function packageManager(): ?PackageManager\PackageManager
+    {
+        $this->parseData();
+        if (!$this->valid) {
+            return null;
+        }
+
+        /** @var PackageManager\PackageManager|null $packageManager */
+        $packageManager = $this->data[self::PACKAGE_MANAGER];
+
+        return $packageManager;
+    }
+
+    /**
      * @return PreCompilation\Config|null
      */
     public function preCompilationConfig(): ?PreCompilation\Config
@@ -280,32 +337,21 @@ class Config
      */
     public function defaultEnv(): array
     {
-        if (!$this->isByPackage()) {
+        if (!$this->isValid() || !$this->byPackage) {
             return [];
         }
 
         if (is_array($this->data[self::DEF_ENV])) {
-            $env = EnvResolver::sanitizeEnvVars($this->data[self::DEF_ENV]);
+            /** @var array<string, string> $data */
+            $data = $this->data[self::DEF_ENV];
 
-            return $env;
-        }
-
-        $this->data[self::DEF_ENV] = [];
-
-        if (!$this->byRootPackage) {
-            $this->parseData();
-
-            if (!$this->valid) {
-                return [];
-            }
+            return $data;
         }
 
         $config = $this->raw[self::DEF_ENV] ?? null;
-        if (!is_array($config) && !$config instanceof \stdClass) {
-            return [];
-        }
-
-        $this->data[self::DEF_ENV] = EnvResolver::sanitizeEnvVars((array)$config);
+        $this->data[self::DEF_ENV] = (is_array($config) || ($config instanceof \stdClass))
+            ? EnvResolver::sanitizeEnvVars((array)$config)
+            : [];
 
         return $this->data[self::DEF_ENV];
     }
@@ -333,20 +379,12 @@ class Config
             return;
         }
 
-        $byEnv = $this->envResolver->resolveConfig($config);
-        if ($byEnv && is_array($byEnv)) {
-            $config = $byEnv;
-        }
-
-        if ($byEnv === null) {
-            $config = $this->envResolver->removeEnvConfig($config);
-        }
-
         $this->data = self::BASE_DATA;
         $scripts = $this->parseScripts($config);
         $this->data[self::DEPENDENCIES] = $this->parseDependencies($config, (bool)$scripts);
         $this->data[self::SCRIPT] = $scripts;
         $this->data[self::PRE_COMPILED] = $this->parsePreCompiled($config);
+        $this->data[self::PACKAGE_MANAGER] = $this->parsePackageManager($config);
 
         $this->valid = $this->data[self::DEPENDENCIES] || $this->data[self::SCRIPT];
     }
@@ -427,6 +465,35 @@ class Config
         }
 
         return PreCompilation\Config::new($raw, $this->envResolver);
+    }
+
+    /**
+     * @param array $config
+     * @return PackageManager\PackageManager|null
+     */
+    private function parsePackageManager(array $config): ?PackageManager\PackageManager
+    {
+        // 'commands' is deprecated, but we don't have an IO instance here to inform the user
+        $manager = $config[self::PACKAGE_MANAGER] ?? $config['commands'] ?? null;
+
+        if (!$manager) {
+            return null;
+        }
+
+        if (is_array($manager)) {
+            $byEnv = $this->envResolver->resolveConfig($manager);
+            if ($byEnv && (is_array($byEnv) || is_string($byEnv))) {
+                $manager = $byEnv;
+            } elseif ($byEnv === null) {
+                $manager = $this->envResolver->removeEnvConfig($manager);
+            }
+        }
+
+        if (is_string($manager)) {
+            return PackageManager\PackageManager::fromDefault(strtolower($manager));
+        }
+
+        return is_array($manager) ? PackageManager\PackageManager::new($manager) : null;
     }
 
     /**

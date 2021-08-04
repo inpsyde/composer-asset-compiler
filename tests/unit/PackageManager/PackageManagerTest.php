@@ -9,18 +9,18 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\AssetsCompiler\Tests\Unit\Commands;
+namespace Inpsyde\AssetsCompiler\Tests\Unit\PackageManager;
 
 use Composer\Util\ProcessExecutor;
-use Inpsyde\AssetsCompiler\Commands\Commands;
+use Inpsyde\AssetsCompiler\PackageManager\PackageManager;
 use Inpsyde\AssetsCompiler\Tests\TestCase;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class CommandsTest extends TestCase
+class PackageManagerTest extends TestCase
 {
     public function testFromDefaultFailsForUnknown()
     {
-        $commands = Commands::fromDefault('foo');
+        $commands = PackageManager::fromDefault('foo');
         $io = $this->factoryIo();
 
         static::assertFalse($commands->isValid());
@@ -31,8 +31,8 @@ class CommandsTest extends TestCase
 
     public function testFromDefaultWorksForKnown()
     {
-        $yarn = Commands::fromDefault('Yarn');
-        $npm = Commands::fromDefault('NPM');
+        $yarn = PackageManager::fromDefault('Yarn');
+        $npm = PackageManager::fromDefault('NPM');
         $io = $this->factoryIo();
 
         static::assertTrue($yarn->isValid());
@@ -62,7 +62,7 @@ class CommandsTest extends TestCase
             ->andReturn(0);
 
         $io = $this->factoryIo();
-        $yarn = Commands::discover($executor, __DIR__);
+        $yarn = PackageManager::discover($executor, __DIR__);
 
         static::assertTrue($yarn->isValid());
         static::assertSame('yarn', $yarn->installCmd($io));
@@ -85,7 +85,7 @@ class CommandsTest extends TestCase
             ->with('npm --version', \Mockery::any(), __DIR__)
             ->andReturn(0);
 
-        $npm = Commands::discover($executor, __DIR__);
+        $npm = PackageManager::discover($executor, __DIR__);
         $io = $this->factoryIo();
 
         static::assertTrue($npm->isValid());
@@ -109,7 +109,7 @@ class CommandsTest extends TestCase
             ->with('npm --version', \Mockery::any(), __DIR__)
             ->andReturn(1);
 
-        $yarn = Commands::discover($executor, __DIR__);
+        $yarn = PackageManager::discover($executor, __DIR__);
         $io = $this->factoryIo();
 
         static::assertFalse($yarn->isValid());
@@ -121,7 +121,7 @@ class CommandsTest extends TestCase
      */
     public function testYarnVerbosity()
     {
-        $commands = Commands::fromDefault('Yarn');
+        $commands = PackageManager::fromDefault('Yarn');
 
         $veryVeryVerbose = $this->factoryIo(OutputInterface::VERBOSITY_DEBUG);
         $veryVerbose = $this->factoryIo(OutputInterface::VERBOSITY_VERY_VERBOSE);
@@ -143,7 +143,7 @@ class CommandsTest extends TestCase
      */
     public function testNpmVerbosity()
     {
-        $commands = Commands::fromDefault('npm');
+        $commands = PackageManager::fromDefault('npm');
 
         $veryVeryVerbose = $this->factoryIo(OutputInterface::VERBOSITY_DEBUG);
         $veryVerbose = $this->factoryIo(OutputInterface::VERBOSITY_VERY_VERBOSE);
@@ -165,7 +165,7 @@ class CommandsTest extends TestCase
      */
     public function testNpmVerbosityWhenVerbosityInCommandDefined()
     {
-        $commands = Commands::new(
+        $commands = PackageManager::new(
             [
                 'script' => 'npm run %s',
                 'dependencies' => [
@@ -199,8 +199,8 @@ class CommandsTest extends TestCase
 
     public function testAdditionalArguments()
     {
-        $yarn = Commands::fromDefault('yarn');
-        $npm = Commands::fromDefault('npm');
+        $yarn = PackageManager::fromDefault('yarn');
+        $npm = PackageManager::fromDefault('npm');
 
         $script = 'build -- --name=value';
 
