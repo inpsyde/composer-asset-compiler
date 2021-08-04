@@ -104,10 +104,11 @@ class Finder
 
         $manager = $config->packageManager();
 
-        if ($this->checkIsValid($manager, $name, $path, true, true)) {
+        if ($manager && $this->checkIsValid($manager, $name, $path, true, true)) {
             return $manager->withDefaultEnv($this->defaultEnv);
         }
 
+        $manager = null;
         switch (true) {
             case file_exists("{$path}/package-lock.json"):
             case file_exists("{$path}/npm-shrinkwrap.json"):
@@ -121,6 +122,8 @@ class Finder
         if ($manager && $this->checkIsValid($manager, $name, $path, false, true)) {
             return $manager->withDefaultEnv($this->defaultEnv);
         }
+
+        $this->io->writeVerbose(" Will use default package manager for {$name}.");
 
         $this->discovered = $this->discovered ?: PackageManager::discover($this->executor, $path);
 
@@ -153,7 +156,7 @@ class Finder
     }
 
     /**
-     * @param PackageManager|null $packageManager
+     * @param PackageManager $packageManager
      * @param string $name
      * @param string $dir
      * @param bool $checkValid
@@ -163,28 +166,32 @@ class Finder
      * @psalm-assert-if-true PackageManager $packageManager
      */
     private function checkIsValid(
-        ?PackageManager $packageManager,
+        PackageManager $packageManager,
         string $name,
         string $dir,
         bool $checkValid,
         bool $checkExec
     ): bool {
 
-        $valid = $packageManager && (!$checkValid || $packageManager->isValid());
-        $errors = [" 'commands' configuration is invalid for '{$name}'."];
+        $byConfig = $checkValid && $checkExec;
+        $byLockFile = !$checkValid && $checkExec;
+
+        $valid = !$checkValid || $packageManager->isValid();
+        $error = $byConfig
+            ? " Package manager configuration is invalid for '{$name}'."
+            : null;
         if ($valid && $checkExec && !$packageManager->isExecutable($this->executor, $dir)) {
             $valid = false;
             $pmName = $packageManager->name();
-            $error = $checkValid
-                ? "'{$name}' seems to require {$pmName} via configuration"
-                : "'{$name}' has lock file for {$pmName}";
-            $errors = [" {$error}, but that package manager is not available on the system."];
-            if ($checkValid) {
-                $errors[] = ' Will now try to discover an executable package manager.';
-            }
+            $error = $byLockFile
+                ? " '{$name}' has a {$pmName}-specific lock file, "
+                : " '{$name}' seems to require {$pmName} via configuration, ";
+            $error .= "but that package manager is not available on the system.";
         }
 
-        $valid or $this->io->writeVerboseError(...$errors);
+        if (!$valid && $error) {
+            $this->io->writeVerboseError($error);
+        }
 
         return $valid;
     }
