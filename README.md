@@ -279,7 +279,7 @@ The "*Asset Compiler env*" is an arbitrary string that can be set in two ways:
 - passing the `--env` flag to the `compile-assets` command
 - setting the `COMPOSER_ASSETS_COMPILER` environment variable
 
-When the "env" is configured, it can be used in pre-compilation `${env}` placeholder and primarily
+When the "env" is configured, it can be used in pre-compilation `${env}` placeholder, and also
 to have different configuration per-environment.
 
 For example:
@@ -302,12 +302,12 @@ For example:
 The `env` property is the entrypoint for environment-specific configuration. It has to contain an
 object where the keys are the environment names, and the values are the related configuration.
 
-The `$default` key is a special key used when no Composer Asset Compiler env si available, that is
+The `$default` key is a special key used when no Composer Asset Compiler env is available, that is
 when `COMPOSER_ASSETS_COMPILER` environment variable is not set and the `--env` flag is not passed
 to the `compile-assets` command.
 
 When used as "root item", like in the snippet above, the `env` key forces us to have the entire set
-of configuration once per environment. When we have more than just the script (e.g. pre-compilation
+of configuration per environment. When we have more than just the script (e.g. pre-compilation
 config), we could end up in very verbose configuration and duplications.
 
 In such cases it is possible to use the `env` key only for the config properties that needs to be
@@ -362,7 +362,7 @@ be `npm install && npm run gulp build`.
 When using environment variables for script in that way, we probably rely on the fact those
 environment variables are set, and in case they are not, some error might occur.
 
-To define some default for non-defined environment variables, we can use the `default-env` config
+To define default for non-defined environment variables, we can use the `default-env` config
 property:
 
 ```json
@@ -391,25 +391,24 @@ In some cases, especially when using adding env-specific pre-compilation setting
 environment, the configuration object might become verbose and "pollute" the `composer.json`.
 
 In such cases it is possible to place the same configuration that goes
-in `extra.composer-asset-compiler` in a separate file, in package's root folder,
-named **`assets-compiler.json`** . Adding that file there's no need to add anything
-in `composer.json`.
+in `extra.composer-asset-compiler` in a **separate file named `assets-compiler.json`**, in package's
+root folder.
+Adding that file there's no need to add anything in `composer.json`.
 
-Having _both_ `assets-compiler.json` and `extra.composer-asset-compiler` in `composer.json` the
+Having _both_ `assets-compiler.json` and `extra.composer-asset-compiler` in `composer.json`, the
 latter will be ignored and only the content of `assets-compiler.json` will be took into account.
 
 ## Package managers
 
 In theory, the requirements in a `package.json` can be installed via either npm or Yarn without any
 difference. However, the experience tell us that is not always the truth, more so when there's a
-lock file (e.g. `yarn.lock` or `npm-shrinkwrap.json`) that are package-manager specific.
+package manager-specific lock file (e.g. `yarn.lock` or `npm-shrinkwrap.json`).
 
 Composer Asset Compiler supports both npm and Yarn. When a package has a lock file, the plugin will
 execute the package manager that generated that lock file.
 
-Even if there's no lock file (for example that is git-ignored), it is possible to instruct Composer
-Asset Compiler to use one specific package manager via the `package-manager` configuration. An
-example `assets-compiler.json`:
+Even if there's no lock file, it is possible to instruct Composer Asset Compiler to use one specific
+package manager via the `package-manager` configuration. An example `assets-compiler.json`:
 
 ```json
 {
@@ -419,14 +418,14 @@ example `assets-compiler.json`:
 ```
 
 When no package manager is configured, and there's no lock file, Composer Asset Compiler will use
-for that package the first available in the system between Yarn and npm (in this order).
+for that package the first available in the system between Yarn and npm (in that order).
 
-In the case a package manager is configured (or a package manager specific lock file is present),
+In the case a package manager is configured (or a package manager-specific lock file is present),
 but the chosen package manager is not available in the system, Composer Asset Compiler will *not*
-fail, but will attempt to process the asset using the available package manager.
+fail, but will attempt to process assets using the available package manager.
 
-For example, if the package having the configuration in the snippet above is processed and npm is
-not available on the system Composer Asset Compiler will attempt to use yarn.
+For example, processing a package having the configuration in the snippet above, if npm is not
+available on the system, Composer Asset Compiler will attempt to use Yarn.
 
 ## Configuration cheat sheet
 
@@ -471,8 +470,8 @@ not available on the system Composer Asset Compiler will attempt to use yarn.
 ### Packages definitions in root
 
 The "usual" plugin's workflow expect each dependency to define what is needed to process its assets.
-However it is possible to add/remove/edit configuration for a dependency form the root package. An
-example `assets-compiler.json`:
+However it is possible to add/remove/edit configuration for a dependency in the root package.
+An example `assets-compiler.json`:
 
 ```json
 {
@@ -496,7 +495,7 @@ example `assets-compiler.json`:
 In the example above, the `packages` property is used to change the configuration of some
 dependencies, and it show all the possible configuration types:
 
-- when using `true` it means: "*if the packages has many configuration use it, otherwise process
+- when using `true` it means: "*if the packages has any configuration use it, otherwise process
   anyway using defaults*"
 - when using `false` it means: "*do not process assets for this package*"
 - when using `force-defaults` it means: "*process the assets for this package using the defaults*"
@@ -515,13 +514,14 @@ configuration).
 ### Verbosity
 
 `compile-assets` is a command added to Composer, which means all the Composer
-command ["global options"](https://getcomposer.org/doc/03-cli.md#global-options)  are valid. Among
+command ["global options"](https://getcomposer.org/doc/03-cli.md#global-options) are valid. Among
 those, the ones that control the "verbosity" have a multiple effects on Composer Asset Compiler:
 
-- Composer utilities used by the plugin  (such as the "HTTP Downloader") will adjust their verbosity
+- Composer's functionalities used by the plugin (such as the "HTTP Downloader") will adjust their
+  verbosity
 - Composer Asset Compiler itself will emit more or less output based on those options
-- The level of Composer verbosity is "mapped" to package managers' verbosity flags, according to the
-  following table:
+- Composer verbosity is "mapped" to package managers' verbosity flags, according to the following
+  table:
 
 | Composer flag      | [npm](https://docs.npmjs.com/cli/v7/commands/npm) | [Yarn](https://classic.yarnpkg.com/en/docs/cli/) |
 | ------------------ | ------------------------------------------------- | ------------------------------------------------ |
@@ -536,11 +536,12 @@ receive the flag `--non-interactive`, but npm doesn't have a correspondent flag.
 ### Isolated cache
 
 Composer Assets Compiler normally doesn't change the behavior of package manager, it only move
-current working directory to the package path and execute whatever processing script was configured.
+current working directory to the package path and execute whichever processing script was configured.
 We have experienced that in bigger projects with multiple packages to process sometimes package
-manager's cache gets "bungled" . If that happens a possible solution is to set `isolated-cache` to
-true, that ensures each package uses a different cache folder (under the system's temp folder) and
-usually that solves the issue.
+manager's cache gets "bungled" and processing fails.
+If that happens a possible solution is to set `isolated-cache` to true. That ensures each package is
+processed making use of a different cache folder (under the system's temp folder), and usually that 
+solves the issue.
 
 Activating `isolated-cache` has a performance cost, but could be useful is some situations. In any
 case, the preferred way to solve *both* "bungled cache" and performance issues is using pre-compiled
@@ -551,9 +552,10 @@ assets.
 The plugin processes multiple packages in parallel to speed up the process. Note that only the
 assets' _script_ are executed in parallel, dependencies installation is executed in series, because
 package manager fails in parallel installation due to multiple processes simultaneously attempting
-write the same file in cache. The plugin parallel implementation is pretty basic and it is based in
-spinning up different processes to be started at same time, and check their status at regular
-interval. The number of processes that are executed at same time can be controlled via
-the `max-processes` configuration, and the interval via the `processes-poll` configuration. Using
-a `max-processes` value that matches the number of system CPUs might increase performance, assuming
-there's also enough memory.
+write the same file in cache. The plugin implementation for parallel execution is pretty basic and
+works by in spinning up different processes to be started at same time, and then check their status
+(completed, failed, running) at regular intervals.
+The number of processes that are executed at same time can be controlled via the `max-processes`
+configuration, and the interval via the `processes-poll` configuration.
+Using a `max-processes` value that matches the number of system CPUs might increase performance,
+assuming there's also enough memory.
