@@ -99,23 +99,20 @@ class Handler
      */
     public function tryPrecompiled(Asset $asset, array $defaultEnv, ?string $hashSeed = null): bool
     {
+        $hash = $this->hashBuilder->forAsset($asset, $hashSeed) ?? '';
+        $placeholders = Placeholders::new($asset, $this->envResolver->env(), $hash);
+
         $config = $asset->preCompilationConfig();
-        $adapter = $this->findAdapter($config);
+        $adapter = $this->findAdapter($config, $placeholders);
         if (!$adapter) {
             return false;
         }
 
-        $hash = $this->hashBuilder->forAsset($asset, $hashSeed);
-        if (!$hash) {
-            return false;
-        }
-
         $environment = array_merge(array_filter($defaultEnv), array_filter($asset->env()));
-        $placeholders = Placeholders::new($asset, $this->envResolver->env(), $hash);
 
         $source = $config->source($placeholders, $environment);
         $path = $asset->path();
-        $target = $config->target();
+        $target = $config->target($placeholders);
 
         if (!$source || !$path || !$target) {
             return false;
@@ -151,15 +148,16 @@ class Handler
 
     /**
      * @param Config $config
+     * @param Placeholders $placeholders
      * @return Adapter|null
      */
-    private function findAdapter(Config $config): ?Adapter
+    private function findAdapter(Config $config, Placeholders $placeholders): ?Adapter
     {
         if (!$config->isValid()) {
             return null;
         }
 
-        $adapterId = $config->adapter() ?? $this->defaultAdapterId;
+        $adapterId = $config->adapter($placeholders) ?? $this->defaultAdapterId;
 
         return $adapterId ? ($this->adapters[$adapterId] ?? null) : null;
     }

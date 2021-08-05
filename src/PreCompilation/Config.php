@@ -12,26 +12,35 @@ final class Config
     private const TARGET = 'target';
     private const ADAPTER = 'adapter';
     private const CONFIG = 'config';
+    private const STABILITY = 'stability';
+    private const STABILITY_STABLE = 'stable';
+    private const STABILITY_DEV = 'dev';
+    private const STABILITY_ALL = '*';
 
     /**
      * @var array
      */
-    private $raw;
+    private $raw = [];
 
     /**
-     * @var array{source:string, target:string, adapter:string|null, config:array}|null
+     * @var list<array<string, string|null|array>>
      */
-    private $parsed;
+    private $parsed = [];
+
+    /**
+     * @var array<string, array<string, string|null|array>>
+     */
+    private $selected = [];
 
     /**
      * @var bool|null
      */
-    private $valid;
+    private $valid = null;
 
     /**
      * @var EnvResolver|null
      */
-    private $envResolver;
+    private $envResolver = null;
 
     /**
      * @param array $raw
@@ -83,33 +92,48 @@ final class Config
             return null;
         }
 
-        $rawSource = $this->parsed[self::SOURCE];
+        $this->selectBestSettings($placeholders);
 
-        return $placeholders->replace($rawSource, $environment) ?: null;
+        /** @var string|null $rawSource */
+        $rawSource = $this->selected[$placeholders->uuid()][self::SOURCE] ?? null;
+
+        return $rawSource ? ($placeholders->replace($rawSource, $environment) ?: null) : null;
     }
 
     /**
+     * @param Placeholders $placeholders
      * @return string|null
      */
-    public function target(): ?string
+    public function target(Placeholders $placeholders): ?string
     {
         if (!$this->parse()) {
             return null;
         }
 
-        return $this->parsed[self::TARGET];
+        $this->selectBestSettings($placeholders);
+
+        /** @var string|null $target */
+        $target = $this->selected[$placeholders->uuid()][self::TARGET] ?? null;
+
+        return $target;
     }
 
     /**
+     * @param Placeholders $placeholders
      * @return string|null
      */
-    public function adapter(): ?string
+    public function adapter(Placeholders $placeholders): ?string
     {
         if (!$this->parse()) {
             return null;
         }
 
-        return $this->parsed[self::ADAPTER];
+        $this->selectBestSettings($placeholders);
+
+        /** @var string|null $adapter */
+        $adapter = $this->selected[$placeholders->uuid()][self::ADAPTER] ?? null;
+
+        return $adapter;
     }
 
     /**
@@ -123,34 +147,42 @@ final class Config
             return [];
         }
 
-        $raw = $this->parsed[self::CONFIG];
-        $config = [];
-        foreach ($raw as $key => $value) {
-            if ($value && is_string($value)) {
-                $value = $placeholders->replace($value, $environment);
-            }
+        $this->selectBestSettings($placeholders);
 
-            $config[$key] = $value;
+        /** @var array $raw */
+        $raw = $this->selected[$placeholders->uuid()][self::CONFIG] ?? [];
+
+        return $this->deepReplace($raw, $placeholders, $environment);
+    }
+
+    /**
+     * @param array $data
+     * @param Placeholders $placeholders
+     * @param array $env
+     * @return array
+     */
+    private function deepReplace(array $data, Placeholders $placeholders, array $env): array
+    {
+        $config = [];
+        foreach ($data as $key => $value) {
+            if (!$value) {
+                $config[$key] = $value;
+                continue;
+            }
+            if (is_string($value)) {
+                $config[$key] = $placeholders->replace($value, $env);
+                continue;
+            }
+            $config[$key] = is_array($value)
+                ? $this->deepReplace($value, $placeholders, $env)
+                : $value;
         }
 
         return $config;
     }
 
     /**
-     * @return array
-     */
-    public function toArray(): array
-    {
-        return $this->parse() ? $this->parsed : [];
-    }
-
-    /**
      * @return bool
-     *
-     * @psalm-assert bool $this->valid
-     * @psalm-assert-if-true array{source:string, target:string, adapter:string|null} $this->parsed
-     * @psalm-assert-if-true EnvResolver $this->envResolver
-     * @psalm-assert-if-false null $this->parsed
      */
     private function parse(): bool
     {
@@ -158,7 +190,6 @@ final class Config
             return $this->valid;
         }
 
-        $this->parsed = null;
         $this->valid = false;
 
         if (!$this->envResolver) {
@@ -171,45 +202,131 @@ final class Config
         }
 
         $byEnv = $this->envResolver->resolveConfig($config);
-
         if ($byEnv && is_array($byEnv)) {
             $config = $byEnv;
         }
-
         if ($byEnv === null) {
             $config = $this->envResolver->removeEnvConfig($config);
         }
 
-        $source = $config[self::SOURCE] ?? null;
-        $target = $config[self::TARGET] ?? null;
-        $adapter = $config[self::ADAPTER] ?? null;
-        $config = $config[self::CONFIG] ?? [];
+        $settings = [];
+        $isNumeric = strpos(json_encode($config), '[') === 0;
+        $hasSource = array_key_exists(self::SOURCE, $config);
+        if ($isNumeric && !$hasSource) {
+            $settings = $config;
+        } elseif ($hasSource) {
+            $settings = [$config];
+        }
 
-        $this->valid = $source
+        foreach ($settings as $setting) {
+            is_array($setting) and $this->parseSetting($setting);
+        }
+
+        $this->valid = count($this->parsed) > 0;
+
+        return $this->valid;
+    }
+
+    /**
+     * @param array $setting
+     * @return void
+     */
+    private function parseSetting(array $setting): void
+    {
+        $source = $setting[self::SOURCE] ?? null;
+        $target = $setting[self::TARGET] ?? null;
+        $adapter = $setting[self::ADAPTER] ?? null;
+        $stability = $setting[self::STABILITY] ?? null;
+        $config = $setting[self::CONFIG] ?? [];
+
+        $valid = $source
             && $target
             && is_string($source)
             && is_string($target)
             && (($adapter === null) || ($adapter && is_string($adapter)))
             && is_array($config);
 
-        if (!$this->valid) {
-            return false;
+        if (!$valid) {
+            return;
         }
 
-        /**
-         * @var string $source
-         * @var string $target
-         * @var string|null $adapter
-         * @var array $config
-         */
+        is_string($stability) and $stability = strtolower($stability);
+        if (!in_array($stability, [self::STABILITY_DEV, self::STABILITY_STABLE], true)) {
+            $stability = self::STABILITY_ALL;
+        }
 
-        $this->parsed = [
+        $this->parsed[] = [
             self::SOURCE => $source,
             self::TARGET => $target,
             self::ADAPTER => $adapter ? strtolower($adapter) : null,
+            self::STABILITY => $stability,
             self::CONFIG => $config,
         ];
+    }
 
-        return true;
+    /**
+     * @param Placeholders $placeholders
+     * @return void
+     *
+     * @psalm-assert array<string, string|null|array> $this->selected
+     */
+    private function selectBestSettings(Placeholders $placeholders): void
+    {
+        $uuid = $placeholders->uuid();
+        if (isset($this->selected[$uuid])) {
+            return;
+        }
+
+        $isStable = $placeholders->hasStableVersion();
+        $acceptedStability = $isStable ? self::STABILITY_STABLE : self::STABILITY_DEV;
+        $noHash = $placeholders->replace('${hash}', []) === '';
+        $noVersion = $placeholders->replace('${version}', []) === '';
+        $noReference = $placeholders->replace('${ref}', []) === '';
+
+        foreach ($this->parsed as $settings) {
+            if (
+                ($noHash && $this->containsPlaceholder('${hash}', $settings))
+                || ($noVersion && $this->containsPlaceholder('${version}', $settings))
+                || ($noReference && $this->containsPlaceholder('${ref}', $settings))
+            ) {
+                continue;
+            }
+
+            $stability = $settings[self::STABILITY];
+            if (($stability === self::STABILITY_ALL) || ($stability === $acceptedStability)) {
+                $this->selected[$uuid] = $settings;
+
+                return;
+            }
+        }
+
+        $this->selected[$uuid] = [];
+    }
+
+    /**
+     * @param string $placeholder
+     * @param array $setting
+     * @return bool
+     */
+    private function containsPlaceholder(string $placeholder, array $setting): bool
+    {
+        /** @var string $source */
+        $source = $setting[self::SOURCE] ?? '';
+        if (stripos(str_replace(' ', '', $source), $placeholder) !== false) {
+            return true;
+        }
+
+        /** @var array $config */
+        $config = $setting[self::CONFIG] ?? [];
+        foreach ($config as $value) {
+            if (
+                is_string($value)
+                && (stripos(str_replace(' ', '', $value), $placeholder) !== false)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

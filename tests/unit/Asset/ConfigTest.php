@@ -180,7 +180,6 @@ class ConfigTest extends TestCase
         static::assertSame('npm', $config->packageManager()->name());
         static::assertTrue($config->preCompilationConfig() instanceof PreCompilation\Config);
         static::assertTrue($config->preCompilationConfig()->isValid());
-        static::assertSame('./assets/', $config->preCompilationConfig()->target());
         static::assertSame(['build-test'], $config->scripts());
         static::assertFalse($config->usePackageLevelOrDefault());
     }

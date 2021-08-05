@@ -235,6 +235,43 @@ The supported placeholders are:
 - **`${env}`** - replaced with the Composer Asset Compiler env (more on this below)
 - **`${hash}`** - replaced with the Composer Asset Compiler package's hash (more on this below)
 
+### Pre-compilation by stability
+
+Sometimes we want to have a different mechanism for pre-compilation depending on the fact that the
+package we are installing has a stability "stable" or not.
+
+For example, we might want to use the `"gh-release-zip"` adapter only when using "stable" version,
+because if we require a package from things like "dev-master" there's no release for it.
+
+That can be accomplished by using two set of `pre-compiled`, one indicating a stability "stable"
+and one indicating a stability "dev". For example:
+
+```json
+{
+    "script": "build",
+    "pre-compiled": [
+        {
+            "stability": "stable",
+            "adapter": "gh-release-zip",
+            "source": "assets-${version}",
+            "target": "./assets/",
+            "config": {
+                "repository": "acme/some-theme"
+            }
+        },
+        {
+            "stability": "dev",
+            "adapter": "gh-action-artifact",
+            "source": "assets-${ref}",
+            "target": "./assets/",
+            "config": {
+                "repository": "acme/some-theme"
+            }
+        }
+    ]
+}
+```
+
 ## The "lock file” and the "package hash"
 
 Everytime the assets are processed for a package, a lock file named **`.composer_compiled_assets`**
@@ -279,8 +316,8 @@ The "*Asset Compiler env*" is an arbitrary string that can be set in two ways:
 - passing the `--env` flag to the `compile-assets` command
 - setting the `COMPOSER_ASSETS_COMPILER` environment variable
 
-When the "env" is configured, it can be used in pre-compilation `${env}` placeholder, and also
-to have different configuration per-environment.
+When the "env" is configured, it can be used in pre-compilation `${env}` placeholder, and also to
+have different configuration per-environment.
 
 For example:
 
@@ -392,8 +429,7 @@ environment, the configuration object might become verbose and "pollute" the `co
 
 In such cases it is possible to place the same configuration that goes
 in `extra.composer-asset-compiler` in a **separate file named `assets-compiler.json`**, in package's
-root folder.
-Adding that file there's no need to add anything in `composer.json`.
+root folder. Adding that file there's no need to add anything in `composer.json`.
 
 Having _both_ `assets-compiler.json` and `extra.composer-asset-compiler` in `composer.json`, the
 latter will be ignored and only the content of `assets-compiler.json` will be took into account.
@@ -470,8 +506,8 @@ available on the system, Composer Asset Compiler will attempt to use Yarn.
 ### Packages definitions in root
 
 The "usual" plugin's workflow expect each dependency to define what is needed to process its assets.
-However it is possible to add/remove/edit configuration for a dependency in the root package.
-An example `assets-compiler.json`:
+However it is possible to add/remove/edit configuration for a dependency in the root package. An
+example `assets-compiler.json`:
 
 ```json
 {
@@ -536,12 +572,11 @@ receive the flag `--non-interactive`, but npm doesn't have a correspondent flag.
 ### Isolated cache
 
 Composer Assets Compiler normally doesn't change the behavior of package manager, it only move
-current working directory to the package path and execute whichever processing script was configured.
-We have experienced that in bigger projects with multiple packages to process sometimes package
-manager's cache gets "bungled" and processing fails.
-If that happens a possible solution is to set `isolated-cache` to true. That ensures each package is
-processed making use of a different cache folder (under the system's temp folder), and usually that 
-solves the issue.
+current working directory to the package path and execute whichever processing script was
+configured. We have experienced that in bigger projects with multiple packages to process sometimes
+package manager's cache gets "bungled" and processing fails. If that happens a possible solution is
+to set `isolated-cache` to true. That ensures each package is processed making use of a different
+cache folder (under the system's temp folder), and usually that solves the issue.
 
 Activating `isolated-cache` has a performance cost, but could be useful is some situations. In any
 case, the preferred way to solve *both* "bungled cache" and performance issues is using pre-compiled
@@ -554,8 +589,8 @@ assets' _script_ are executed in parallel, dependencies installation is executed
 package manager fails in parallel installation due to multiple processes simultaneously attempting
 write the same file in cache. The plugin implementation for parallel execution is pretty basic and
 works by in spinning up different processes to be started at same time, and then check their status
-(completed, failed, running) at regular intervals.
-The number of processes that are executed at same time can be controlled via the `max-processes`
-configuration, and the interval via the `processes-poll` configuration.
-Using a `max-processes` value that matches the number of system CPUs might increase performance,
-assuming there's also enough memory.
+(completed, failed, running) at regular intervals. The number of processes that are executed at same
+time can be controlled via the `max-processes`
+configuration, and the interval via the `processes-poll` configuration. Using a `max-processes`
+value that matches the number of system CPUs might increase performance, assuming there's also
+enough memory.
