@@ -197,11 +197,11 @@ This can be achieved by using two sets of `pre-compiled`, one specifying "stable
 }
 ```
 
-## The "lock file" and the "package hash".
+## The "lock file" and the "package hash"
 
 Each time the assets for a package are processed, a lock file named **`.composer_compiled_assets`** is saved in the root directory of the package.
 
-This file should be git-ignored if the compiled assets are git-ignored.
+That file should be git-ignored if the compiled assets are git-ignored.
 
 The lock file contains a hash, referenced as "*Composer Asset Compiler package's hash*", which is created from the Composer Assets Compiler configuration and the contents of certain files such as `package.json`, `package-lock.json`, `npm-shrinkwrap.json`, and `yarn.lock`.
 
@@ -390,7 +390,7 @@ For example, if npm is not available in the system, Composer Asset Compiler will
 
 ## Advanced topics
 
-### Package definitions in the root directory
+### Package definitions in the root package
 
 The "normal" workflow of the plugin expects each dependency to define what is needed to process its assets. However, it is possible to add/remove/edit the configuration for a dependency in the root package. An example `assets-compiler.json`:
 
