@@ -213,7 +213,6 @@ final class Plugin implements
      */
     private function convertErrorsToExceptions(): void
     {
-        /** @psalm-suppress InvalidArgument */
         set_error_handler(
             static function (int $severity, string $msg, string $file = '', int $line = 0): void {
                 if ($file && $line) {
