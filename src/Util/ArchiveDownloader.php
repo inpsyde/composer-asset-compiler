@@ -139,7 +139,7 @@ class ArchiveDownloader
             ($this->downloadCallback)($package, $tempDir);
             $this->filesystem->ensureDirectoryExists($path);
 
-            $finder = Finder::create()->in($tempDir)->ignoreVCS(true)->depth('== 0');
+            $finder = Finder::create()->in($tempDir)->ignoreVCS(true)->files();
 
             $this->io->writeVerbose(
                 "Copying unpacked files from temporary folder '{$tempDir}' to '{$path}'..."
@@ -148,8 +148,9 @@ class ArchiveDownloader
             $errors = 0;
             /** @var \Symfony\Component\Finder\SplFileInfo $item */
             foreach ($finder as $item) {
-                $basename = $item->getBasename();
-                $targetPath = $this->filesystem->normalizePath("{$path}/{$basename}");
+                $relative = $item->getRelativePathname();
+                $targetPath = $this->filesystem->normalizePath("{$path}/{$relative}");
+                $this->filesystem->ensureDirectoryExists(dirname($targetPath));
                 $sourcePath = $item->getPathname();
                 if (file_exists($targetPath)) {
                     $this->io->writeVeryVerbose("   - removing existing '{$targetPath}'...");

@@ -96,6 +96,9 @@ class GithubActionArtifactAdapter implements Adapter
             }
 
             $distUrl = $this->retrieveArchiveUrl($source, $endpoint, $owner, $ghConfig);
+            if (!$distUrl) {
+                return false;
+            }
 
             $type = ArchiveDownloader::ZIP;
             $package = new Package($asset->name() . '-assets', 'artifact', 'artifact');
