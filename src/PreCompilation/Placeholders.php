@@ -64,14 +64,16 @@ class Placeholders
         $this->version = $version;
         $this->reference = $reference;
 
-        $str = md5(implode('|', [$env, $hash ?? '', $version ?? '', $reference ?? '']));
+        $values = [$hash ?? '', $version ?? '', $reference ?? '', random_bytes(32)];
+        $base = sha1(implode('|', $values));
+        $last = sha1(implode('|', [substr($base, 32) ?: '', microtime()]));
         $this->uid = sprintf(
             '%s-%s-%s-%s-%s',
-            substr($str, 8, 8),
-            substr($str, 16, 4),
-            substr($str, 20, 4),
-            substr($str, 24, 4),
-            substr(md5($str), 12, 12)
+            substr($base, 12, 8) ?: '',
+            substr($base, 20, 4) ?: '',
+            substr($base, 24, 4) ?: '',
+            substr($base, 28, 4) ?: '',
+            substr($last, 14, 12) ?: ''
         );
     }
 
@@ -93,7 +95,6 @@ class Placeholders
 
     /**
      * @param string $original
-     * @param string $hash
      * @param array $environment
      * @return string
      */
@@ -113,7 +114,7 @@ class Placeholders
         $replaced = preg_replace_callback(
             '~\$\{\s*(' . implode('|', array_keys($replace)) . ')\s*\}~i',
             static function (array $matches) use ($replace): string {
-                $key = strtolower((string)($matches[1] ?? ''));
+                $key = strtolower($matches[1] ?? '');
 
                 return $replace[$key] ?? '';
             },

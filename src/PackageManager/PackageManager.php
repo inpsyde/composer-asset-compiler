@@ -82,7 +82,6 @@ final class PackageManager
     /**
      * @param ProcessExecutor $executor
      * @param string|null $workingDir
-     * @param array $defaultEnvironment
      * @return list<string>
      */
     public static function test(ProcessExecutor $executor, ?string $workingDir = null): array
@@ -157,19 +156,8 @@ final class PackageManager
     {
         $this->reset();
         $this->defaultEnvironment = $defaultEnvironment;
-
-        $dependencies = $this->parseDependencies($config);
-        if (empty($dependencies[self::DEPS_INSTALL])) {
-            $this->reset();
-
-            return;
-        }
-        $this->dependencies = $dependencies;
-
-        $script = $config[self::SCRIPT] ?? null;
-        if ($script && is_string($script) && substr_count($script, '%s') === 1) {
-            $this->script = $script;
-        }
+        $this->dependencies = $this->parseDependencies($config);
+        $this->script = $this->parseScript($config);
 
         if (!$this->isValid()) {
             $this->reset();
@@ -178,7 +166,7 @@ final class PackageManager
         }
 
         $manager = $config[self::MANAGER] ?? null;
-        $name = ($manager && is_string($manager)) ? strtolower(trim($manager)) : null;
+        $name = is_string($manager) ? strtolower(trim($manager)) : null;
         in_array($name, [self::YARN, self::NPM], true) or $name = null;
         $this->name = $name;
 
@@ -391,6 +379,20 @@ final class PackageManager
         }
 
         return [self::DEPS_INSTALL => $install, self::DEPS_UPDATE => $update];
+    }
+
+    /**
+     * @param array $config
+     * @return string|null
+     */
+    private function parseScript(array $config): ?string
+    {
+        $script = $config[self::SCRIPT] ?? null;
+        if (is_string($script) && substr_count($script, '%s') === 1) {
+            return $script;
+        }
+
+        return null;
     }
 
     /**

@@ -20,7 +20,7 @@ final class Config
     /**
      * @var array
      */
-    private $raw = [];
+    private $raw;
 
     /**
      * @var list<array<string, string|null|array>>
@@ -40,10 +40,9 @@ final class Config
     /**
      * @var EnvResolver|null
      */
-    private $envResolver = null;
+    private $envResolver;
 
     /**
-     * @param array $raw
      * @return Config
      */
     public static function invalid(): Config
@@ -210,7 +209,7 @@ final class Config
         }
 
         $settings = [];
-        $isNumeric = strpos(json_encode($config), '[') === 0;
+        $isNumeric = strpos(@json_encode($config) ?: '', '[') === 0;
         $hasSource = array_key_exists(self::SOURCE, $config);
         if ($isNumeric && !$hasSource) {
             $settings = $config;
@@ -283,6 +282,11 @@ final class Config
         $noVersion = $placeholders->replace('${version}', []) === '';
         $noReference = $placeholders->replace('${ref}', []) === '';
 
+        /** @var array<string, string|null|array>|null $exactStability */
+        $exactStability = null;
+        /** @var array<string, string|null|array>|null $fallbackStability */
+        $fallbackStability = null;
+
         foreach ($this->parsed as $settings) {
             if (
                 ($noHash && $this->containsPlaceholder('${hash}', $settings))
@@ -292,15 +296,18 @@ final class Config
                 continue;
             }
 
-            $stability = $settings[self::STABILITY];
-            if (($stability === self::STABILITY_ALL) || ($stability === $acceptedStability)) {
-                $this->selected[$uuid] = $settings;
+            if (!$exactStability && ($settings[self::STABILITY] === $acceptedStability)) {
+                $exactStability = $settings;
+            } elseif (!$fallbackStability && ($settings[self::STABILITY] === self::STABILITY_ALL)) {
+                $fallbackStability = $settings;
+            }
 
-                return;
+            if ($exactStability && $fallbackStability) {
+                break;
             }
         }
 
-        $this->selected[$uuid] = [];
+        $this->selected[$uuid] = $exactStability ?? $fallbackStability ?? [];
     }
 
     /**

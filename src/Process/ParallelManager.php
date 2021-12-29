@@ -17,7 +17,6 @@ use Symfony\Component\Process\Process;
 
 class ParallelManager
 {
-
     /**
      * @var callable
      */
@@ -29,12 +28,12 @@ class ParallelManager
     private $factory;
 
     /**
-     * @var int
+     * @var positive-int
      */
     private $maxParallel;
 
     /**
-     * @var int
+     * @var positive-int
      */
     private $poll;
 
@@ -90,9 +89,9 @@ class ParallelManager
     /**
      * @param callable $outputHandler
      * @param Factory $factory
-     * @param int $timeoutLimit
      * @param int $maxParallel
      * @param int $poll
+     * @param int $timeoutIncrement
      */
     private function __construct(
         callable $outputHandler,
@@ -321,7 +320,7 @@ class ParallelManager
                 continue;
             }
 
-            $io->writeVerboseInfo("Processing of {$name} done successfully.");
+            $io->writeInfo("Processing of {$name} done successfully.");
             $successful->enqueue([$process, $asset]);
         }
 

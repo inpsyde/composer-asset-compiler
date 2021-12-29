@@ -30,7 +30,6 @@ use Symfony\Component\Process\Process;
 
 final class Factory
 {
-
     /**
      * @var Composer
      */
@@ -349,7 +348,6 @@ final class Factory
      */
     public function rootFolder(): string
     {
-        /** @var \Composer\Config\ConfigSourceInterface $source */
         $source = $this->composerConfig()->getConfigSource();
 
         return $this->filesystem()->normalizePath(dirname($source->getName()));

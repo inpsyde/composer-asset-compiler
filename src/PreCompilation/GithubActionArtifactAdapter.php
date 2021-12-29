@@ -87,24 +87,27 @@ class GithubActionArtifactAdapter implements Adapter
 
         try {
             $ghConfig = GitHubConfig::new($config, $environment);
-
-            [$endpoint, $owner] = $this->buildEndpoint($source, $ghConfig);
+            [$endpoint, $owner] = $this->buildArtifactsEndpoint($source, $ghConfig);
             if (!$endpoint || !$owner) {
                 $this->io->writeVerboseError('  Invalid configuration for GitHub artifact.');
 
                 return false;
             }
 
-            $distUrl = $this->retrieveArchiveUrl($source, $endpoint, $owner, $ghConfig);
+            $distUrl = $this->retrieveArtifactUrl($source, $endpoint, $ghConfig);
             if (!$distUrl) {
                 return false;
             }
+
+            $auth = $ghConfig->basicAuth();
+            $headers = $auth ? ["Authorization: {$auth}"] : [];
 
             $type = ArchiveDownloader::ZIP;
             $package = new Package($asset->name() . '-assets', 'artifact', 'artifact');
             $package->setDistType($type);
             $package->setDistUrl($distUrl);
             $package->setTargetDir($targetDir);
+            $package->setTransportOptions(['http' => ['header' => $headers]]);
 
             return $this->downloaderFactory->create($type)->download($package, $targetDir);
         } catch (\Throwable $throwable) {
@@ -119,7 +122,7 @@ class GithubActionArtifactAdapter implements Adapter
      * @param GitHubConfig $config
      * @return array{string,string}|array{null,null}
      */
-    private function buildEndpoint(string $source, GitHubConfig $config): array
+    private function buildArtifactsEndpoint(string $source, GitHubConfig $config): array
     {
         if (!$source) {
             return [null, null];
@@ -140,63 +143,60 @@ class GithubActionArtifactAdapter implements Adapter
         $safe = filter_var($endpoint, FILTER_SANITIZE_URL);
         $safe && is_string($safe) or $safe = null;
 
-        return $safe ? [$safe, reset($userRepo) ?: null] : [null, null];
+        return $safe ? [$safe, reset($userRepo) ?: ''] : [null, null];
     }
 
     /**
-     * @param string $artifactName
+     * @param string $name
      * @param string $endpoint
-     * @param string $owner
      * @param GitHubConfig $config
-     * @return string
+     * @return string|null
      */
-    private function retrieveArchiveUrl(
-        string $artifactName,
+    private function retrieveArtifactUrl(
+        string $name,
         string $endpoint,
-        string $owner,
         GitHubConfig $config
-    ): string {
+    ): ?string {
 
-        $token = $config->token();
-        $repo = $config->repo() ?? '';
-        $authString = '';
-        if ($token) {
-            $user = $config->user() ?? $owner;
-            $authString = "https://{$user}:{$token}@";
-            $endpoint = (string)preg_replace('~^https://(.+)~', $authString . '$1', $endpoint);
-        }
-
-        $response = $this->client->get($endpoint);
+        $response = $this->client->get($endpoint, [], $config->basicAuth());
         $json = $response ? json_decode($response, true) : null;
         if (!$json || !is_array($json) || empty($json['artifacts'])) {
             throw new \Exception("Could not obtain a valid API response from {$endpoint}.");
         }
 
-        $archiveUrl = null;
-        foreach ((array)$json['artifacts'] as $artifactData) {
-            if (!is_array($artifactData)) {
-                continue;
-            }
-            $name = $artifactData['name'] ?? null;
-            $url = $name ? ($artifactData['archive_download_url'] ?? null) : null;
-            if (($name === $artifactName) && $url && filter_var($url, FILTER_VALIDATE_URL)) {
-                $archiveUrl = $url;
+        /** @var string|null $artifactUrl */
+        $artifactUrl = null;
+        foreach ((array)$json['artifacts'] as $item) {
+            $artifactUrl = is_array($item) ? $this->artifactUrl($item, $name) : null;
+            if ($artifactUrl) {
                 break;
             }
         }
 
-        if (!$archiveUrl) {
-            $this->io->writeVerbose("  Artifact '{$artifactName}' not found in '{$repo}'.");
+        $repo = $config->repo() ?? '';
+        $artifactUrl or $this->io->writeVerbose("  Artifact '{$name}' not found in '{$repo}'.");
 
-            return '';
+        return $artifactUrl;
+    }
+
+    /**
+     * @param array $data
+     * @param string $targetName
+     * @return string|null
+     */
+    private function artifactUrl(array $data, string $targetName): ?string
+    {
+        $name = $data['name'] ?? null;
+        if (($name !== $targetName) || !empty($data['expired'])) {
+            return null;
         }
 
-        /** @var string $archiveUrl */
-
-        if ($authString) {
-            $archiveUrl = preg_replace('~^https://(.+)~', $authString . '$1', $archiveUrl);
+        /** @var string|null $url */
+        $url = $data['archive_download_url'] ?? null;
+        if ($url && filter_var($url, FILTER_VALIDATE_URL)) {
+            return $url;
         }
 
-        return $archiveUrl ?: '';
+        return null;
     }
 }

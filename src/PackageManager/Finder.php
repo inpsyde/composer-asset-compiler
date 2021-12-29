@@ -96,7 +96,6 @@ class Finder
      * @param string $name
      * @param string $path
      * @return PackageManager
-     * @throws \Exception
      */
     public function findForConfig(Config $config, string $name, string $path): PackageManager
     {

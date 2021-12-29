@@ -110,7 +110,7 @@ class ArchiveDownloader
             $distUrl = $package->getDistUrl();
 
             // Download callback makes use of Composer downloader, and will empty the target path.
-            // When target does not exist, that's irrelevant and we can unpack directly there.
+            // When target does not exist, that's irrelevant, and we can unpack directly there.
             if (!file_exists($path)) {
                 $this->filesystem->ensureDirectoryExists($path);
                 $this->io->writeVerbose(
@@ -130,7 +130,7 @@ class ArchiveDownloader
             // So we first unpack in a temporary folder and then move unpacked files from the temp
             // dir to final target dir. That's surely slower, but necessary.
 
-            $tempDir = dirname($path) . '/.tmp' . substr(md5(uniqid($path, true)), 0, 8);
+            $tempDir = dirname($path) . '/.tmp' . (string)substr(md5(uniqid($path, true)), 0, 8);
             $this->io->writeVerbose(
                 "Archive target path '{$path}' is an existing directory.",
                 "Downloading and unpacking '{$distUrl}' in the temporary folder '{$tempDir}'..."
@@ -153,16 +153,16 @@ class ArchiveDownloader
                 $this->filesystem->ensureDirectoryExists(dirname($targetPath));
                 $sourcePath = $item->getPathname();
                 if (file_exists($targetPath)) {
-                    $this->io->writeVeryVerbose("   - removing existing '{$targetPath}'...");
+                    $this->io->writeVerbose("   - removing existing '{$targetPath}'...");
                     $this->filesystem->remove($targetPath);
                 }
-                $this->io->writeVeryVerbose("   - moving '{$sourcePath}' to '{$targetPath}'...");
+                $this->io->writeVerbose("   - moving '{$sourcePath}' to '{$targetPath}'...");
                 $this->filesystem->copy($sourcePath, $targetPath) or $errors++;
             }
 
             return $errors === 0;
         } catch (\Throwable $throwable) {
-            $this->io->writeVerboseError('  ' . $throwable->getMessage());
+            $this->io->writeError('  ' . $throwable->getMessage());
 
             return false;
         } finally {

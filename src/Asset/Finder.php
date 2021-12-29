@@ -18,7 +18,6 @@ use Inpsyde\AssetsCompiler\Util\EnvResolver;
 
 class Finder
 {
-
     /**
      * @var array
      */

@@ -96,29 +96,31 @@ class GithubReleaseZipAdapter implements Adapter
 
             $ghConfig = GitHubConfig::new($config, $environment);
 
-            [$endpoint, $owner] = $this->buildEndpoint($source, $ghConfig, $version);
+            [$endpoint, $owner] = $this->buildReleaseEndpoint($source, $ghConfig, $version);
             if (!$endpoint || !$owner) {
-                $this->io->writeVerboseError('  Invalid configuration for GitHub release zip.');
+                $this->io->writeVerboseError('  Invalid GitHub release configuration.');
 
                 return false;
             }
 
-            $distUrl = $this->retrieveArchiveUrl($source, $endpoint, $owner, $ghConfig);
+            $distUrl = $this->retrieveArchiveUrl($source, $endpoint, $ghConfig, $version);
+            if (!$distUrl) {
+                $repo = $ghConfig->repo() ?: '';
+                $this->io->writeVerboseError("  Release binary '{$source}' not found in {$repo}.");
+
+                return false;
+            }
+
+            $headers = ['Accept: application/octet-stream'];
+            $auth = $ghConfig->basicAuth();
+            $auth and $headers[] = ["Authorization: {$auth}"];
 
             $type = ArchiveDownloader::ZIP;
             $package = new Package($asset->name() . '-assets', 'release-zip', 'release-zip');
             $package->setDistType($type);
             $package->setDistUrl($distUrl);
             $package->setTargetDir($targetDir);
-            $package->setTransportOptions(
-                [
-                    'http' => [
-                        'header' => [
-                            'Accept: application/octet-stream',
-                        ],
-                    ],
-                ]
-            );
+            $package->setTransportOptions(['http' => ['header' => $headers]]);
 
             return $this->downloaderFactory->create($type)->download($package, $targetDir);
         } catch (\Throwable $throwable) {
@@ -134,7 +136,7 @@ class GithubReleaseZipAdapter implements Adapter
      * @param string $version
      * @return array{string,string}|array{null,null}
      */
-    private function buildEndpoint(string $source, GitHubConfig $config, string $version): array
+    private function buildReleaseEndpoint(string $source, GitHubConfig $config, string $version): array
     {
         if (!$source) {
             return [null, null];
@@ -154,62 +156,66 @@ class GithubReleaseZipAdapter implements Adapter
         $safe = filter_var($endpoint, FILTER_SANITIZE_URL);
         $safe && is_string($safe) or $safe = null;
 
-        return $safe ? [$safe, reset($userRepo) ?: null] : [null, null];
+        return $safe ? [$safe, reset($userRepo) ?: ''] : [null, null];
     }
 
     /**
-     * @param string $assetsName
+     * @param string $targetName
      * @param string $endpoint
-     * @param string $owner
      * @param GitHubConfig $config
-     * @return string
+     * @param string $version
+     * @return string|null
      */
     private function retrieveArchiveUrl(
-        string $assetsName,
+        string $targetName,
         string $endpoint,
-        string $owner,
-        GitHubConfig $config
-    ): string {
+        GitHubConfig $config,
+        string $version
+    ): ?string {
 
-        $token = $config->token();
-        $repo = $config->repo() ?? '';
-        $authString = '';
-        if ($token) {
-            $user = $config->user() ?? $owner;
-            $authString = "https://{$user}:{$token}@";
-            $endpoint = (string)preg_replace('~^https://(.+)~', $authString . '$1', $endpoint);
-        }
-
-        $response = $this->client->get($endpoint);
+        $response = $this->client->get($endpoint, [], $config->basicAuth());
         $json = $response ? json_decode($response, true) : null;
-        if (!$json || !is_array($json) || empty($json['assets'])) {
+        if (!$json || !is_array($json)) {
             throw new \Exception("Could not obtain a valid API response from {$endpoint}.");
         }
 
-        if (strtolower(pathinfo($assetsName, PATHINFO_EXTENSION) ?: '') !== 'zip') {
-            $assetsName .= '.zip';
+        $assets = $json['assets'] ?? null;
+        if (!$assets || !is_array($assets)) {
+            $this->io->writeVerbose("  Release '{$version}' has no binary assets.");
+
+            return null;
         }
 
-        $id = null;
-        foreach ((array)$json['assets'] as $assetData) {
-            if (!is_array($assetData)) {
-                continue;
+        if (strtolower(pathinfo($targetName, PATHINFO_EXTENSION) ?: '') !== 'zip') {
+            $targetName .= '.zip';
+        }
+
+        $id = $this->findBinaryId($assets, $targetName);
+        $repo = $config->repo() ?: '';
+        $id or $this->io->writeVerbose("  Release binary '{$targetName}' not found.");
+
+        return $id ? "https://api.github.com/repos/{$repo}/releases/assets/{$id}" : null;
+    }
+
+    /**
+     * @param array $items
+     * @param string $targetName
+     * @return string|null
+     */
+    private function findBinaryId(array $items, string $targetName): ?string
+    {
+        foreach ($items as $item) {
+            if (
+                is_array($item)
+                && !empty($item['name'])
+                && ($item['name'] === $targetName)
+                && !empty($item['id'])
+                && is_string($item['id'])
+            ) {
+                return $item['id'];
             }
-            $name = $assetData['name'] ?? null;
-            $id = $name ? ($assetData['id'] ?? null) : null;
-            if (($name === $assetsName) && $id) {
-                break;
-            }
         }
 
-        if (!$id) {
-            $this->io->writeVerbose("  Release zip '{$assetsName}' not found in '{$repo}'.");
-
-            return '';
-        }
-
-        return $authString
-            ? "{$authString}api.github.com/repos/{$repo}/releases/assets/{$id}"
-            : "https://api.github.com/repos/{$repo}/releases/assets/{$id}";
+        return null;
     }
 }

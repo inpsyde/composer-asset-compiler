@@ -87,31 +87,12 @@ class Factory
         Defaults $defaults
     ): ?Asset {
 
-        $defaultForced = false;
-        $packageOrDefaultAllowed = false;
-        if ($rootLevelPackageConfig) {
-            $defaultForced = $rootLevelPackageConfig->isForcedDefault();
-            $packageOrDefaultAllowed = $rootLevelPackageConfig->usePackageLevelOrDefault();
-        }
-
-        $defaultConfig = (($defaultForced || $packageOrDefaultAllowed) && $defaults->isValid())
-            ? $defaults->toConfig()
-            : null;
-
-        if ($defaultForced && !$defaultConfig) {
+        [$proceed, $config, $defaultConfig, $packageOrDefaultAllowed] = $this->initConfig(
+            $rootLevelPackageConfig,
+            $defaults
+        );
+        if (!$proceed) {
             return null;
-        }
-
-        $rootLevelConfig = ($rootLevelPackageConfig && $rootLevelPackageConfig->isRunnable())
-            ? $rootLevelPackageConfig
-            : null;
-
-        /** @var Config|null $config */
-        $config = null;
-        if ($defaultForced) {
-            $config = $defaultConfig;
-        } elseif ($rootLevelConfig) {
-            $config = $rootLevelConfig;
         }
 
         $path = ($package instanceof RootPackageInterface)
@@ -136,14 +117,49 @@ class Factory
             return null;
         }
 
-        $path = $this->filesystem->normalizePath($path);
-
         return Asset::new(
             $package->getName(),
             $config,
-            $path,
+            $this->filesystem->normalizePath($path),
             $package->getPrettyVersion(),
             $package->getSourceReference() ?: $package->getDistReference()
         );
+    }
+
+    /**
+     * @param Config|null $rootLevelPackageConfig
+     * @param Defaults $defaults
+     * @return array{bool, Config|null, Config|null, bool}
+     */
+    private function initConfig(?Config $rootLevelPackageConfig, Defaults $defaults): array
+    {
+        $defaultForced = false;
+        $packageOrDefaultAllowed = false;
+        if ($rootLevelPackageConfig) {
+            $defaultForced = $rootLevelPackageConfig->isForcedDefault();
+            $packageOrDefaultAllowed = $rootLevelPackageConfig->usePackageLevelOrDefault();
+        }
+
+        $defaultConfig = (($defaultForced || $packageOrDefaultAllowed) && $defaults->isValid())
+            ? $defaults->toConfig()
+            : null;
+
+        if ($defaultForced && !$defaultConfig) {
+            return [false, null, null, false];
+        }
+
+        $rootLevelConfig = ($rootLevelPackageConfig && $rootLevelPackageConfig->isRunnable())
+            ? $rootLevelPackageConfig
+            : null;
+
+        /** @var Config|null $config */
+        $config = null;
+        if ($defaultForced) {
+            $config = $defaultConfig;
+        } elseif ($rootLevelConfig) {
+            $config = $rootLevelConfig;
+        }
+
+        return [true, $config, $defaultConfig, $packageOrDefaultAllowed];
     }
 }

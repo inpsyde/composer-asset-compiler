@@ -4,7 +4,6 @@
     useDocblockPropertyTypes="true"
     usePhpDocMethodsWithoutMagicCall="true"
     strictBinaryOperands="true"
-    allowPhpStormGenerics="true"
     ignoreInternalFunctionFalseReturn="false"
     ignoreInternalFunctionNullReturn="false"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

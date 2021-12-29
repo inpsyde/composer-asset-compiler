@@ -59,5 +59,12 @@
             "dev-v2.x": "2.x-dev",
             "dev-v3.x": "3.x-dev"
         }
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/*": true,
+            "inpsyde/*": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
     }
 }

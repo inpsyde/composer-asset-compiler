@@ -20,6 +20,9 @@ use Inpsyde\AssetsCompiler\Process\Results;
 use Inpsyde\AssetsCompiler\Process\ParallelManager;
 use Inpsyde\AssetsCompiler\Util\Io;
 
+/*
+ * phpcs:disable Inpsyde.CodeQuality.PropertyPerClassLimit
+ */
 class Processor
 {
     /**
@@ -71,6 +74,11 @@ class Processor
      * @var PackageManager|null
      */
     private $defaultPackageManager;
+
+    /**
+     * @var array{bool, string|null}
+     */
+    private $tempDir = [false, null];
 
     /**
      * @param Io $io
@@ -163,13 +171,16 @@ class Processor
         foreach ($assets as $asset) {
             if (!($asset instanceof Asset) && $stopOnFailure) {
                 throw new \Exception('Invalid data to process.');
-            } elseif (!($asset instanceof Asset)) {
-                continue;
             }
-            [$name, $path, $shouldWipe] = $this->assetProcessInfo($asset, $rootConfig);
+
+            [$name, $path, $shouldWipe] = ($asset instanceof Asset)
+                ? $this->assetProcessInfo($asset, $rootConfig)
+                : [null, null, null];
             if (!$name || !$path || ($shouldWipe === null)) {
                 continue;
             }
+
+            /** @var Asset $asset */
             if ($this->maybeSkipAsset($asset, $hashSeed)) {
                 continue;
             }
@@ -235,7 +246,7 @@ class Processor
         $name = $asset->name();
 
         if ($this->locker->isLocked($asset, $hashSeed)) {
-            $this->io->writeVerbose("Not processing '{$name}' because already processed.");
+            $this->io->write("Not processing '{$name}' because already processed.");
 
             return true;
         }
@@ -254,7 +265,6 @@ class Processor
      * @param Asset $asset
      * @param RootConfig $root
      * @return PackageManager
-     * @throws \Throwable
      */
     private function findCommandsForAsset(Asset $asset, RootConfig $root): PackageManager
     {
@@ -327,7 +337,7 @@ class Processor
         $action = $isUpdate ? 'Updating' : 'Installing';
         $name = $asset->name();
         $cmdName = $packageManager->name();
-        $this->io->writeVerboseComment("{$action} dependencies for '{$name}' using {$cmdName}...");
+        $this->io->writeComment("{$action} dependencies for '{$name}' using {$cmdName}...");
 
         $command = $this->handleIsolatedCache($packageManager, $root, $command, $cwd, $name);
         $exitCode = $this->executor->execute($command, $this->outputHandler, $cwd);
@@ -361,17 +371,10 @@ class Processor
             return $command;
         }
 
-        static $tempDir;
-        if (!isset($tempDir)) {
-            $tempDirRaw = $this->filesystem->normalizePath(sys_get_temp_dir());
-            $tempDir = (is_dir($tempDirRaw) && is_writable($tempDirRaw))
-                ? rtrim($tempDirRaw, '/')
-                : false;
-        }
-
+        $tempDir = $this->tempDir();
         $cmdName = $packageManager->name();
         $cleanCmd = $packageManager->cleanCacheCmd();
-        $doClean = $tempDir === false;
+        $doClean = $tempDir === null;
         $fullPath = $doClean ? '' : "{$tempDir}/composer-asset-compiler/{$cmdName}/{$assetName}";
         try {
             $fullPath and $this->filesystem->ensureDirectoryExists($fullPath);
@@ -391,7 +394,8 @@ class Processor
         if ($doClean) {
             $this->io->writeVerbose(
                 "Failed creating asset temporary directory.",
-                "Will now execute {$cleanCmd} to ensure isolated cache for '{$assetName}'."
+                "Will now clean cache executing '{$cleanCmd}' "
+                . "to ensure isolated cache for '{$assetName}'."
             );
 
             $this->io->writeVerboseComment("Forcing {$cmdName} cache cleanup...");
@@ -501,5 +505,23 @@ class Processor
         $this->io->writeVerboseComment("Will compile '{$name}' using '{$commandsStr}'.");
 
         return $assetCommands;
+    }
+
+    /**
+     * @return string|null
+     */
+    private function tempDir(): ?string
+    {
+        if ($this->tempDir[0]) {
+            return $this->tempDir[1];
+        }
+
+        $this->tempDir[0] = true;
+        $sysDir = sys_get_temp_dir();
+        $this->tempDir[1] = (is_dir($sysDir) && is_writable($sysDir))
+            ? $this->filesystem->normalizePath($sysDir)
+            : null;
+
+        return $this->tempDir[1];
     }
 }

@@ -80,7 +80,7 @@ class EnvResolver
         return (string)preg_replace_callback(
             '~\$\{([a-z0-9_]+)\}~i',
             static function (array $var) use ($defaultEnv): string {
-                return (string)static::readEnv((string)$var[1], $defaultEnv);
+                return (string)static::readEnv($var[1], $defaultEnv);
             },
             $string
         );

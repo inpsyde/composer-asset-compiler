@@ -33,7 +33,6 @@ final class Plugin implements
     Capable,
     CommandProvider
 {
-
     private const MODE_NONE = 0;
     private const MODE_COMMAND = 1;
     private const MODE_COMPOSER_INSTALL = 4;
@@ -55,7 +54,7 @@ final class Plugin implements
     private $mode = self::MODE_NONE;
 
     /**
-     * @return array
+     * @return array<string, list<array{string, int}>>
      *
      * @see Plugin::onAutorunBecauseInstall()
      * @see Plugin::onAutorunBecauseUpdate()
@@ -91,8 +90,6 @@ final class Plugin implements
     /**
      * @param Composer $composer
      * @param IOInterface $io
-     *
-     * @psalm-suppress MissingReturnType
      */
     public function activate(Composer $composer, IOInterface $io)
     {
@@ -102,6 +99,7 @@ final class Plugin implements
 
     /**
      * @param Event $event
+     * @return void
      */
     public function onAutorunBecauseInstall(Event $event): void
     {
@@ -143,7 +141,6 @@ final class Plugin implements
      * @param Factory $factory
      * @param string|null $hashSeed
      * @return void
-     * @throws \Exception
      */
     private function run(Factory $factory, ?string $hashSeed = null): void
     {
@@ -156,7 +153,7 @@ final class Plugin implements
             $io->writeInfo('', 'starting...', '');
             $assets = $factory->assets();
             if (!$assets->valid()) {
-                $io->writeVerbose('Nothing to process.');
+                $io->write('Nothing to process.');
 
                 return;
             }
@@ -193,7 +190,7 @@ final class Plugin implements
     }
 
     /**
-     * @param \Throwable $throwable
+     * @param int $exit
      * @param Io|null $io
      * @return void
      */
@@ -213,7 +210,6 @@ final class Plugin implements
      */
     private function convertErrorsToExceptions(): void
     {
-        /** @psalm-suppress InvalidArgument */
         set_error_handler(
             static function (int $severity, string $msg, string $file = '', int $line = 0): void {
                 if ($file && $line) {

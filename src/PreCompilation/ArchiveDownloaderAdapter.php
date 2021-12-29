@@ -88,7 +88,8 @@ class ArchiveDownloaderAdapter implements Adapter
 
         /** @var string $type */
 
-        $distUrl = $this->sanitizeAndMaybeAuthorizeSource($source, $config);
+        $safeSource = $this->sanitizeSource($source);
+        [$distUrl, $auth] = $safeSource ? $this->extractAuth($safeSource, $config) : [null, null];
         if (!$distUrl) {
             return false;
         }
@@ -98,6 +99,9 @@ class ArchiveDownloaderAdapter implements Adapter
             $package->setDistType($type);
             $package->setDistUrl($distUrl);
             $package->setTargetDir($targetDir);
+            if ($auth) {
+                $package->setTransportOptions(['http' => ['header' => ["Authorization: {$auth}"]]]);
+            }
 
             return $this->downloaderFactory->create($type)->download($package, $targetDir);
         } catch (\Throwable $throwable) {
@@ -133,67 +137,71 @@ class ArchiveDownloaderAdapter implements Adapter
 
     /**
      * @param string $source
-     * @param array $config
      * @return string|null
      */
-    private function sanitizeAndMaybeAuthorizeSource(string $source, array $config): ?string
+    private function sanitizeSource(string $source): ?string
     {
-        if (!filter_var($source, FILTER_VALIDATE_URL)) {
+        $safeSource = filter_var($source, FILTER_VALIDATE_URL)
+            ? filter_var($source, FILTER_SANITIZE_URL)
+            : false;
+
+        if (!$safeSource || !is_string($safeSource)) {
             $this->io->writeVerboseError("  '{$source}' is not a valid URL.");
 
             return null;
         }
 
-        $safeSource = filter_var($source, FILTER_SANITIZE_URL);
-        if (!$safeSource) {
-            $this->io->writeVerboseError("  '{$source}' is not a valid URL.");
+        return $source;
+    }
 
-            return null;
-        }
-
-        /** @var string $safeSource */
-
-        preg_match('~^(https?://)(?:([^:]+)(?::([^@]+))?@)?(.+)~i', $safeSource, $matches);
+    /**
+     * @param string $source
+     * @param array $config
+     * @return array{string|null, string|null}
+     */
+    private function extractAuth(string $source, array $config): array
+    {
+        preg_match('~^(https?://)(?:([^:]+)(?::([^@]+))?@)?(.+)~i', $source, $matches);
         $schema = $matches[1] ?? null;
         $url = $matches[4] ?? null;
 
         if (!$schema || !$url) {
             $this->io->writeVerboseError("  '{$source}' is not a valid URL.");
 
-            return null;
+            return [null, null];
         }
 
         $auth = $config['auth'] ?? null;
-        if (!$auth || !is_array($auth)) {
-            return $safeSource;
+        is_array($auth) and $auth = $this->extractBasicAuth($auth);
+        if (is_string($auth) && preg_match('~^[^\s]+\s.+$~', $auth)) {
+            return [$source, $auth];
         }
 
         $user = $matches[2] ?? null;
         $pass = $matches[3] ?? null;
-        if ($user && $pass) {
-            return $safeSource;
+        $auth = $this->extractBasicAuth(compact('user', 'pass'));
+
+        return [$schema . $url, $auth ?? ''];
+    }
+
+    /**
+     * @param array $config
+     * @return string|null
+     */
+    private function extractBasicAuth(array $config): ?string
+    {
+        $user = $config['user'] ?? $config['usr'] ?? null;
+        $pass = $config['password']
+            ?? $config['pass']
+            ?? $config['secret']
+            ?? $config['pwd']
+            ?? $config['token']
+            ?? '';
+
+        if (!$user || !is_string($user) || !is_string($pass)) {
+            return null;
         }
 
-        if (!$user) {
-            $user = $auth['user'] ?? $auth['usr'] ?? null;
-            if (!$user || !is_string($user)) {
-                return $safeSource;
-            }
-
-            $user = rawurlencode($user);
-        }
-
-        if (!$pass) {
-            $pass = $auth['password']
-                ?? $auth['pass']
-                ?? $auth['secret']
-                ?? $auth['pwd']
-                ?? $auth['token']
-                ?? '';
-            is_string($pass) or $pass = '';
-            $pass and $pass = rawurlencode($pass);
-        }
-
-        return $pass ? "{$schema}{$user}:{$pass}@{$url}" : "{$schema}{$user}@{$url}";
+        return 'Basic ' . base64_encode("{$user}:{$pass}");
     }
 }
