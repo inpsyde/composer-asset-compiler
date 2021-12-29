@@ -38,7 +38,7 @@
         "phpunit/phpunit": "^8.5.21",
         "mockery/mockery": "^1.3.5",
         "inpsyde/php-coding-standards": "^1@dev",
-        "vimeo/psalm": ">=4.11.2@stable",
+        "vimeo/psalm": "^4.16.1",
         "mikey179/vfsstream": "^1.6.10"
     },
     "scripts": {
@@ -58,6 +58,13 @@
             "dev-v1.x": "1.x-dev",
             "dev-v2.x": "2.x-dev",
             "dev-v3.x": "3.x-dev"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/*": true,
+            "inpsyde/*": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true
         }
     }
 }
