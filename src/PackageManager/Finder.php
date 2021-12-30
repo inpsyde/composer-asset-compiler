@@ -15,7 +15,7 @@ use Composer\Util\Filesystem;
 use Composer\Util\ProcessExecutor;
 use Inpsyde\AssetsCompiler\Asset\Asset;
 use Inpsyde\AssetsCompiler\Asset\Config;
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
+use Inpsyde\AssetsCompiler\Util\ModeResolver;
 use Inpsyde\AssetsCompiler\Util\Io;
 
 class Finder
@@ -24,11 +24,6 @@ class Finder
      * @var ProcessExecutor
      */
     private $executor;
-
-    /**
-     * @var EnvResolver
-     */
-    private $envResolver;
 
     /**
      * @var Filesystem
@@ -52,40 +47,36 @@ class Finder
 
     /**
      * @param ProcessExecutor $executor
-     * @param EnvResolver $envResolver
-     * @param Filesystem $filesystem,
+     * @param ModeResolver $modeResolver
+     * @param Filesystem $filesystem ,
      * @param Io $io
      * @param array $defaultEnv
      * @return Finder
      */
     public static function new(
         ProcessExecutor $executor,
-        EnvResolver $envResolver,
         Filesystem $filesystem,
         Io $io,
         array $defaultEnv
     ): Finder {
 
-        return new self($executor, $envResolver, $filesystem, $io, $defaultEnv);
+        return new self($executor, $filesystem, $io, $defaultEnv);
     }
 
     /**
      * @param ProcessExecutor $executor
-     * @param EnvResolver $envResolver
-     * @param Filesystem $filesystem,
+     * @param Filesystem $filesystem
      * @param Io $io
      * @param array $defaultEnv
      */
     private function __construct(
         ProcessExecutor $executor,
-        EnvResolver $envResolver,
         Filesystem $filesystem,
         Io $io,
         array $defaultEnv
     ) {
 
         $this->executor = $executor;
-        $this->envResolver = $envResolver;
         $this->filesystem = $filesystem;
         $this->io = $io;
         $this->defaultEnv = $defaultEnv;

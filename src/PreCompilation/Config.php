@@ -1,10 +1,17 @@
 <?php
 
+/*
+ * This file is part of the "Composer Asset Compiler" package.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\PreCompilation;
 
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
+use Inpsyde\AssetsCompiler\Util\ModeResolver;
 
 final class Config
 {
@@ -38,9 +45,9 @@ final class Config
     private $valid = null;
 
     /**
-     * @var EnvResolver|null
+     * @var ModeResolver|null
      */
-    private $envResolver;
+    private $modeResolver;
 
     /**
      * @return Config
@@ -52,28 +59,28 @@ final class Config
 
     /**
      * @param array $raw
-     * @param EnvResolver $envResolver
+     * @param ModeResolver $modeResolver
      * @return Config
      */
-    public static function new(array $raw, EnvResolver $envResolver): Config
+    public static function new(array $raw, ModeResolver $modeResolver): Config
     {
-        return new static($raw, $envResolver);
+        return new static($raw, $modeResolver);
     }
 
     /**
      * @param array $raw
-     * @param EnvResolver|null $envResolver
+     * @param ModeResolver|null $modeResolver
      */
-    private function __construct(array $raw, ?EnvResolver $envResolver = null)
+    private function __construct(array $raw, ?ModeResolver $modeResolver = null)
     {
         $this->raw = $raw;
-        $this->envResolver = $envResolver;
+        $this->modeResolver = $modeResolver;
     }
 
     /**
      * @return bool
      *
-     * @psalm-assert-if-true EnvResolver $this->envResolver
+     * @psalm-assert-if-true ModeResolver $this->modeResolver
      */
     public function isValid(): bool
     {
@@ -155,26 +162,34 @@ final class Config
     }
 
     /**
-     * @param array $data
+     * @param iterable $data
      * @param Placeholders $placeholders
      * @param array $env
      * @return array
      */
-    private function deepReplace(array $data, Placeholders $placeholders, array $env): array
+    private function deepReplace(iterable $data, Placeholders $placeholders, array $env): array
     {
         $config = [];
         foreach ($data as $key => $value) {
-            if (!$value) {
+            if (is_string($value)) {
+                /** @psalm-suppress MixedArrayOffset */
+                $config[$key] = $value ? $placeholders->replace($value, $env) : '';
+                continue;
+            }
+
+            $stdClass = $value instanceof \stdClass;
+            if (!is_iterable($value) && !$stdClass) {
+                /** @psalm-suppress MixedArrayOffset */
                 $config[$key] = $value;
                 continue;
             }
-            if (is_string($value)) {
-                $config[$key] = $placeholders->replace($value, $env);
-                continue;
-            }
-            $config[$key] = is_array($value)
-                ? $this->deepReplace($value, $placeholders, $env)
-                : $value;
+
+            /** @psalm-suppress MixedArgument */
+            $stdClass and $value = get_object_vars($value);
+            $replaced = $this->deepReplace($value, $placeholders, $env);
+            $stdClass and $replaced = (object)$replaced;
+            /** @psalm-suppress MixedArrayOffset */
+            $config[$key] = $replaced;
         }
 
         return $config;
@@ -191,7 +206,7 @@ final class Config
 
         $this->valid = false;
 
-        if (!$this->envResolver) {
+        if (!$this->modeResolver) {
             return false;
         }
 
@@ -200,12 +215,12 @@ final class Config
             return false;
         }
 
-        $byEnv = $this->envResolver->resolveConfig($config);
-        if ($byEnv && is_array($byEnv)) {
-            $config = $byEnv;
+        $byMode = $this->modeResolver->resolveConfig($config);
+        if ($byMode && is_array($byMode)) {
+            $config = $byMode;
         }
-        if ($byEnv === null) {
-            $config = $this->envResolver->removeEnvConfig($config);
+        if ($byMode === null) {
+            $config = $this->modeResolver->removeModeConfig($config);
         }
 
         $settings = [];

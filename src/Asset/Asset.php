@@ -12,7 +12,7 @@ declare(strict_types=1);
 namespace Inpsyde\AssetsCompiler\Asset;
 
 use Inpsyde\AssetsCompiler\PreCompilation;
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
+use Inpsyde\AssetsCompiler\Util\Env;
 
 final class Asset
 {
@@ -183,7 +183,7 @@ final class Asset
      */
     public function env(): array
     {
-        return $this->config ? $this->config->defaultEnv() : [];
+        return $this->config ? $this->config->mergedDefaultEnv() : [];
     }
 
     /**
@@ -191,11 +191,27 @@ final class Asset
      */
     public function preCompilationConfig(): PreCompilation\Config
     {
-        if (!$this->config || EnvResolver::readEnv('COMPOSER_ASSET_COMPILER_PRECOMPILING')) {
+        if (!$this->config || Env::readEnv('COMPOSER_ASSET_COMPILER_PRECOMPILING', $this->env())) {
             return PreCompilation\Config::invalid();
         }
 
         return $this->config->preCompilationConfig() ?? PreCompilation\Config::invalid();
+    }
+
+    /**
+     * @return bool|null
+     */
+    public function isolatedCache(): ?bool
+    {
+        return $this->config ? $this->config->isolatedCache() : null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function srcPaths(): array
+    {
+        return $this->config ? $this->config->srcPaths() : [];
     }
 
     /**

@@ -9,16 +9,16 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\AssetsCompiler\Tests\Unit\Asset;
+namespace Inpsyde\AssetsCompiler\Tests\Asset;
 
 use Inpsyde\AssetsCompiler\Asset\Config;
 use Inpsyde\AssetsCompiler\Asset\Asset;
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
-use Inpsyde\AssetsCompiler\Tests\TestCase;
+use Inpsyde\AssetsCompiler\Util\ModeResolver;
+use Inpsyde\AssetsCompiler\Tests\UnitTestCase;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamFile;
 
-class PackageTest extends TestCase
+class PackageUnitTest extends UnitTestCase
 {
     /**
      * @test
@@ -115,7 +115,7 @@ JSON;
      */
     private function factoryConfig(string $json): Config
     {
-        $resolver = EnvResolver::new('', false);
+        $resolver = ModeResolver::new('', false);
 
         return Config::forAssetConfigInRoot(json_decode($json, true), $resolver);
     }

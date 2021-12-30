@@ -16,7 +16,8 @@ use Composer\Package\PackageInterface;
 use Composer\Package\RootPackageInterface;
 use Composer\Util\Filesystem;
 use Inpsyde\AssetsCompiler\PackageManager;
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
+use Inpsyde\AssetsCompiler\Util\Env;
+use Inpsyde\AssetsCompiler\Util\ModeResolver;
 use Inpsyde\AssetsCompiler\PreCompilation;
 
 class Config
@@ -27,6 +28,8 @@ class Config
     public const SCRIPT = 'script';
     public const PACKAGE_MANAGER = 'package-manager';
     public const PRE_COMPILED = 'pre-compiled';
+    public const ISOLATED_CACHE = 'isolated-cache';
+    public const SRC_PATHS = 'src-paths';
     public const INSTALL = 'install';
     public const UPDATE = 'update';
     public const NONE = 'none';
@@ -45,6 +48,8 @@ class Config
         self::FORCE_DEFAULTS => false,
         self::DISABLED => false,
         self::PACKAGE_MANAGER => null,
+        self::ISOLATED_CACHE => false,
+        self::SRC_PATHS => [],
     ];
 
     /**
@@ -58,9 +63,9 @@ class Config
     private $byRootPackage = false;
 
     /**
-     * @var EnvResolver
+     * @var ModeResolver
      */
-    private $envResolver;
+    private $modeResolver;
 
     /**
      * @var array
@@ -88,31 +93,54 @@ class Config
     private $data = self::BASE_DATA;
 
     /**
-     * @param mixed $config
-     * @param EnvResolver $envResolver
+     * @var array<string, string>
+     */
+    private $rootEnv;
+
+    /**
+     * @param array $data
+     * @param ModeResolver $modeResolver
+     * @param array<string, string> $rootEnv
      * @return Config
      */
-    public static function forAssetConfigInRoot($config, EnvResolver $envResolver): Config
+    public static function new(array $data, ModeResolver $modeResolver, array $rootEnv = []): Config
     {
+        return new static($data, $modeResolver, $rootEnv);
+    }
+
+    /**
+     * @param mixed $config
+     * @param ModeResolver $modeResolver
+     * @param array<string, string> $rootEnv = []
+     * @return Config
+     */
+    public static function forAssetConfigInRoot(
+        $config,
+        ModeResolver $modeResolver,
+        array $rootEnv = []
+    ): Config {
+
         if (!is_array($config) && !is_bool($config) && !is_string($config)) {
             $config = [];
         }
 
-        return new static(static::parseRaw($config, $envResolver), $envResolver);
+        return new static(static::parseRaw($config, $modeResolver), $modeResolver, $rootEnv);
     }
 
     /**
      * @param PackageInterface $package
      * @param string $path
-     * @param EnvResolver $envResolver
+     * @param ModeResolver $modeResolver
      * @param Filesystem $filesystem
+     * @param array<string, string> $rootEnv
      * @return Config
      */
     public static function forComposerPackage(
         PackageInterface $package,
         string $path,
-        EnvResolver $envResolver,
-        Filesystem $filesystem
+        ModeResolver $modeResolver,
+        Filesystem $filesystem,
+        array $rootEnv = []
     ): Config {
 
         $path = $filesystem->normalizePath($path);
@@ -121,13 +149,23 @@ class Config
             ? JsonFile::parseJson(file_get_contents($configFile) ?: '')
             : $package->getExtra()[self::EXTRA_KEY] ?? [];
 
-        $data = static::parseRaw($raw, $envResolver);
-        $instance = new static($data, $envResolver);
+        $isRoot = $package instanceof RootPackageInterface;
+        $isRoot and $rootEnv = [];
+
+        $data = static::parseRaw($raw, $modeResolver);
+        $instance = new static($data, $modeResolver, $rootEnv);
         $instance->byPackage = true;
-        if ($package instanceof RootPackageInterface) {
+        if ($isRoot) {
             $instance->byRootPackage = true;
             $name = $package->getName();
-            $instance->rootConfig = RootConfig::new($name, $path, $data, $envResolver, $filesystem);
+            $instance->rootConfig = RootConfig::new(
+                $name,
+                $path,
+                $data,
+                $modeResolver,
+                $filesystem,
+                $instance->defaultEnv()
+            );
         }
 
         return $instance;
@@ -135,19 +173,19 @@ class Config
 
     /**
      * @param mixed $raw
-     * @param EnvResolver $envResolver
+     * @param ModeResolver $modeResolver
      * @return array
      */
-    private static function parseRaw($raw, EnvResolver $envResolver): array
+    private static function parseRaw($raw, ModeResolver $modeResolver): array
     {
         $config = $raw;
 
-        $byEnv = null;
+        $byMode = null;
         $noEnv = null;
         if (is_array($raw)) {
-            $byEnv = $envResolver->resolveConfig($raw);
-            $noEnv = $envResolver->removeEnvConfig($raw);
-            $config = ($byEnv === null) ? $noEnv : $byEnv;
+            $byMode = $modeResolver->resolveConfig($raw);
+            $noEnv = $modeResolver->removeModeConfig($raw);
+            $config = ($byMode === null) ? $noEnv : $byMode;
         }
 
         if (is_bool($config)) {
@@ -167,18 +205,19 @@ class Config
 
         is_array($config) or $config = [];
 
-        return ($byEnv && $noEnv) ? array_merge($noEnv, $config) : $config;
+        return ($byMode && $noEnv) ? array_merge($noEnv, $config) : $config;
     }
 
     /**
-     * @param bool $isRootPackage
      * @param array $raw
-     * @param EnvResolver $envResolver
+     * @param ModeResolver $modeResolver
+     * @param array<string, string> $rootEnv
      */
-    final private function __construct(array $raw, EnvResolver $envResolver)
+    final private function __construct(array $raw, ModeResolver $modeResolver, array $rootEnv = [])
     {
         $this->raw = $raw;
-        $this->envResolver = $envResolver;
+        $this->modeResolver = $modeResolver;
+        $this->rootEnv = $rootEnv;
     }
 
     /**
@@ -327,7 +366,7 @@ class Config
         }
 
         /** @var PreCompilation\Config $config */
-        $config =  $this->data[self::PRE_COMPILED];
+        $config = $this->data[self::PRE_COMPILED];
 
         return $config;
     }
@@ -350,10 +389,59 @@ class Config
 
         $config = $this->raw[self::DEF_ENV] ?? null;
         $this->data[self::DEF_ENV] = (is_array($config) || ($config instanceof \stdClass))
-            ? EnvResolver::sanitizeEnvVars((array)$config)
+            ? Env::sanitizeEnvVars((array)$config)
             : [];
 
         return $this->data[self::DEF_ENV];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function mergedDefaultEnv(): array
+    {
+        if (!$this->isValid()) {
+            return [];
+        }
+
+        $inner = $this->defaultEnv();
+        if ($this->rootConfig()) {
+            return $inner;
+        }
+
+        return array_merge(array_filter($this->rootEnv), array_filter($inner));
+    }
+
+    /**
+     * @return bool|null
+     */
+    public function isolatedCache(): ?bool
+    {
+        $this->parseData();
+        if (!$this->valid) {
+            return null;
+        }
+
+        /** @var bool|null $isolated */
+        $isolated = $this->data[self::ISOLATED_CACHE];
+
+        return $isolated;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function srcPaths(): array
+    {
+        $this->parseData();
+        if (!$this->valid) {
+            return [];
+        }
+
+        /** @var list<string> $paths */
+        $paths = $this->data[self::SRC_PATHS];
+
+        return $paths;
     }
 
     /**
@@ -385,6 +473,8 @@ class Config
         $this->data[self::SCRIPT] = $scripts;
         $this->data[self::PRE_COMPILED] = $this->parsePreCompiled($config);
         $this->data[self::PACKAGE_MANAGER] = $this->parsePackageManager($config);
+        $this->data[self::ISOLATED_CACHE] = $this->parseIsolatedCache($config);
+        $this->data[self::SRC_PATHS] = $this->parseLockPaths($config);
 
         $this->valid = $this->data[self::DEPENDENCIES] || $this->data[self::SCRIPT];
     }
@@ -403,8 +493,8 @@ class Config
         }
 
         if (is_array($dependencies)) {
-            $byEnv = $this->envResolver->resolveConfig($dependencies);
-            $dependencies = ($byEnv && is_string($byEnv)) ? $byEnv : null;
+            $byMode = $this->modeResolver->resolveConfig($dependencies);
+            $dependencies = ($byMode && is_string($byMode)) ? $byMode : null;
         }
 
         is_string($dependencies) and $dependencies = strtolower($dependencies);
@@ -435,11 +525,11 @@ class Config
 
         /** @var array $scripts */
 
-        $byEnv = $this->envResolver->resolveConfig($scripts);
-        if ($byEnv && (is_array($byEnv) || is_string($byEnv))) {
-            $scripts = (array)$byEnv;
-        } elseif ($byEnv === null) {
-            $scripts = $this->envResolver->removeEnvConfig($scripts);
+        $byMode = $this->modeResolver->resolveConfig($scripts);
+        if ($byMode && (is_array($byMode) || is_string($byMode))) {
+            $scripts = (array)$byMode;
+        } elseif ($byMode === null) {
+            $scripts = $this->modeResolver->removeModeConfig($scripts);
         }
 
         $allScripts = [];
@@ -447,7 +537,7 @@ class Config
             ($script && is_string($script)) and $allScripts[$script] = 1;
         }
 
-        /** @var array<string> $keys */
+        /** @var list<string> $keys */
         $keys = $allScripts ? array_keys($allScripts) : null;
 
         return $keys;
@@ -464,7 +554,7 @@ class Config
             return PreCompilation\Config::invalid();
         }
 
-        return PreCompilation\Config::new($raw, $this->envResolver);
+        return PreCompilation\Config::new($raw, $this->modeResolver);
     }
 
     /**
@@ -477,15 +567,20 @@ class Config
         $manager = $config[self::PACKAGE_MANAGER] ?? $config['commands'] ?? null;
 
         if (!$manager) {
-            return null;
+            $byEnv = $this->resolveByEnv('PACKAGE_MANAGER');
+            if (!$byEnv) {
+                return null;
+            }
+
+            $manager = $byEnv;
         }
 
         if (is_array($manager)) {
-            $byEnv = $this->envResolver->resolveConfig($manager);
-            if ($byEnv && (is_array($byEnv) || is_string($byEnv))) {
-                $manager = $byEnv;
-            } elseif ($byEnv === null) {
-                $manager = $this->envResolver->removeEnvConfig($manager);
+            $byMode = $this->modeResolver->resolveConfig($manager);
+            if ($byMode && (is_array($byMode) || is_string($byMode))) {
+                $manager = $byMode;
+            } elseif ($byMode === null) {
+                $manager = $this->modeResolver->removeModeConfig($manager);
             }
         }
 
@@ -494,6 +589,59 @@ class Config
         }
 
         return is_array($manager) ? PackageManager\PackageManager::new($manager) : null;
+    }
+
+    /**
+     * @param array $config
+     * @return bool|null
+     */
+    private function parseIsolatedCache(array $config): ?bool
+    {
+        $isolated = $config[self::ISOLATED_CACHE] ?? $this->resolveByEnv('ISOLATED_CACHE');
+        if ($isolated === null) {
+            return null;
+        }
+
+        if (is_array($isolated)) {
+            $byMode = $this->modeResolver->resolveConfig($isolated);
+            if ($byMode && (is_bool($byMode) || is_string($byMode))) {
+                $isolated = $byMode;
+            } elseif ($byMode === null) {
+                return false;
+            }
+        }
+
+        return (bool)filter_var($isolated, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * @param array $config
+     * @return list<string>
+     */
+    private function parseLockPaths(array $config): array
+    {
+        $paths = $config[self::SRC_PATHS] ?? null;
+
+        if (is_array($paths)) {
+            $byMode = $this->modeResolver->resolveConfig($paths);
+            if ($byMode && (is_array($byMode) || is_string($byMode))) {
+                $paths = $byMode;
+            } elseif ($byMode === null) {
+                $paths = $this->modeResolver->removeModeConfig($paths);
+            }
+        }
+
+        is_string($paths) and $paths = [$paths];
+        if (!is_array($paths)) {
+            return [];
+        }
+
+        $parsed = [];
+        foreach ($paths as $path) {
+            ($path && is_string($path)) and $parsed[] = $path;
+        }
+
+        return $parsed;
     }
 
     /**
@@ -516,5 +664,14 @@ class Config
         }
 
         return false;
+    }
+
+    /**
+     * @param string $key
+     * @return string|null
+     */
+    private function resolveByEnv(string $key): ?string
+    {
+        return Env::readEnv("COMPOSER_ASSET_COMPILER_{$key}", $this->mergedDefaultEnv());
     }
 }

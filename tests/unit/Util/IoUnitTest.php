@@ -9,13 +9,13 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\AssetsCompiler\Tests\Unit\Util;
+namespace Inpsyde\AssetsCompiler\Tests\Util;
 
 use Composer\IO\IOInterface;
 use Inpsyde\AssetsCompiler\Util\Io;
-use Inpsyde\AssetsCompiler\Tests\TestCase;
+use Inpsyde\AssetsCompiler\Tests\UnitTestCase;
 
-class IoTest extends TestCase
+class IoUnitTest extends UnitTestCase
 {
     private const SPACER = '    ';
 
@@ -25,8 +25,8 @@ class IoTest extends TestCase
     public function testWrite(): void
     {
         $composerIo = \Mockery::mock(IOInterface::class);
-        $composerIo->shouldReceive('write')->once()->with(self::SPACER . 'foo');
-        $composerIo->shouldReceive('write')->once()->with(self::SPACER . 'bar');
+        $composerIo->expects('write')->with(self::SPACER . 'foo');
+        $composerIo->expects('write')->with(self::SPACER . 'bar');
 
         Io::new($composerIo)->write('foo', 'bar');
     }
@@ -38,12 +38,10 @@ class IoTest extends TestCase
     {
         $composerIo = \Mockery::mock(IOInterface::class);
 
-        $composerIo->shouldReceive('write')
-            ->once()
+        $composerIo->expects('write')
             ->with(self::SPACER . 'foo', true, IOInterface::VERBOSE);
 
-        $composerIo->shouldReceive('write')
-            ->once()
+        $composerIo->expects('write')
             ->with(self::SPACER . 'bar', true, IOInterface::VERBOSE);
 
         Io::new($composerIo)->writeVerbose('foo', 'bar');
@@ -56,20 +54,20 @@ class IoTest extends TestCase
     {
         $composerIo = \Mockery::mock(IOInterface::class);
 
-        $composerIo->shouldReceive('write')
-            ->once()
+        $composerIo
+            ->expects('write')
             ->with(self::SPACER . '<info>a</info>', true, IOInterface::NORMAL);
 
         $composerIo
-            ->shouldReceive('write')
-            ->once()->with(self::SPACER . '<info>b</info>', true, IOInterface::NORMAL);
+            ->expects('write')
+            ->with(self::SPACER . '<info>b</info>', true, IOInterface::NORMAL);
 
-        $composerIo->shouldReceive('write')
-            ->once()
+        $composerIo
+            ->expects('write')
             ->with(self::SPACER . '<info>c</info>', true, IOInterface::VERBOSE);
 
-        $composerIo->shouldReceive('write')
-            ->once()
+        $composerIo
+            ->expects('write')
             ->with(self::SPACER . '<info>d</info>', true, IOInterface::VERBOSE);
 
         $io = Io::new($composerIo);
@@ -85,20 +83,20 @@ class IoTest extends TestCase
     {
         $composerIo = \Mockery::mock(IOInterface::class);
 
-        $composerIo->shouldReceive('write')
-            ->once()
+        $composerIo
+            ->expects('write')
             ->with(self::SPACER . '<comment>a</comment>', true, IOInterface::NORMAL);
 
         $composerIo
-            ->shouldReceive('write')
-            ->once()->with(self::SPACER . '<comment>b</comment>', true, IOInterface::NORMAL);
+            ->expects('write')
+            ->with(self::SPACER . '<comment>b</comment>', true, IOInterface::NORMAL);
 
-        $composerIo->shouldReceive('write')
-            ->once()
+        $composerIo
+            ->expects('write')
             ->with(self::SPACER . '<comment>c</comment>', true, IOInterface::VERBOSE);
 
-        $composerIo->shouldReceive('write')
-            ->once()
+        $composerIo
+            ->expects('write')
             ->with(self::SPACER . '<comment>d</comment>', true, IOInterface::VERBOSE);
 
         $io = Io::new($composerIo);
@@ -114,20 +112,20 @@ class IoTest extends TestCase
     {
         $composerIo = \Mockery::mock(IOInterface::class);
 
-        $composerIo->shouldReceive('writeError')
-            ->once()
+        $composerIo
+            ->expects('writeError')
             ->with(self::SPACER . '<fg=red>a</>', true, IOInterface::NORMAL);
 
         $composerIo
-            ->shouldReceive('writeError')
-            ->once()->with(self::SPACER . '<fg=red>b</>', true, IOInterface::NORMAL);
+            ->expects('writeError')
+            ->with(self::SPACER . '<fg=red>b</>', true, IOInterface::NORMAL);
 
-        $composerIo->shouldReceive('writeError')
-            ->once()
+        $composerIo
+            ->expects('writeError')
             ->with(self::SPACER . '<fg=red>c</>', true, IOInterface::VERBOSE);
 
-        $composerIo->shouldReceive('writeError')
-            ->once()
+        $composerIo
+            ->expects('writeError')
             ->with(self::SPACER . '<fg=red>d</>', true, IOInterface::VERBOSE);
 
         $io = Io::new($composerIo);

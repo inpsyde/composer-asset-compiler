@@ -9,7 +9,7 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\AssetsCompiler\Tests\Unit\PackageManager;
+namespace Inpsyde\AssetsCompiler\Tests\PackageManager;
 
 use Composer\Installer\InstallationManager;
 use Composer\Package\Loader\ArrayLoader;
@@ -20,14 +20,14 @@ use Inpsyde\AssetsCompiler\Asset\Config;
 use Inpsyde\AssetsCompiler\Asset\Defaults;
 use Inpsyde\AssetsCompiler\Asset\Factory;
 use Inpsyde\AssetsCompiler\PackageManager\Finder;
-use Inpsyde\AssetsCompiler\Tests\TestCase;
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
+use Inpsyde\AssetsCompiler\Tests\UnitTestCase;
+use Inpsyde\AssetsCompiler\Util\ModeResolver;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * @runTestsInSeparateProcesses
  */
-class FinderTest extends TestCase
+class FinderUnitTest extends UnitTestCase
 {
     /**
      * @test
@@ -306,7 +306,7 @@ class FinderTest extends TestCase
                 'extra' => [Config::EXTRA_KEY => $settings],
             ]),
             $dir ?? __DIR__,
-            EnvResolver::new('test', true),
+            ModeResolver::new('test', true),
             new Filesystem()
         );
     }
@@ -325,13 +325,17 @@ class FinderTest extends TestCase
         $package = (new ArrayLoader())->load($data);
 
         $manager = \Mockery::mock(InstallationManager::class);
-        $manager->shouldReceive('getInstallPath')->with($package)->andReturn($dir);
+        $manager->allows('getInstallPath')->with($package)->andReturns($dir);
+        $modeResolver = ModeResolver::new('test', true);
+        $filesystem = new Filesystem();
+        $config = Config::forComposerPackage($package, $dir, $modeResolver, $filesystem);
 
         $assetFactory = Factory::new(
-            EnvResolver::new('test', true),
-            new Filesystem(),
+            $modeResolver,
+            $filesystem,
             $manager,
-            $dir
+            $dir,
+            $config->defaultEnv()
         );
 
         return $assetFactory->attemptFactory($package, null, Defaults::empty());
@@ -345,7 +349,6 @@ class FinderTest extends TestCase
     {
         return Finder::new(
             $executor ?? new ProcessExecutor(),
-            EnvResolver::new('test', true),
             new Filesystem(),
             $this->factoryIo(OutputInterface::VERBOSITY_VERBOSE),
             []
@@ -360,7 +363,7 @@ class FinderTest extends TestCase
     {
         $executor = \Mockery::mock(ProcessExecutor::class);
         $executor
-            ->shouldReceive('execute')
+            ->allows('execute')
             ->andReturnUsing(
                 static function (string $discover) use ($which): int {
                     if ($which === null) {

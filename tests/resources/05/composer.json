@@ -1,0 +1,21 @@
+{
+  "name": "composer-asset-compiler/test-root",
+  "description": "description",
+  "minimum-stability": "dev",
+  "license": "proprietary",
+  "repositories": [
+    { "type": "path", "url": "./repo" },
+    { "packagist": false }
+  ],
+  "require": {
+    "composer-asset-compiler/test-repo": "*"
+  },
+  "extra": {
+    "composer-asset-compiler": {
+      "default-env": {
+        "CAC_WHERE": "root",
+        "CAC_FOO": "Foo"
+      }
+    }
+  }
+}

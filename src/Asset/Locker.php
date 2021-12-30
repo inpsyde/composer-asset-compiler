@@ -56,10 +56,9 @@ class Locker
 
     /**
      * @param Asset $asset
-     * @param string|null $hashSeed
      * @return bool
      */
-    public function isLocked(Asset $asset, ?string $hashSeed = null): bool
+    public function isLocked(Asset $asset): bool
     {
         if ($this->ignoreAll) {
             return false;
@@ -91,7 +90,7 @@ class Locker
             return false;
         }
 
-        $hash = $this->hashBuilder->forAsset($asset, $hashSeed);
+        $hash = $this->hashBuilder->forAsset($asset);
 
         return $hash && trim($content) === $hash;
     }

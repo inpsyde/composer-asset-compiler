@@ -1,10 +1,17 @@
 <?php
 
+/*
+ * This file is part of the "Composer Asset Compiler" package.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\PreCompilation;
 
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
+use Inpsyde\AssetsCompiler\Util\Env;
 
 class GitHubConfig
 {
@@ -37,18 +44,18 @@ class GitHubConfig
     {
         // phpcs:enable Generic.Metrics.CyclomaticComplexity
         $user = $config[self::TOKEN_USER]
-            ?? EnvResolver::readEnv('GITHUB_USER_NAME', $env)
-            ?? EnvResolver::readEnv('GITHUB_API_USER', $env)
-            ?? EnvResolver::readEnv('GITHUB_ACTOR', $env)
+            ?? Env::readEnv('GITHUB_USER_NAME', $env)
+            ?? Env::readEnv('GITHUB_API_USER', $env)
+            ?? Env::readEnv('GITHUB_ACTOR', $env)
             ?? null;
         $token = $config[self::TOKEN]
-            ?? EnvResolver::readEnv('GITHUB_USER_TOKEN', $env)
-            ?? EnvResolver::readEnv('GITHUB_API_TOKEN', $env)
-            ?? EnvResolver::readEnv('GITHUB_TOKEN', $env)
+            ?? Env::readEnv('GITHUB_USER_TOKEN', $env)
+            ?? Env::readEnv('GITHUB_API_TOKEN', $env)
+            ?? Env::readEnv('GITHUB_TOKEN', $env)
             ?? null;
         $repo = $config[self::REPO]
-            ?? EnvResolver::readEnv('GITHUB_API_REPOSITORY', $env)
-            ?? EnvResolver::readEnv('GITHUB_REPOSITORY', $env)
+            ?? Env::readEnv('GITHUB_API_REPOSITORY', $env)
+            ?? Env::readEnv('GITHUB_REPOSITORY', $env)
             ?? null;
 
         $this->config = [

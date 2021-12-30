@@ -29,8 +29,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Inpsyde\\AssetsCompiler\\Tests\\": "tests/src/",
-            "Inpsyde\\AssetsCompiler\\Tests\\Unit\\": "tests/unit/"
+            "Inpsyde\\AssetsCompiler\\Tests\\": ["tests/src/", "tests/unit/", "tests/functional/"]
         }
     },
     "require-dev": {

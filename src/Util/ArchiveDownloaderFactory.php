@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * This file is part of the "Composer Asset Compiler" package.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\Util;
@@ -49,7 +56,7 @@ class ArchiveDownloaderFactory
      * @param string $type
      * @return bool
      */
-    public static function isValidType(string $type): bool
+    public static function isValidArchiveType(string $type): bool
     {
         return in_array(strtolower($type), self::ARCHIVES, true);
     }
@@ -99,7 +106,7 @@ class ArchiveDownloaderFactory
             return $this->downloaders[$type];
         }
 
-        if (!static::isValidType($type)) {
+        if (!static::isValidArchiveType($type)) {
             throw new \Exception(sprintf("Invalid archive type: '%s'.", $type));
         }
 
@@ -125,18 +132,13 @@ class ArchiveDownloaderFactory
 
         // When it's not very verbose we silence FileDownloader ConsoleIO
 
-        static $replacer;
-        $replacer or $replacer = function (): void {
-            /** @psalm-suppress DocblockTypeContradiction */
-            if ($this->io instanceof ConsoleIO) {
-                /** @psalm-suppress InvalidPropertyAssignmentValue io */
-                $this->io = SilentConsoleIo::new($this->io);
-            }
-        };
-
-        /** @var \Closure $replacer */
-        $replacerBound = \Closure::bind($replacer, $downloader, FileDownloader::class);
-        $replacerBound and $replacerBound();
+        $ref = new \ReflectionClass($downloader);
+        $prop = $ref->getProperty('io');
+        $prop->setAccessible(true);
+        $io = $prop->getValue($downloader);
+        if ($io instanceof ConsoleIO) {
+            $prop->setValue($downloader, SilentConsoleIo::new($io));
+        }
 
         return $downloader;
     }

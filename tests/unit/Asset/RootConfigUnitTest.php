@@ -9,18 +9,18 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\AssetsCompiler\Tests\Unit\Asset;
+namespace Inpsyde\AssetsCompiler\Tests\Asset;
 
 use Composer\Package\RootPackage;
 use Composer\Util\Filesystem;
 use Inpsyde\AssetsCompiler\Asset\Config;
 use Inpsyde\AssetsCompiler\Asset\RootConfig;
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
-use Inpsyde\AssetsCompiler\Tests\TestCase;
+use Inpsyde\AssetsCompiler\Util\ModeResolver;
+use Inpsyde\AssetsCompiler\Tests\UnitTestCase;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamDirectory;
 
-class RootConfigTest extends TestCase
+class RootConfigUnitTest extends UnitTestCase
 {
     /**
      * @test
@@ -166,14 +166,13 @@ JSON;
     }
 }
 JSON;
-        /** @var Filesystem $filesystem */
         $filesystem = \Mockery::mock(Filesystem::class)->makePartial();
         $filesystem
-            ->shouldReceive('isSymlinkedDirectory')
-            ->once()
+            ->expects('isSymlinkedDirectory')
             ->with(__DIR__)
             ->andReturn(true);
 
+        /** @var Filesystem $filesystem */
         $config = $this->factoryConfig($json, 'test', __DIR__, $filesystem);
 
         static::assertFalse($config->isWipeAllowedFor(__DIR__));
@@ -282,7 +281,7 @@ JSON;
         $config = Config::forComposerPackage(
             $package,
             $rootDir ?? __DIR__,
-            EnvResolver::new($env, true),
+            ModeResolver::new($env, true),
             $filesystem ?? new Filesystem()
         );
 

@@ -9,27 +9,27 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\AssetsCompiler\Tests\Unit\Asset;
+namespace Inpsyde\AssetsCompiler\Tests\Asset;
 
 use Composer\Installer\InstallationManager;
 use Composer\Package\Loader\ArrayLoader;
-use Composer\Package\Package;
 use Composer\Package\PackageInterface;
 use Composer\Package\RootPackage;
 use Composer\Repository\ArrayRepository;
 use Composer\Repository\RepositoryInterface;
 use Composer\Util\Filesystem;
+use Inpsyde\AssetsCompiler\Asset\Asset;
 use Inpsyde\AssetsCompiler\Asset\Config;
 use Inpsyde\AssetsCompiler\Asset\Defaults;
 use Inpsyde\AssetsCompiler\Asset\Factory;
 use Inpsyde\AssetsCompiler\Asset\Finder;
 use Inpsyde\AssetsCompiler\Asset\RootConfig;
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
-use Inpsyde\AssetsCompiler\Tests\TestCase;
+use Inpsyde\AssetsCompiler\Util\ModeResolver;
+use Inpsyde\AssetsCompiler\Tests\UnitTestCase;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamFile;
 
-class FinderTest extends TestCase
+class FinderUnitTest extends UnitTestCase
 {
     /**
      * @test
@@ -42,9 +42,9 @@ class FinderTest extends TestCase
         static::assertArrayHasKey('me/foo', $found);
         static::assertArrayHasKey('me/bar', $found);
 
-        /** @var Package $foo */
+        /** @var Asset $foo */
         $foo = $found['me/foo'];
-        /** @var Package $bar */
+        /** @var Asset $bar */
         $bar = $found['me/bar'];
 
         static::assertSame(['my-name-is-foo'], $foo->script());
@@ -160,12 +160,12 @@ class FinderTest extends TestCase
 
         static::assertCount(3, $found);
 
-        /** @var Package $package */
-        foreach ($found as $name => $package) {
-            static::assertSame($name, $package->name());
-            static::assertFalse($package->isInstall());
-            static::assertTrue($package->isUpdate());
-            static::assertSame(['foo', 'bar'], $package->script());
+        /** @var Asset $asset */
+        foreach ($found as $name => $asset) {
+            static::assertSame($name, $asset->name());
+            static::assertFalse($asset->isInstall());
+            static::assertTrue($asset->isUpdate());
+            static::assertSame(['foo', 'bar'], $asset->script());
         }
     }
 
@@ -176,7 +176,7 @@ class FinderTest extends TestCase
      */
     private function findPackages(?array $settings): array
     {
-        $envResolver = EnvResolver::new('test', true);
+        $envResolver = ModeResolver::new('test', true);
         $filesystem = new Filesystem();
         $rootDir = vfsStream::setup('root');
 
@@ -197,21 +197,22 @@ class FinderTest extends TestCase
 
         /** @var \Mockery\MockInterface|InstallationManager $manager */
         $manager = \Mockery::mock(InstallationManager::class);
-        $manager->shouldReceive('getInstallPath')
+        $manager->allows('getInstallPath')
             ->with(\Mockery::type(PackageInterface::class))
-            ->andReturn($packagesDir->url());
-
-        $factory = Factory::new($envResolver, $filesystem, $manager, $rootDir->url());
-        $defaults = $config->rootConfig()->defaults();
+            ->andReturns($packagesDir->url());
 
         /** @var RootConfig $rootConfig */
         $rootConfig = $config->rootConfig();
+        $rootEnv = $config->defaultEnv();
+
+        $factory = Factory::new($envResolver, $filesystem, $manager, $rootDir->url(), $rootEnv);
+        $defaults = $rootConfig->defaults();
+
         $finder = Finder::new(
             $rootConfig->packagesData(),
             $envResolver,
-            $filesystem,
             $defaults ? Defaults::new($defaults) : Defaults::empty(),
-            $packagesDir->url(),
+            $config,
             $rootConfig->stopOnFailure()
         );
 

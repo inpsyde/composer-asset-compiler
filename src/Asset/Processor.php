@@ -153,10 +153,9 @@ class Processor
 
     /**
      * @param \Iterator $assets
-     * @param string|null $hashSeed
      * @return bool
      */
-    public function process(\Iterator $assets, ?string $hashSeed = null): bool
+    public function process(\Iterator $assets): bool
     {
         $rootConfig = $this->config->rootConfig();
         if (!$rootConfig) {
@@ -181,7 +180,7 @@ class Processor
             }
 
             /** @var Asset $asset */
-            if ($this->maybeSkipAsset($asset, $hashSeed)) {
+            if ($this->maybeSkipAsset($asset)) {
                 continue;
             }
 
@@ -238,20 +237,19 @@ class Processor
 
     /**
      * @param Asset $asset
-     * @param string|null $hashSeed
      * @return bool
      */
-    private function maybeSkipAsset(Asset $asset, ?string $hashSeed = null): bool
+    private function maybeSkipAsset(Asset $asset): bool
     {
         $name = $asset->name();
 
-        if ($this->locker->isLocked($asset, $hashSeed)) {
+        if ($this->locker->isLocked($asset)) {
             $this->io->write("Not processing '{$name}' because already processed.");
 
             return true;
         }
 
-        if ($this->preCompiler->tryPrecompiled($asset, $this->config->defaultEnv(), $hashSeed)) {
+        if ($this->preCompiler->tryPrecompiled($asset)) {
             $this->io->writeInfo("Used pre-processed assets for '{$name}'.");
             $this->locker->lock($asset);
 
@@ -305,13 +303,13 @@ class Processor
     /**
      * @param Asset $asset
      * @param PackageManager $packageManager
-     * @param RootConfig $root
+     * @param RootConfig $rootConfig
      * @return bool
      */
     private function doDependencies(
         Asset $asset,
         PackageManager $packageManager,
-        RootConfig $root
+        RootConfig $rootConfig
     ): bool {
 
         $isUpdate = $asset->isUpdate();
@@ -339,7 +337,15 @@ class Processor
         $cmdName = $packageManager->name();
         $this->io->writeComment("{$action} dependencies for '{$name}' using {$cmdName}...");
 
-        $command = $this->handleIsolatedCache($packageManager, $root, $command, $cwd, $name);
+        $command = $this->handleIsolatedCache(
+            $packageManager,
+            $asset,
+            $rootConfig,
+            $command,
+            $cwd,
+            $name
+        );
+
         $exitCode = $this->executor->execute($command, $this->outputHandler, $cwd);
 
         return $exitCode === 0;
@@ -347,7 +353,8 @@ class Processor
 
     /**
      * @param PackageManager $packageManager
-     * @param RootConfig $root
+     * @param Asset $asset
+     * @param RootConfig $rootConfig
      * @param string $command
      * @param string $cwd
      * @param string $assetName
@@ -355,57 +362,37 @@ class Processor
      */
     private function handleIsolatedCache(
         PackageManager $packageManager,
-        RootConfig $root,
+        Asset $asset,
+        RootConfig $rootConfig,
         string $command,
         string $cwd,
         string $assetName
     ): string {
 
-        if (!$root->isolatedCache()) {
+        $isolated = $asset->isolatedCache() ?? $rootConfig->config()->isolatedCache() ?? false;
+        if (!$isolated) {
             return $command;
         }
 
         $isYarn = $packageManager->isYarn();
+        $cmdName = $packageManager->name();
         $cacheParam = $isYarn ? 'cache-folder' : 'cache';
         if (strpos($command, " --{$cacheParam}") !== false) {
             return $command;
         }
 
         $tempDir = $this->tempDir();
-        $cmdName = $packageManager->name();
-        $cleanCmd = $packageManager->cleanCacheCmd();
-        $doClean = $tempDir === null;
-        $fullPath = $doClean ? '' : "{$tempDir}/composer-asset-compiler/{$cmdName}/{$assetName}";
+        $flushCache = $tempDir === null;
+        $fullPath = $flushCache ? '' : "{$tempDir}/composer-asset-compiler/{$cmdName}/{$assetName}";
+
         try {
             $fullPath and $this->filesystem->ensureDirectoryExists($fullPath);
         } catch (\Throwable $throwable) {
-            $doClean = true;
+            $flushCache = true;
         }
 
-        if ($doClean && !$cleanCmd) {
-            $this->io->writeVerboseError(
-                "Cache cleanup command not configured for {$cmdName}.",
-                "Isolated cache not applicable for '{$assetName}'."
-            );
-
-            return $command;
-        }
-
-        if ($doClean) {
-            $this->io->writeVerbose(
-                "Failed creating asset temporary directory.",
-                "Will now clean cache executing '{$cleanCmd}' "
-                . "to ensure isolated cache for '{$assetName}'."
-            );
-
-            $this->io->writeVerboseComment("Forcing {$cmdName} cache cleanup...");
-            $out = null;
-            if ($this->executor->execute($cleanCmd, $out, $cwd) !== 0) {
-                $this->io->writeVerboseError(
-                    "  {$cmdName} cache cleanup failed!",
-                    "  Isolated cache not applicable for '{$assetName}'."
-                );
-            }
+        if ($flushCache) {
+            $this->flushCache($packageManager, $assetName, $cwd);
 
             return $command;
         }
@@ -494,9 +481,8 @@ class Processor
         }
 
         $assetCommands = [];
-        $assetEnv = $asset->env();
         foreach ($scripts as $script) {
-            $command = $packageManager->scriptCmd($script, $assetEnv);
+            $command = $packageManager->scriptCmd($script, $asset->env());
             $command and $assetCommands[] = $command;
         }
 
@@ -505,6 +491,42 @@ class Processor
         $this->io->writeVerboseComment("Will compile '{$name}' using '{$commandsStr}'.");
 
         return $assetCommands;
+    }
+
+    /**
+     * @param PackageManager $manager
+     * @param string $asset
+     * @param string $cwd
+     * @return void
+     */
+    private function flushCache(PackageManager $manager, string $asset, string $cwd): void
+    {
+        $cmdName = $manager->name();
+        $flushCmd = $manager->cleanCacheCmd();
+
+        if (!$flushCmd) {
+            $this->io->writeVerboseError(
+                "Cache cleanup command not configured for {$cmdName}.",
+                "Isolated cache not applicable for '{$asset}'."
+            );
+
+            return;
+        }
+
+        $this->io->writeVerbose(
+            "Failed creating asset temporary directory.",
+            "Will now clean cache executing '{$flushCmd}' "
+            . "to ensure isolated cache for '{$asset}'."
+        );
+
+        $this->io->writeVerboseComment("Forcing {$cmdName} cache cleanup...");
+        $out = null;
+        if ($this->executor->execute($flushCmd, $out, $cwd) !== 0) {
+            $this->io->writeVerboseError(
+                "  {$cmdName} cache cleanup failed!",
+                "  Isolated cache not applicable for '{$asset}'."
+            );
+        }
     }
 
     /**

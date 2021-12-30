@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * This file is part of the "Composer Asset Compiler" package.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\PreCompilation;
@@ -7,7 +14,7 @@ namespace Inpsyde\AssetsCompiler\PreCompilation;
 use Composer\Util\Filesystem;
 use Inpsyde\AssetsCompiler\Asset\Asset;
 use Inpsyde\AssetsCompiler\Asset\HashBuilder;
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
+use Inpsyde\AssetsCompiler\Util\ModeResolver;
 use Inpsyde\AssetsCompiler\Util\Io;
 
 class Handler
@@ -38,44 +45,44 @@ class Handler
     private $filesystem;
 
     /**
-     * @var EnvResolver
+     * @var ModeResolver
      */
-    private $envResolver;
+    private $modeResolver;
 
     /**
      * @param HashBuilder $hashBuilder
      * @param Io $io
      * @param Filesystem $filesystem
-     * @param EnvResolver $envResolver
+     * @param ModeResolver $modeResolver
      * @return Handler
      */
     public static function new(
         HashBuilder $hashBuilder,
         Io $io,
         Filesystem $filesystem,
-        EnvResolver $envResolver
+        ModeResolver $modeResolver
     ): Handler {
 
-        return new static($hashBuilder, $io, $filesystem, $envResolver);
+        return new static($hashBuilder, $io, $filesystem, $modeResolver);
     }
 
     /**
      * @param HashBuilder $hashBuilder
      * @param Io $io
      * @param Filesystem $filesystem
-     * @param EnvResolver $envResolver
+     * @param ModeResolver $modeResolver
      */
     final private function __construct(
         HashBuilder $hashBuilder,
         Io $io,
         Filesystem $filesystem,
-        EnvResolver $envResolver
+        ModeResolver $modeResolver
     ) {
 
         $this->hashBuilder = $hashBuilder;
         $this->io = $io;
         $this->filesystem = $filesystem;
-        $this->envResolver = $envResolver;
+        $this->modeResolver = $modeResolver;
     }
 
     /**
@@ -94,13 +101,12 @@ class Handler
     /**
      * @param Asset $asset
      * @param array $defaultEnv
-     * @param string|null $hashSeed
      * @return bool
      */
-    public function tryPrecompiled(Asset $asset, array $defaultEnv, ?string $hashSeed = null): bool
+    public function tryPrecompiled(Asset $asset): bool
     {
-        $hash = $this->hashBuilder->forAsset($asset, $hashSeed) ?? '';
-        $placeholders = Placeholders::new($asset, $this->envResolver->env(), $hash);
+        $hash = $this->hashBuilder->forAsset($asset) ?? '';
+        $placeholders = Placeholders::new($asset, $this->modeResolver->mode(), $hash);
 
         $config = $asset->preCompilationConfig();
         $adapter = $this->findAdapter($config, $placeholders);
@@ -108,8 +114,7 @@ class Handler
             return false;
         }
 
-        $environment = array_merge(array_filter($defaultEnv), array_filter($asset->env()));
-
+        $environment = $asset->env();
         $source = $config->source($placeholders, $environment);
         $path = $asset->path();
         $target = $config->target($placeholders);
@@ -151,7 +156,7 @@ class Handler
      * @param Placeholders $placeholders
      * @return Adapter|null
      */
-    private function findAdapter(Config $config, Placeholders $placeholders): ?Adapter
+    public function findAdapter(Config $config, Placeholders $placeholders): ?Adapter
     {
         if (!$config->isValid()) {
             return null;

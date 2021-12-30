@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * This file is part of the "Composer Asset Compiler" package.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\PreCompilation;
@@ -76,7 +83,7 @@ class ArchiveDownloaderAdapter implements Adapter
 
         $type = $this->determineType($config, $source);
 
-        if (!ArchiveDownloaderFactory::isValidType($type ?? '')) {
+        if (!ArchiveDownloaderFactory::isValidArchiveType($type ?? '')) {
             $typeName = is_string($type) ? $type : gettype($type);
             $message = ($type === null)
                 ? "Could not determine archive type for {$source}."

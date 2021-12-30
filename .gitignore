@@ -1,5 +1,9 @@
-vendor/
+/vendor/
 /.phpunit.result.cache
 /composer.lock
 /phpcs.xml
 /phpunit.xml
+
+/tests/resources/05/vendor/
+/tests/resources/05/composer.lock
+/tests/resources/05/.htaccess

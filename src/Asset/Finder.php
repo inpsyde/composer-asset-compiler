@@ -14,7 +14,7 @@ namespace Inpsyde\AssetsCompiler\Asset;
 use Composer\Package\RootPackageInterface;
 use Composer\Repository\RepositoryInterface;
 use Composer\Util\Filesystem;
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
+use Inpsyde\AssetsCompiler\Util\ModeResolver;
 
 class Finder
 {
@@ -24,14 +24,9 @@ class Finder
     private $packagesData;
 
     /**
-     * @var EnvResolver
+     * @var ModeResolver
      */
-    private $envResolver;
-
-    /**
-     * @var Filesystem
-     */
-    private $filesystem;
+    private $modeResolver;
 
     /**
      * @var Defaults<Config|null|>
@@ -39,9 +34,9 @@ class Finder
     private $defaults;
 
     /**
-     * @var string
+     * @var Config
      */
-    private $rootDir;
+    private $rootPackageConfig;
 
     /**
      * @var bool
@@ -50,54 +45,50 @@ class Finder
 
     /**
      * @param array $packageData
-     * @param EnvResolver $envResolver
+     * @param ModeResolver $modeResolver
      * @param Filesystem $filesystem
      * @param Defaults $defaults
      * @param string $rootDir
+     * @param Config $rootPackageConfig
      * @param bool $stopOnFailure
      * @return Finder
      */
     public static function new(
         array $packageData,
-        EnvResolver $envResolver,
-        Filesystem $filesystem,
+        ModeResolver $modeResolver,
         Defaults $defaults,
-        string $rootDir,
+        Config $rootPackageConfig,
         bool $stopOnFailure
     ): Finder {
 
         return new self(
             $packageData,
-            $envResolver,
-            $filesystem,
+            $modeResolver,
             $defaults,
-            $rootDir,
+            $rootPackageConfig,
             $stopOnFailure
         );
     }
 
     /**
      * @param array $packageData
-     * @param EnvResolver $envResolver
-     * @param Filesystem $filesystem
+     * @param ModeResolver $modeResolver
      * @param Defaults $defaults
-     * @param string $rootDir
+     * @param Config $rootPackageConfig
      * @param bool $stopOnFailure
      */
     private function __construct(
         array $packageData,
-        EnvResolver $envResolver,
-        Filesystem $filesystem,
+        ModeResolver $modeResolver,
         Defaults $defaults,
-        string $rootDir,
+        Config $rootPackageConfig,
         bool $stopOnFailure
     ) {
 
-        $this->packagesData = $envResolver->removeEnvConfig($packageData);
-        $this->envResolver = $envResolver;
-        $this->filesystem = $filesystem;
+        $this->packagesData = $modeResolver->removeModeConfig($packageData);
+        $this->modeResolver = $modeResolver;
         $this->defaults = $defaults;
-        $this->rootDir = $rootDir;
+        $this->rootPackageConfig = $rootPackageConfig;
         $this->stopOnFailure = $stopOnFailure;
     }
 
@@ -115,24 +106,24 @@ class Finder
         bool $autoDiscover = true
     ): array {
 
-        [$rootLevelIncludePackagesConfig, $excludeNames] = $this->extractRootLevelPackagesData();
+        [$rootLevelPackagesConfig, $excludeNames] = $this->extractRootLevelPackagesData();
 
         $found = [];
 
         $rootAsset = $this->attemptFactoryRootPackageAsset($root, $assetsFactory);
         $rootAsset and $found[$root->getName()] = $rootAsset;
 
-        if (!$rootLevelIncludePackagesConfig && !$autoDiscover) {
+        if (!$rootLevelPackagesConfig && !$autoDiscover) {
             return $found;
         }
 
-        $rootLevelIncludePatterns = array_keys($rootLevelIncludePackagesConfig);
+        $rootLevelIncludePatterns = array_keys($rootLevelPackagesConfig);
         $packages = $repository->getPackages();
 
         foreach ($packages as $package) {
             $name = $package->getName();
             if (
-                $package === $root
+                ($package === $root)
                 || isset($found[$name])
                 || $this->nameMatches($name, ...$excludeNames)[0]
             ) {
@@ -142,7 +133,7 @@ class Finder
             [, $rootLevelPackagePattern] = $this->nameMatches($name, ...$rootLevelIncludePatterns);
 
             $rootLevelPackageConfig = $rootLevelPackagePattern
-                ? ($rootLevelIncludePackagesConfig[$rootLevelPackagePattern] ?? null)
+                ? ($rootLevelPackagesConfig[$rootLevelPackagePattern] ?? null)
                 : null;
 
             // If there's no root-level config for the package, and auto-discover is disabled,
@@ -186,18 +177,15 @@ class Finder
         Factory $assetFactory
     ): ?Asset {
 
-        $packageConfig = Config::forComposerPackage(
-            $root,
-            $this->rootDir,
-            $this->envResolver,
-            $this->filesystem
-        );
-
-        if (!$packageConfig->isRunnable()) {
+        if (!$this->rootPackageConfig->isRunnable()) {
             return null;
         }
 
-        $rootPackage = $assetFactory->attemptFactory($root, $packageConfig, Defaults::empty());
+        $rootPackage = $assetFactory->attemptFactory(
+            $root,
+            $this->rootPackageConfig,
+            Defaults::empty()
+        );
         if ($rootPackage && $rootPackage->isValid()) {
             return $rootPackage;
         }
@@ -207,6 +195,7 @@ class Finder
 
     /**
      * @return array{array<string, Config>, array<string>}
+     * @throws \Exception
      */
     private function extractRootLevelPackagesData(): array
     {
@@ -247,7 +236,8 @@ class Finder
             return null;
         }
 
-        $config = Config::forAssetConfigInRoot($packageData, $this->envResolver);
+        $rootEnv = $this->rootPackageConfig->defaultEnv();
+        $config = Config::forAssetConfigInRoot($packageData, $this->modeResolver, $rootEnv);
         if (!$config->isValid()) {
             if ($this->stopOnFailure) {
                 throw new \Exception("Package setting for '{$pattern}' is not valid.");
@@ -279,7 +269,7 @@ class Finder
     }
 
     /**
-     * @param Asset $asset
+     * @param Asset|null $asset
      * @param string $name
      * @param bool $requiredExplicitlyByRoot
      * @return bool

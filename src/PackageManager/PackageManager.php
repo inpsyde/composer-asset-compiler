@@ -12,7 +12,7 @@ declare(strict_types=1);
 namespace Inpsyde\AssetsCompiler\PackageManager;
 
 use Composer\Util\ProcessExecutor;
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
+use Inpsyde\AssetsCompiler\Util\Env;
 use Inpsyde\AssetsCompiler\Util\Io;
 
 final class PackageManager
@@ -297,8 +297,7 @@ final class PackageManager
             return null;
         }
 
-        $environment = array_merge(array_filter($this->defaultEnvironment), array_filter($env));
-        $command = EnvResolver::replaceEnvVariables($command, $environment);
+        $command = Env::replaceEnvVariables($command, $env);
 
         // To pass arguments to scripts defined in package.json, npm requires `--` to be used,
         // whereas Yarn requires the arguments to be appended to script name.

@@ -1,0 +1,25 @@
+{
+  "name": "composer-asset-compiler/test-repo",
+  "description": "description",
+  "version": "1.0.0",
+  "minimum-stability": "dev",
+  "license": "proprietary",
+  "extra": {
+    "composer-asset-compiler": {
+      "default-env": {
+        "CAC_WHERE": "library",
+        "CAC_FROM": "library",
+        "CAC_HELLO": "world"
+      },
+      "script": "build",
+      "pre-compiled": {
+        "adapter": "gh-action-artifact",
+        "source": "assets-${mode}-${version}-${CAC_FOO}",
+        "target": "./assets/",
+        "config": {
+          "repository": "acme/foo"
+        }
+      }
+    }
+  }
+}

@@ -1,16 +1,23 @@
 <?php
 
+/*
+ * This file is part of the "Composer Asset Compiler" package.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\PreCompilation;
 
 use Composer\Semver\VersionParser;
 use Inpsyde\AssetsCompiler\Asset\Asset;
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
+use Inpsyde\AssetsCompiler\Util\Env;
 
 class Placeholders
 {
-    public const ENV = 'env';
+    public const MODE = 'mode';
     public const HASH = 'hash';
     public const VERSION = 'version';
     public const REFERENCE = 'ref';
@@ -18,7 +25,7 @@ class Placeholders
     /**
      * @var string
      */
-    private $env;
+    private $mode;
 
     /**
      * @var string|null
@@ -59,7 +66,7 @@ class Placeholders
      */
     private function __construct(string $env, ?string $hash, ?string $version, ?string $reference)
     {
-        $this->env = $env;
+        $this->mode = $env;
         $this->hash = $hash;
         $this->version = $version;
         $this->reference = $reference;
@@ -106,7 +113,7 @@ class Placeholders
 
         $replace = [
             self::HASH => $this->hash,
-            self::ENV => $this->env,
+            self::MODE => $this->mode,
             self::VERSION => $this->version,
             self::REFERENCE => $this->reference,
         ];
@@ -121,6 +128,6 @@ class Placeholders
             $original
         );
 
-        return $replaced ? EnvResolver::replaceEnvVariables($replaced, $environment) : '';
+        return $replaced ? Env::replaceEnvVariables($replaced, $environment) : '';
     }
 }

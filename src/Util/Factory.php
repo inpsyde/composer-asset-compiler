@@ -1,5 +1,12 @@
 <?php
 
+/*
+ * This file is part of the "Composer Asset Compiler" package.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\Util;
@@ -43,7 +50,7 @@ final class Factory
     /**
      * @var string|null
      */
-    private $env;
+    private $mode;
 
     /**
      * @var bool
@@ -63,7 +70,7 @@ final class Factory
     /**
      * @param Composer $composer
      * @param IOInterface $io
-     * @param string|null $env
+     * @param string|null $mode
      * @param bool $isDev
      * @param string $ignoreLock
      * @return Factory
@@ -71,32 +78,32 @@ final class Factory
     public static function new(
         Composer $composer,
         IOInterface $io,
-        ?string $env,
+        ?string $mode,
         bool $isDev,
         string $ignoreLock = ''
     ): Factory {
 
-        return new self($composer, $io, $env, $isDev, $ignoreLock);
+        return new self($composer, $io, $mode, $isDev, $ignoreLock);
     }
 
     /**
      * @param Composer $composer
      * @param IOInterface $io
-     * @param string|null $env
+     * @param string|null $mode
      * @param bool $isDev
      * @param string $ignoreLock
      */
     private function __construct(
         Composer $composer,
         IOInterface $io,
-        ?string $env,
+        ?string $mode,
         bool $isDev,
         string $ignoreLock = ''
     ) {
 
         $this->composer = $composer;
         $this->io = $io;
-        $this->env = $env ?? EnvResolver::assetsCompilerEnv();
+        $this->mode = $mode ?? Env::assetsCompilerMode();
         $this->isDev = $isDev;
         $this->ignoreLock = $ignoreLock;
     }
@@ -194,15 +201,15 @@ final class Factory
     }
 
     /**
-     * @return EnvResolver
+     * @return ModeResolver
      */
-    public function envResolver(): EnvResolver
+    public function modeResolver(): ModeResolver
     {
         if (empty($this->objects[__FUNCTION__])) {
-            $this->objects[__FUNCTION__] = EnvResolver::new($this->env, $this->isDev);
+            $this->objects[__FUNCTION__] = ModeResolver::new($this->mode, $this->isDev);
         }
 
-        /** @var EnvResolver $resolver */
+        /** @var ModeResolver $resolver */
         $resolver = $this->objects[__FUNCTION__];
 
         return $resolver;
@@ -217,7 +224,7 @@ final class Factory
             $this->objects[__FUNCTION__] = Config::forComposerPackage(
                 $this->composerRootPackage(),
                 $this->rootFolder(),
-                $this->envResolver(),
+                $this->modeResolver(),
                 $this->filesystem()
             );
         }
@@ -307,7 +314,6 @@ final class Factory
         if (empty($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = PackageManager\Finder::new(
                 $this->processExecutor(),
-                $this->envResolver(),
                 $this->filesystem(),
                 $this->io(),
                 $this->config()->defaultEnv()
@@ -329,10 +335,9 @@ final class Factory
             $config = $this->rootConfig();
             $this->objects[__FUNCTION__] = AssetFinder::new(
                 $config->packagesData(),
-                $this->envResolver(),
-                $this->filesystem(),
+                $this->modeResolver(),
                 $this->defaults(),
-                $this->rootFolder(),
+                $this->config(),
                 $config->stopOnFailure()
             );
         }
@@ -360,10 +365,11 @@ final class Factory
     {
         if (empty($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = AssetFactory::new(
-                $this->envResolver(),
+                $this->modeResolver(),
                 $this->filesystem(),
                 $this->composer->getInstallationManager(),
-                $this->rootFolder()
+                $this->rootFolder(),
+                $this->config()->defaultEnv()
             );
         }
 
@@ -379,7 +385,11 @@ final class Factory
     public function hashBuilder(): HashBuilder
     {
         if (empty($this->objects[__FUNCTION__])) {
-            $this->objects[__FUNCTION__] = HashBuilder::new($this->config()->defaultEnv());
+            $this->objects[__FUNCTION__] = HashBuilder::new(
+                $this->config()->defaultEnv(),
+                $this->filesystem(),
+                $this->io()
+            );
         }
 
         /** @var HashBuilder $builder */
@@ -488,7 +498,7 @@ final class Factory
                 $this->hashBuilder(),
                 $this->io(),
                 $this->filesystem(),
-                $this->envResolver()
+                $this->modeResolver()
             );
             $handler = $handler
                 ->registerAdapter($this->archiveDownloaderAdapter())
@@ -575,7 +585,8 @@ final class Factory
                 $this->processOutputHandler(),
                 $this->processFactory(),
                 $config->maxProcesses(),
-                $config->processesPoll()
+                $config->processesPoll(),
+                $config->timeoutIncrement()
             );
         }
 

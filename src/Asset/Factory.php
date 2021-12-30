@@ -15,14 +15,14 @@ use Composer\Installer\InstallationManager;
 use Composer\Package\PackageInterface;
 use Composer\Package\RootPackageInterface;
 use Composer\Util\Filesystem;
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
+use Inpsyde\AssetsCompiler\Util\ModeResolver;
 
 class Factory
 {
     /**
-     * @var EnvResolver
+     * @var ModeResolver
      */
-    private $envResolver;
+    private $modeResolver;
 
     /**
      * @var Filesystem
@@ -40,39 +40,49 @@ class Factory
     private $rootDir;
 
     /**
-     * @param EnvResolver $envResolver
+     * @var array<string, string>
+     */
+    private $rootEnv;
+
+    /**
+     * @param ModeResolver $modeResolver
      * @param Filesystem $filesystem
      * @param InstallationManager $installationManager
      * @param string $rootDir
+     * @param array<string, string> $rootEnv
      * @return Factory
      */
     public static function new(
-        EnvResolver $envResolver,
+        ModeResolver $modeResolver,
         Filesystem $filesystem,
         InstallationManager $installationManager,
-        string $rootDir
+        string $rootDir,
+        array $rootEnv
     ): Factory {
 
-        return new static($envResolver, $filesystem, $installationManager, $rootDir);
+        return new static($modeResolver, $filesystem, $installationManager, $rootDir, $rootEnv);
     }
 
     /**
-     * @param EnvResolver $envResolver
+     * @param ModeResolver $modeResolver
      * @param Filesystem $filesystem
      * @param InstallationManager $installationManager
      * @param string $rootDir
+     * @param array<string, string> $rootEnv
      */
     final private function __construct(
-        EnvResolver $envResolver,
+        ModeResolver $modeResolver,
         Filesystem $filesystem,
         InstallationManager $installationManager,
-        string $rootDir
+        string $rootDir,
+        array $rootEnv
     ) {
 
-        $this->envResolver = $envResolver;
+        $this->modeResolver = $modeResolver;
         $this->filesystem = $filesystem;
         $this->installationManager = $installationManager;
         $this->rootDir = $rootDir;
+        $this->rootEnv = $rootEnv;
     }
 
     /**
@@ -95,7 +105,8 @@ class Factory
             return null;
         }
 
-        $path = ($package instanceof RootPackageInterface)
+        $isRoot = ($package instanceof RootPackageInterface);
+        $path = $isRoot
             ? $this->rootDir
             : $this->installationManager->getInstallPath($package);
 
@@ -103,8 +114,9 @@ class Factory
             $packageLevelConfig = Config::forComposerPackage(
                 $package,
                 $path,
-                $this->envResolver,
-                $this->filesystem
+                $this->modeResolver,
+                $this->filesystem,
+                $isRoot ? [] : $this->rootEnv
             );
             $packageLevelConfig->isRunnable() and $config = $packageLevelConfig;
         }

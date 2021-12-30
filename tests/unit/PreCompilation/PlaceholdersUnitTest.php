@@ -9,26 +9,26 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\AssetsCompiler\Tests\Unit\PreCompilation;
+namespace Inpsyde\AssetsCompiler\Tests\PreCompilation;
 
 use Inpsyde\AssetsCompiler\Asset\Asset;
 use Inpsyde\AssetsCompiler\Asset\Config;
 use Inpsyde\AssetsCompiler\PreCompilation\Placeholders;
-use Inpsyde\AssetsCompiler\Tests\TestCase;
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
+use Inpsyde\AssetsCompiler\Tests\UnitTestCase;
+use Inpsyde\AssetsCompiler\Util\ModeResolver;
 
-class PlaceholdersTest extends TestCase
+class PlaceholdersUnitTest extends UnitTestCase
 {
     /**
      * @test
      */
     public function testReplacements(): void
     {
-        $config = Config::forAssetConfigInRoot(true, EnvResolver::new('test', true));
+        $config = Config::forAssetConfigInRoot(true, ModeResolver::new('test', true));
         $asset = Asset::new('inpsyde/test', $config, __DIR__, '1.0.0', 'aaa0bbb');
         $placeholders = Placeholders::new($asset, 'test', 'a0a0a0a');
 
-        $original = '${a-${ref}/${version}/${env}-${hash}/${ref}.${EXT}}';
+        $original = '${a-${ref}/${version}/${mode}-${hash}/${ref}.${EXT}}';
         $replaced = $placeholders->replace($original, ['EXT' => 'php']);
 
         $expected = '${a-aaa0bbb/1.0.0/test-a0a0a0a/aaa0bbb.php}';
@@ -41,11 +41,11 @@ class PlaceholdersTest extends TestCase
      */
     public function testReplacementsEmpty(): void
     {
-        $config = Config::forAssetConfigInRoot(true, EnvResolver::new('test', true));
+        $config = Config::forAssetConfigInRoot(true, ModeResolver::new('test', true));
         $asset = Asset::new('inpsyde/test', $config, __DIR__);
         $placeholders = Placeholders::new($asset, 'test', null);
 
-        $original = '${a-${ref}/${version}/${env}-${hash}/${ref}.${EXT}}';
+        $original = '${a-${ref}/${version}/${mode}-${hash}/${ref}.${EXT}}';
         $replaced = $placeholders->replace($original, []);
 
         $expected = '${a-//test-/.}';
@@ -58,7 +58,7 @@ class PlaceholdersTest extends TestCase
      */
     public function testStableVersion(): void
     {
-        $config = Config::forAssetConfigInRoot(true, EnvResolver::new('test', true));
+        $config = Config::forAssetConfigInRoot(true, ModeResolver::new('test', true));
         $assetStable = Asset::new('inpsyde/test', $config, __DIR__, '1.0');
         $assetDev = Asset::new('inpsyde/test', $config, __DIR__, 'dev-master');
         $placeholdersStable = Placeholders::new($assetStable, 'test', null);

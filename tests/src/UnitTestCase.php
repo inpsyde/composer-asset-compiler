@@ -18,7 +18,7 @@ use Symfony\Component\Console\Helper\HelperSet;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-abstract class TestCase extends \PHPUnit\Framework\TestCase
+abstract class UnitTestCase extends \PHPUnit\Framework\TestCase
 {
     use MockeryPHPUnitIntegration;
 
@@ -33,14 +33,12 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
     ): Io {
 
         $input = \Mockery::mock(InputInterface::class);
-        $input->shouldReceive('isInteractive')->andReturn($interactive);
+        $input->allows('isInteractive')->andReturns($interactive);
 
         $output = \Mockery::mock(OutputInterface::class);
-        $output->shouldReceive('getVerbosity')->andReturn($verbosity);
-
-        $output->shouldReceive('isQuiet')
-            ->andReturn($verbosity === OutputInterface::VERBOSITY_QUIET);
-        $output->shouldReceive('write')->zeroOrMoreTimes();
+        $output->allows('getVerbosity')->andReturn($verbosity);
+        $output->allows('isQuiet')->andReturn($verbosity === OutputInterface::VERBOSITY_QUIET);
+        $output->allows('write');
 
         $composerIo = new ConsoleIO($input, $output, new HelperSet());
 

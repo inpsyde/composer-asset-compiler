@@ -9,16 +9,16 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\AssetsCompiler\Tests\Unit\PreCompilation;
+namespace Inpsyde\AssetsCompiler\Tests\PreCompilation;
 
 use Inpsyde\AssetsCompiler\Asset\Asset;
 use Inpsyde\AssetsCompiler\Asset\Config as AssetConfig;
 use Inpsyde\AssetsCompiler\PreCompilation\Config;
 use Inpsyde\AssetsCompiler\PreCompilation\Placeholders;
-use Inpsyde\AssetsCompiler\Tests\TestCase;
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
+use Inpsyde\AssetsCompiler\Tests\UnitTestCase;
+use Inpsyde\AssetsCompiler\Util\ModeResolver;
 
-class ConfigTest extends TestCase
+class ConfigUnitTest extends UnitTestCase
 {
     /**
      * @test
@@ -37,7 +37,7 @@ class ConfigTest extends TestCase
                     ],
                 ],
             ],
-            EnvResolver::new('test', true)
+            ModeResolver::new('test', true)
         );
 
         $placeholders = $this->factoryPlaceholders('1.0', 'thisIsRef', 'thisIsHash');
@@ -74,7 +74,7 @@ class ConfigTest extends TestCase
                     ],
                 ],
             ],
-            EnvResolver::new('test', true)
+            ModeResolver::new('test', true)
         );
 
         $placeholders = $this->factoryPlaceholders('1.0', 'thisIsRef', 'thisIsHash');
@@ -99,7 +99,7 @@ class ConfigTest extends TestCase
                 'target' => '.',
                 'adapter' => 'archive',
             ],
-            EnvResolver::new('test', true)
+            ModeResolver::new('test', true)
         );
 
         $placeholders = $this->factoryPlaceholders('', 'thisIsRef', 'thisIsHash');
@@ -120,7 +120,7 @@ class ConfigTest extends TestCase
                 'target' => '.',
                 'adapter' => 'archive',
             ],
-            EnvResolver::new('test', true)
+            ModeResolver::new('test', true)
         );
 
         $placeholders = $this->factoryPlaceholders('1.0', '', 'thisIsHash');
@@ -141,7 +141,7 @@ class ConfigTest extends TestCase
                 'target' => '.',
                 'adapter' => 'archive',
             ],
-            EnvResolver::new('test', true)
+            ModeResolver::new('test', true)
         );
 
         $placeholders = $this->factoryPlaceholders('1.0', 'thisIsRef', '');
@@ -169,7 +169,7 @@ class ConfigTest extends TestCase
                     'adapter' => 'archive',
                 ],
             ],
-            EnvResolver::new('test', true)
+            ModeResolver::new('test', true)
         );
 
         $placeholders = $this->factoryPlaceholders('1.0', 'thisIsRef', 'thisIsHash');
@@ -195,7 +195,7 @@ class ConfigTest extends TestCase
                     'adapter' => 'archive',
                 ],
             ],
-            EnvResolver::new('test', true)
+            ModeResolver::new('test', true)
         );
 
         $phNoVer = $this->factoryPlaceholders('', 'aaa', 'thisIsHash');
@@ -225,7 +225,7 @@ class ConfigTest extends TestCase
                     'stability' => 'dev',
                 ],
             ],
-            EnvResolver::new('test', true)
+            ModeResolver::new('test', true)
         );
 
         $phDev = $this->factoryPlaceholders('dev-master', 'aaa', 'x');
@@ -261,7 +261,7 @@ class ConfigTest extends TestCase
                     ],
                 ],
             ],
-            EnvResolver::new('test', true)
+            ModeResolver::new('test', true)
         );
 
         $placeholders = $this->factoryPlaceholders('1.0-dev', 'r3f', 'h45h');
@@ -277,7 +277,7 @@ class ConfigTest extends TestCase
      */
     private function factoryPlaceholders(string $version, string $ref, string $hash): Placeholders
     {
-        $config = AssetConfig::forAssetConfigInRoot(true, EnvResolver::new('test', true));
+        $config = AssetConfig::forAssetConfigInRoot(true, ModeResolver::new('test', true));
         $asset = Asset::new('inpsyde/test', $config, __DIR__, $version, $ref);
 
         return Placeholders::new($asset, 'test', $hash);

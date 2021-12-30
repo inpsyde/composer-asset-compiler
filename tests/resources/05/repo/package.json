@@ -1,0 +1,7 @@
+{
+  "name": "composer-asset-compiler-test-repo",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "echo 'foo'"
+  }
+}

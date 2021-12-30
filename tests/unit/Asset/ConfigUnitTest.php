@@ -9,26 +9,26 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\AssetsCompiler\Tests\Unit\Asset;
+namespace Inpsyde\AssetsCompiler\Tests\Asset;
 
 use Composer\Package\Package;
 use Composer\Util\Filesystem;
 use Inpsyde\AssetsCompiler\Asset\Config;
 use Inpsyde\AssetsCompiler\PackageManager\PackageManager;
 use Inpsyde\AssetsCompiler\PreCompilation;
-use Inpsyde\AssetsCompiler\Tests\TestCase;
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
+use Inpsyde\AssetsCompiler\Tests\UnitTestCase;
+use Inpsyde\AssetsCompiler\Util\ModeResolver;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamFile;
 
-class ConfigTest extends TestCase
+class ConfigUnitTest extends UnitTestCase
 {
     /**
      * @test
      */
     public function testForAssetConfigInRootAndPackageOrDefault(): void
     {
-        $config = Config::forAssetConfigInRoot(true, $this->factoryEnvResolver());
+        $config = Config::forAssetConfigInRoot(true, $this->factoryModeResolver());
 
         static::assertSame([], $config->defaultEnv());
         static::assertNull($config->dependencies());
@@ -48,7 +48,7 @@ class ConfigTest extends TestCase
      */
     public function testForAssetConfigInRootDisabled(): void
     {
-        $config = Config::forAssetConfigInRoot(false, $this->factoryEnvResolver());
+        $config = Config::forAssetConfigInRoot(false, $this->factoryModeResolver());
 
         static::assertSame([], $config->defaultEnv());
         static::assertNull($config->dependencies());
@@ -68,7 +68,7 @@ class ConfigTest extends TestCase
      */
     public function testForAssetConfigInRootForcedDefaults(): void
     {
-        $config = Config::forAssetConfigInRoot('force-defaults', $this->factoryEnvResolver());
+        $config = Config::forAssetConfigInRoot('force-defaults', $this->factoryModeResolver());
 
         static::assertSame([], $config->defaultEnv());
         static::assertNull($config->dependencies());
@@ -88,7 +88,7 @@ class ConfigTest extends TestCase
      */
     public function testForAssetConfigInRootWithScript(): void
     {
-        $config = Config::forAssetConfigInRoot('build', $this->factoryEnvResolver());
+        $config = Config::forAssetConfigInRoot('build', $this->factoryModeResolver());
 
         static::assertSame([], $config->defaultEnv());
         static::assertSame('install', $config->dependencies());
@@ -109,7 +109,7 @@ class ConfigTest extends TestCase
      */
     public function testForAssetConfigInRootWithConfig(): void
     {
-        $config = Config::forAssetConfigInRoot($this->configSample(), $this->factoryEnvResolver());
+        $config = Config::forAssetConfigInRoot($this->configSample(), $this->factoryModeResolver());
 
         $this->assertConfig($config, false);
     }
@@ -125,7 +125,7 @@ class ConfigTest extends TestCase
         $config = Config::forComposerPackage(
             $package,
             __DIR__,
-            $this->factoryEnvResolver(),
+            $this->factoryModeResolver(),
             new Filesystem()
         );
 
@@ -147,7 +147,7 @@ class ConfigTest extends TestCase
         $config = Config::forComposerPackage(
             $package,
             $dir->url(),
-            $this->factoryEnvResolver(),
+            $this->factoryModeResolver(),
             new Filesystem()
         );
 
@@ -155,11 +155,11 @@ class ConfigTest extends TestCase
     }
 
     /**
-     * @return EnvResolver
+     * @return ModeResolver
      */
-    private function factoryEnvResolver(): EnvResolver
+    private function factoryModeResolver(): ModeResolver
     {
-        return EnvResolver::new('test', false);
+        return ModeResolver::new('test', false);
     }
 
     /**

@@ -96,9 +96,9 @@ class ParallelManager
     private function __construct(
         callable $outputHandler,
         Factory $factory,
-        int $maxParallel = 4,
-        int $poll = 100000, # microseconds, default: 100000 = 1/10 of second
-        int $timeoutIncrement = 300
+        int $maxParallel,
+        int $poll,
+        int $timeoutIncrement
     ) {
 
         $this->outputHandler = $outputHandler;
@@ -106,8 +106,8 @@ class ParallelManager
         $this->maxParallel = $maxParallel >= 1 ? $maxParallel : 4;
         // sanity: between 0.005 and 2 seconds
         $this->poll = min(max($poll, 5000), 2000000);
-        // sanity: between 30 and 1800 seconds
-        $this->timeoutIncrement = min(max($timeoutIncrement, 30), 1800);
+        // sanity: between 30 and 3600 seconds
+        $this->timeoutIncrement = min(max($timeoutIncrement, 30), 3600);
 
         $this->resetStatus();
     }

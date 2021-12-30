@@ -123,26 +123,23 @@ final class Plugin implements
      * @param string|null $env
      * @param bool $isDev
      * @param string $ignoreLock
-     * @param string|null $hashSeed
      * @return void
      */
     public function runByCommand(
         ?string $env,
         bool $isDev,
-        string $ignoreLock = '',
-        ?string $hashSeed = null
+        string $ignoreLock = ''
     ): void {
 
         $this->mode = self::MODE_COMMAND;
-        $this->run(Factory::new($this->composer, $this->io, $env, $isDev, $ignoreLock), $hashSeed);
+        $this->run(Factory::new($this->composer, $this->io, $env, $isDev, $ignoreLock));
     }
 
     /**
      * @param Factory $factory
-     * @param string|null $hashSeed
      * @return void
      */
-    private function run(Factory $factory, ?string $hashSeed = null): void
+    private function run(Factory $factory): void
     {
         $exit = 0;
         $this->convertErrorsToExceptions();
@@ -158,7 +155,7 @@ final class Plugin implements
                 return;
             }
 
-            $factory->assetsProcessor()->process($assets, $hashSeed) or $exit = 1;
+            $factory->assetsProcessor()->process($assets) or $exit = 1;
         } catch (\Throwable $throwable) {
             $exit = 1;
             $this->handleThrowable($throwable, $io ?? null);

@@ -9,7 +9,7 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\AssetsCompiler\Tests\Unit\Asset;
+namespace Inpsyde\AssetsCompiler\Tests\Asset;
 
 use Composer\Installer\InstallationManager;
 use Composer\Package\Package;
@@ -20,12 +20,12 @@ use Inpsyde\AssetsCompiler\Asset\Config;
 use Inpsyde\AssetsCompiler\Asset\Defaults;
 use Inpsyde\AssetsCompiler\Asset\Factory;
 use Inpsyde\AssetsCompiler\PackageManager\PackageManager;
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
-use Inpsyde\AssetsCompiler\Tests\TestCase;
+use Inpsyde\AssetsCompiler\Util\ModeResolver;
+use Inpsyde\AssetsCompiler\Tests\UnitTestCase;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamFile;
 
-class FactoryTest extends TestCase
+class FactoryUnitTest extends UnitTestCase
 {
     private const DEFAULTS = [
         "dependencies" => "install",
@@ -438,13 +438,13 @@ JSON;
 
         /** @var \Mockery\MockInterface|InstallationManager $im */
         $manager = \Mockery::mock(InstallationManager::class);
-        $manager->shouldReceive('getInstallPath')
+        $manager->allows('getInstallPath')
             ->with(\Mockery::type(PackageInterface::class))
-            ->andReturn($dir->url());
+            ->andReturns($dir->url());
 
         $filesystem = new Filesystem();
 
-        return Factory::new(EnvResolver::new($env, true), $filesystem, $manager, $rootPath);
+        return Factory::new(ModeResolver::new($env, true), $filesystem, $manager, $rootPath, []);
     }
 
     /**
@@ -453,7 +453,7 @@ JSON;
      */
     private function factoryDefault(array $config = self::DEFAULTS): Defaults
     {
-        $conf = Config::forAssetConfigInRoot($config, EnvResolver::new('', false));
+        $conf = Config::forAssetConfigInRoot($config, ModeResolver::new('', false));
 
         return Defaults::new($conf);
     }
@@ -464,7 +464,7 @@ JSON;
      */
     private function factoryConfig(string $json): Config
     {
-        $resolver = EnvResolver::new('', false);
+        $resolver = ModeResolver::new('', false);
 
         return Config::forAssetConfigInRoot(json_decode($json, true), $resolver);
     }

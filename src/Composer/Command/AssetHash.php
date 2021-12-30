@@ -30,22 +30,16 @@ final class AssetHash extends BaseCommand
             ->setName('assets-hash')
             ->setDescription('Calculate assets hash for root package in current environment.')
             ->addOption(
-                'seed',
-                null,
-                InputOption::VALUE_REQUIRED,
-                'A seed to be used in determining the hash.'
-            )
-            ->addOption(
                 'no-dev',
                 null,
                 InputOption::VALUE_NONE,
-                'Tell the command to fallback to no-dev env configuration.'
+                'Tell the command to fallback to no-dev mode configuration.'
             )
             ->addOption(
-                'env',
+                'mode',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Set the environment to run command in. '
+                'Set the mode to run command in. '
                 . 'Overrides value of COMPOSER_ASSETS_COMPILER, if set.'
             );
     }
@@ -65,18 +59,15 @@ final class AssetHash extends BaseCommand
             /** @var \Composer\Composer $composer */
             $composer = $this->getComposer(true, false);
             $io = $this->getIO();
-            $seed = $input->hasOption('seed') ? $input->getOption('seed') : null;
-            is_string($seed) or $seed = null;
-            $seed and $seed = trim($seed);
             $noDev = $input->hasOption('no-dev');
-            $env = $input->hasOption('env') ? $input->getOption('env') : null;
-            is_string($env) or $env = null;
+            $mode = $input->hasOption('mode') ? $input->getOption('mode') : null;
+            is_string($mode) or $mode = null;
 
-            $factory = Factory::new($composer, $io, $env, !$noDev);
+            $factory = Factory::new($composer, $io, $mode, !$noDev);
             $package = $composer->getPackage();
             $defaults = $factory->defaults();
             $asset = $factory->assetFactory()->attemptFactory($package, null, $defaults);
-            $hash = $asset ? $factory->hashBuilder()->forAsset($asset, $seed) : null;
+            $hash = $asset ? $factory->hashBuilder()->forAsset($asset) : null;
 
             if (!$hash) {
                 throw new \Error('Could not generate a hash for the package.');

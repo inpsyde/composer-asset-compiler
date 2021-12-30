@@ -22,7 +22,7 @@
             <property
                     name="psr4"
                     type="array"
-                    value="Inpsyde\AssetsCompiler=>src,Inpsyde\AssetsCompiler\Tests=>tests/src,Inpsyde\AssetsCompiler\Tests\Unit=>tests/unit"/>
+                    value="Inpsyde\AssetsCompiler=>src,Inpsyde\AssetsCompiler\Tests=>tests/src|tests/unit|tests/functional"/>
         </properties>
     </rule>
 

@@ -9,14 +9,14 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\AssetsCompiler\Tests\Unit\PackageManager;
+namespace Inpsyde\AssetsCompiler\Tests\PackageManager;
 
 use Composer\Util\ProcessExecutor;
 use Inpsyde\AssetsCompiler\PackageManager\PackageManager;
-use Inpsyde\AssetsCompiler\Tests\TestCase;
+use Inpsyde\AssetsCompiler\Tests\UnitTestCase;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class PackageManagerTest extends TestCase
+class PackageManagerUnitTest extends UnitTestCase
 {
     public function testFromDefaultFailsForUnknown()
     {
@@ -52,14 +52,14 @@ class PackageManagerTest extends TestCase
     public function testDiscoverYarn()
     {
         $executor = \Mockery::mock(ProcessExecutor::class);
-        $executor->shouldReceive('execute')
-            ->once()
+        $executor
+            ->expects('execute')
             ->with('yarn --version', \Mockery::any(), __DIR__)
-            ->andReturn(0);
-        $executor->shouldReceive('execute')
-            ->once()
+            ->andReturns(0);
+        $executor
+            ->expects('execute')
             ->with('npm --version', \Mockery::any(), __DIR__)
-            ->andReturn(0);
+            ->andReturns(0);
 
         $io = $this->factoryIo();
         $yarn = PackageManager::discover($executor, __DIR__);
@@ -75,15 +75,15 @@ class PackageManagerTest extends TestCase
     {
         $executor = \Mockery::mock(ProcessExecutor::class);
 
-        $executor->shouldReceive('execute')
-            ->once()
+        $executor
+            ->expects('execute')
             ->with('yarn --version', \Mockery::any(), __DIR__)
-            ->andReturn(1);
+            ->andReturns(1);
 
-        $executor->shouldReceive('execute')
-            ->once()
+        $executor
+            ->expects('execute')
             ->with('npm --version', \Mockery::any(), __DIR__)
-            ->andReturn(0);
+            ->andReturns(0);
 
         $npm = PackageManager::discover($executor, __DIR__);
         $io = $this->factoryIo();
@@ -99,15 +99,15 @@ class PackageManagerTest extends TestCase
     {
         $executor = \Mockery::mock(ProcessExecutor::class);
 
-        $executor->shouldReceive('execute')
-            ->once()
+        $executor
+            ->expects('execute')
             ->with('yarn --version', \Mockery::any(), __DIR__)
-            ->andReturn(1);
+            ->andReturns(1);
 
-        $executor->shouldReceive('execute')
-            ->once()
+        $executor
+            ->expects('execute')
             ->with('npm --version', \Mockery::any(), __DIR__)
-            ->andReturn(1);
+            ->andReturns(1);
 
         $yarn = PackageManager::discover($executor, __DIR__);
         $io = $this->factoryIo();

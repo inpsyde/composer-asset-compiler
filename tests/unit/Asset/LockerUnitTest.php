@@ -9,20 +9,21 @@
 
 declare(strict_types=1);
 
-namespace Inpsyde\AssetsCompiler\Tests\Unit\Asset;
+namespace Inpsyde\AssetsCompiler\Tests\Asset;
 
 use Composer\IO\IOInterface;
+use Composer\Util\Filesystem;
 use Inpsyde\AssetsCompiler\Asset\Config;
 use Inpsyde\AssetsCompiler\Asset\HashBuilder;
 use Inpsyde\AssetsCompiler\Asset\Locker;
 use Inpsyde\AssetsCompiler\Asset\Asset;
-use Inpsyde\AssetsCompiler\Util\EnvResolver;
+use Inpsyde\AssetsCompiler\Util\ModeResolver;
 use Inpsyde\AssetsCompiler\Util\Io;
-use Inpsyde\AssetsCompiler\Tests\TestCase;
+use Inpsyde\AssetsCompiler\Tests\UnitTestCase;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamFile;
 
-class LockerTest extends TestCase
+class LockerUnitTest extends UnitTestCase
 {
     /**
      * @test
@@ -40,8 +41,8 @@ class LockerTest extends TestCase
     public function testIsLockedIsFalseForEmptyFileAndErrorWritten(): void
     {
         $io = \Mockery::mock(Io::class);
-        $io->shouldReceive('writeVerboseError')
-            ->once()
+        $io
+            ->expects('writeVerboseError')
             ->andReturnUsing(
                 static function (string $arg) {
                     static::assertStringContainsString('lock file', $arg);
@@ -130,8 +131,8 @@ class LockerTest extends TestCase
         ]);
 
         $io = \Mockery::mock(Io::class);
-        $io->shouldReceive('writeVerboseComment')
-            ->once()
+        $io
+            ->expects('writeVerboseComment')
             ->andReturnUsing(
                 static function (string $arg) {
                     static::assertStringContainsString('ignoring', strtolower($arg));
@@ -161,9 +162,11 @@ class LockerTest extends TestCase
      */
     private function factoryLocker(?Io $io = null, string $ignoreLock = ''): Locker
     {
+        $io = $io ?? Io::new(\Mockery::mock(IOInterface::class));
+
         return new Locker(
-            $io ?? Io::new(\Mockery::mock(IOInterface::class)),
-            HashBuilder::new([]),
+            $io,
+            HashBuilder::new([], new Filesystem(), $io),
             $ignoreLock
         );
     }
@@ -180,7 +183,7 @@ class LockerTest extends TestCase
         string $name = 'foo/foo'
     ): Asset {
 
-        $config = Config::forAssetConfigInRoot($settings, EnvResolver::new('', false));
+        $config = Config::forAssetConfigInRoot($settings, ModeResolver::new('', false));
 
         return Asset::new($name, $config, $dir ?? __DIR__);
     }

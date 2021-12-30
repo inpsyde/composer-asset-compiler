@@ -35,20 +35,14 @@ final class CompileAssets extends BaseCommand
                 'no-dev',
                 null,
                 InputOption::VALUE_NONE,
-                'Tell the command to fallback to no-dev env configuration.'
+                'Tell the command to fallback to no-dev mode configuration.'
             )
             ->addOption(
-                'env',
+                'mode',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Set the environment to run command in. '
+                'Set the mode to run command in. '
                 . 'Overrides value of COMPOSER_ASSETS_COMPILER, if set.'
-            )
-            ->addOption(
-                'hash-seed',
-                null,
-                InputOption::VALUE_REQUIRED,
-                'See to be used in the generation of assets-hash.'
             )
             ->addOption(
                 'ignore-lock',
@@ -79,11 +73,7 @@ final class CompileAssets extends BaseCommand
             $plugin->activate($composer, $io);
 
             $noDev = $input->hasOption('no-dev');
-            $env = $input->hasOption('env') ? $input->getOption('env') : null;
-
-            $seed = $input->hasOption('hash-seed') ? $input->getOption('hash-seed') : null;
-            is_string($seed) or $seed = null;
-            $seed and $seed = trim($seed);
+            $mode = $input->hasOption('mode') ? $input->getOption('mode') : null;
 
             $ignoreLockRaw = $input->hasParameterOption('--ignore-lock', true)
                 ? $input->getOption('ignore-lock')
@@ -92,10 +82,9 @@ final class CompileAssets extends BaseCommand
             ($ignoreLock === '*/*') and $ignoreLock = Locker::IGNORE_ALL;
 
             $plugin->runByCommand(
-                is_string($env) ? $env : null,
+                is_string($mode) ? $mode : null,
                 !$noDev,
-                $ignoreLock,
-                $seed ?: null
+                $ignoreLock
             );
 
             return 0;
