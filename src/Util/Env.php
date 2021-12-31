@@ -33,14 +33,9 @@ class Env
      */
     public static function readEnv(string $name, array $defaults = []): ?string
     {
-        foreach ([$_SERVER, $_ENV, static::getenvWrap(), $defaults] as $data) {
-            $env = $data[$name] ?? null;
-            if (is_string($env)) {
-                return $env;
-            }
-        }
+        $env = $_SERVER[$name] ?? $_ENV[$name] ?? getenv($name) ?: ($defaults[$name] ?? null);
 
-        return null;
+        return is_string($env) ? $env : null;
     }
 
     /**
@@ -82,38 +77,5 @@ class Env
         }
 
         return $sanitized;
-    }
-
-    /**
-     * @return \ArrayAccess
-     *
-     * phpcs:disable Inpsyde.CodeQuality.NestingLevel
-     */
-    private static function getenvWrap(): \ArrayAccess
-    {
-        // phpcs:enable Inpsyde.CodeQuality.NestingLevel
-        if (!static::$getenvWrap) {
-            // phpcs:disable
-            static::$getenvWrap = new class() implements \ArrayAccess
-            {
-                public function offsetExists($offset)
-                {
-                    return is_string($offset) && (getenv($offset) !== false);
-                }
-
-                #[\ReturnTypeWillChange]
-                public function offsetGet($offset)
-                {
-                    return is_string($offset) ? (getenv($offset) ?: null) : null;
-                }
-
-                public function offsetSet($offset, $value) {}
-
-                public function offsetUnset($offset) {}
-            };
-            // phpcs:enable
-        }
-
-        return static::$getenvWrap;
     }
 }
