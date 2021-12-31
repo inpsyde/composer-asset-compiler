@@ -118,13 +118,12 @@ class Handler
         $source = $config->source($placeholders, $environment);
         $path = $asset->path();
         $target = $config->target($placeholders);
+        $name = $asset->name();
 
         if (!$source || !$path || !$target) {
             $this->io->writeVerboseComment("Found no pre-processed configuration for '{$name}'.");
             return false;
         }
-
-        $name = $asset->name();
 
         $adapterId = $adapter->id();
         $this->io->writeComment(
