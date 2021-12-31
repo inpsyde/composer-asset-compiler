@@ -254,14 +254,11 @@ class Io
     {
         // phpcs:disable
         $logo = <<<LOGO
-    <fg=white;bg=green>                        </>
-    <fg=white;bg=green>        Inpsyde         </>
-    <fg=white;bg=green>                        </>
-
-    <fg=magenta>Composer</> <fg=yellow>Assets</> <fg=magenta>Compiler</>
+    <fg=green>        Inpsyde         </>
+    <fg=magenta>Composer Assets Compiler</>
 LOGO;
         // phpcs:enable
 
-        $this->io->write("\n{$logo}\n");
+        $this->io->write($logo);
     }
 }

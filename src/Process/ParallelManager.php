@@ -258,7 +258,7 @@ class ParallelManager
 
             $name = $asset->name();
             $command = $this->commands[$name] ?? '';
-            $io->writeVerboseComment("Starting process of '{$name}' using: `{$command}`...");
+            $io->writeComment("Starting process of '{$name}' using: `{$command}`...");
 
             $process->start($this->outputHandler);
             $running->enqueue([$process, $asset]);

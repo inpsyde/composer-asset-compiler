@@ -96,7 +96,7 @@ class GithubReleaseZipAdapter implements Adapter
 
         try {
             if (!$version) {
-                $this->io->writeVerboseError('  Invalid configuration for GitHub release zip.');
+                $this->io->writeError('  Invalid configuration for GitHub release zip.');
 
                 return false;
             }
@@ -105,7 +105,7 @@ class GithubReleaseZipAdapter implements Adapter
 
             [$endpoint, $owner] = $this->buildReleaseEndpoint($source, $ghConfig, $version);
             if (!$endpoint || !$owner) {
-                $this->io->writeVerboseError('  Invalid GitHub release configuration.');
+                $this->io->writeError('  Invalid GitHub release configuration.');
 
                 return false;
             }
@@ -113,7 +113,7 @@ class GithubReleaseZipAdapter implements Adapter
             $distUrl = $this->retrieveArchiveUrl($source, $endpoint, $ghConfig, $version);
             if (!$distUrl) {
                 $repo = $ghConfig->repo() ?: '';
-                $this->io->writeVerboseError("  Release binary '{$source}' not found in {$repo}.");
+                $this->io->writeError("  Release binary '{$source}' not found in {$repo}.");
 
                 return false;
             }
@@ -131,7 +131,7 @@ class GithubReleaseZipAdapter implements Adapter
 
             return $this->downloaderFactory->create($type)->download($package, $targetDir);
         } catch (\Throwable $throwable) {
-            $this->io->writeVerboseError('  ' . $throwable->getMessage());
+            $this->io->writeError('  ' . $throwable->getMessage());
 
             return false;
         }
@@ -188,7 +188,7 @@ class GithubReleaseZipAdapter implements Adapter
 
         $assets = $json['assets'] ?? null;
         if (!$assets || !is_array($assets)) {
-            $this->io->writeVerbose("  Release '{$version}' has no binary assets.");
+            $this->io->write("  Release '{$version}' has no binary assets.");
 
             return null;
         }
@@ -199,7 +199,7 @@ class GithubReleaseZipAdapter implements Adapter
 
         $id = $this->findBinaryId($assets, $targetName);
         $repo = $config->repo() ?: '';
-        $id or $this->io->writeVerbose("  Release binary '{$targetName}' not found.");
+        $id or $this->io->write("  Release binary '{$targetName}' not found.");
 
         return $id ? "https://api.github.com/repos/{$repo}/releases/assets/{$id}" : null;
     }

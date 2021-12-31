@@ -147,7 +147,7 @@ final class Plugin implements
         try {
             $io = $factory->io();
             $io->logo();
-            $io->writeInfo('', 'starting...', '');
+            $io->writeInfo('Starting...');
             $assets = $factory->assets();
             if (!$assets->valid()) {
                 $io->write('Nothing to process.');
@@ -194,12 +194,12 @@ final class Plugin implements
     private function finalMessage(int $exit, ?Io $io): void
     {
         if (!$io) {
-            fwrite(($exit > 0) ? STDERR : STDOUT, ($exit > 0) ? "\n    failed!" : "\n    done.");
+            fwrite(($exit > 0) ? STDERR : STDOUT, ($exit > 0) ? "\n    Failed!" : "\n    Done.");
 
             return;
         }
 
-        ($exit > 0) ? $io->writeError('', 'failed!', '') : $io->writeInfo('', 'done.', '');
+        ($exit > 0) ? $io->writeError('Failed!') : $io->writeInfo('Done.');
     }
 
     /**

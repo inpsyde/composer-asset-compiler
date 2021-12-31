@@ -96,7 +96,7 @@ class GithubActionArtifactAdapter implements Adapter
             $ghConfig = GitHubConfig::new($config, $environment);
             [$endpoint, $owner] = $this->buildArtifactsEndpoint($source, $ghConfig);
             if (!$endpoint || !$owner) {
-                $this->io->writeVerboseError('  Invalid configuration for GitHub artifact.');
+                $this->io->writeError('  Invalid configuration for GitHub artifact.');
 
                 return false;
             }
@@ -118,7 +118,7 @@ class GithubActionArtifactAdapter implements Adapter
 
             return $this->downloaderFactory->create($type)->download($package, $targetDir);
         } catch (\Throwable $throwable) {
-            $this->io->writeVerboseError('  ' . $throwable->getMessage());
+            $this->io->writeError('  ' . $throwable->getMessage());
 
             return false;
         }
@@ -181,7 +181,7 @@ class GithubActionArtifactAdapter implements Adapter
         }
 
         $repo = $config->repo() ?? '';
-        $artifactUrl or $this->io->writeVerbose("  Artifact '{$name}' not found in '{$repo}'.");
+        $artifactUrl or $this->io->write("  Artifact '{$name}' not found in '{$repo}'.");
 
         return $artifactUrl;
     }

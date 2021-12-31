@@ -120,14 +120,15 @@ class Handler
         $target = $config->target($placeholders);
 
         if (!$source || !$path || !$target) {
+            $this->io->writeVerboseComment("Found no pre-processed configuration for '{$name}'.");
             return false;
         }
 
         $name = $asset->name();
 
         $adapterId = $adapter->id();
-        $this->io->writeVerboseComment(
-            "Attempting usage of pre-processed data for '{$name}' using {$adapterId} adapter..."
+        $this->io->writeComment(
+            "Trying to use of pre-processed data for '{$name}' via {$adapterId} adapter..."
         );
 
         $saved = $adapter->tryPrecompiled(
@@ -140,7 +141,7 @@ class Handler
         );
 
         if (!$saved) {
-            $this->io->writeVerbose(
+            $this->io->write(
                 "  Could not use pre-processed assets for '{$name}'",
                 '  will now install using default configuration.'
             );

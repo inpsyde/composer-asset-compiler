@@ -88,7 +88,7 @@ class ArchiveDownloaderAdapter implements Adapter
             $message = ($type === null)
                 ? "Could not determine archive type for {$source}."
                 : "'{$typeName}' is not a valid archive type.";
-            $this->io->writeVerboseError("  {$message}");
+            $this->io->writeError("  {$message}");
 
             return false;
         }
@@ -112,7 +112,7 @@ class ArchiveDownloaderAdapter implements Adapter
 
             return $this->downloaderFactory->create($type)->download($package, $targetDir);
         } catch (\Throwable $throwable) {
-            $this->io->writeVerboseError('  ' . $throwable->getMessage());
+            $this->io->writeError('  ' . $throwable->getMessage());
 
             return false;
         }
@@ -153,7 +153,7 @@ class ArchiveDownloaderAdapter implements Adapter
             : false;
 
         if (!$safeSource || !is_string($safeSource)) {
-            $this->io->writeVerboseError("  '{$source}' is not a valid URL.");
+            $this->io->writeError("  '{$source}' is not a valid URL.");
 
             return null;
         }
@@ -173,7 +173,7 @@ class ArchiveDownloaderAdapter implements Adapter
         $url = $matches[4] ?? null;
 
         if (!$schema || !$url) {
-            $this->io->writeVerboseError("  '{$source}' is not a valid URL.");
+            $this->io->writeError("  '{$source}' is not a valid URL.");
 
             return [null, null];
         }
