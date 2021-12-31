@@ -146,7 +146,7 @@ final class Plugin implements
 
         try {
             $io = $factory->io();
-            $io->logo();
+            $this->io->write('<fg=green>Inpsyde</> <fg=magenta>Composer Assets Compiler</>');
             $io->writeInfo('Starting...');
             $assets = $factory->assets();
             if (!$assets->valid()) {

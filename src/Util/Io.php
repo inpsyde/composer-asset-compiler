@@ -246,19 +246,4 @@ class Io
             );
         }
     }
-
-    /**
-     * @return void
-     */
-    public function logo(): void
-    {
-        // phpcs:disable
-        $logo = <<<LOGO
-    <fg=green>        Inpsyde         </>
-    <fg=magenta>Composer Assets Compiler</>
-LOGO;
-        // phpcs:enable
-
-        $this->io->write($logo);
-    }
 }
