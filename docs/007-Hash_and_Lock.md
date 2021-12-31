@@ -26,14 +26,15 @@ That's why there's a `src-paths` configuration, that can be used to instruct _Co
     "composer-asset-compiler": {
       "script": "build",
       "src-paths": [
-        "**/js/**/*.js",
-        "**/sass/**/*.scss"
+        "./js/*/*.js",
+        "./sass/*/*.scss"
       ]
     }
   }
 }
 ```
 
+Please note that to match path patters _Composer Asset Compiler_ uses [Symfony Finder](https://symfony.com/doc/current/components/finder.html#location) component, which means the "on or more folders" wildcard is `*`, not `**`.
 
 
 ## What affect hash generation
