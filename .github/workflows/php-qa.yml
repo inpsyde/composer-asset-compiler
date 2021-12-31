@@ -45,9 +45,6 @@ jobs:
                 include:
                     - php-ver: '8.1'
                       dependency-versions: 'highest'
-                    - php-ver: '8.2'
-                      dependency-versions: 'highest'
-        continue-on-error: ${{ matrix.php-ver == '8.2' }}
 
         steps:
             -   name: Update "USE_COVERAGE" env var based on matrix
@@ -75,7 +72,6 @@ jobs:
                     dependency-versions: ${{ matrix.deps-mode }}
 
             -   name: Run unit tests
-                if: ${{ env.USE_COVERAGE == 'no' }}
                 run: ./vendor/bin/phpunit --testsuite=unit ${{ ((env.USE_COVERAGE == 'yes') && '--coverage-html=coverage-report') || '--no-coverage' }}
 
             -   name: Upload coverage report
