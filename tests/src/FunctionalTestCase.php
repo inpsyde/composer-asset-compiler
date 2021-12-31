@@ -16,7 +16,6 @@ use Composer\Factory as ComposerFactory;
 use Composer\IO\IOInterface;
 use Composer\IO\NullIO;
 use Composer\Util\Filesystem;
-use Composer\Util\Platform;
 use Inpsyde\AssetsCompiler\Process\Factory as ProcessFactory;
 use Inpsyde\AssetsCompiler\Util\Factory;
 
@@ -77,9 +76,9 @@ abstract class FunctionalTestCase extends \PHPUnit\Framework\TestCase
         if (!$this->baseDir) {
             throw new \Error('Please set base dir.');
         }
-        Platform::putEnv('COMPOSER_HOME', $this->baseDir);
-        Platform::putEnv('COMPOSER_CACHE_DIR', $this->baseDir);
-        Platform::putEnv('COMPOSER_AUTH', '');
+        putenv('COMPOSER_HOME=' . $this->baseDir);
+        putenv('COMPOSER_CACHE_DIR=' . $this->baseDir);
+        putenv('COMPOSER_AUTH');
         $factory = new ComposerFactory();
 
         return $factory->createComposer(
@@ -119,7 +118,7 @@ abstract class FunctionalTestCase extends \PHPUnit\Framework\TestCase
     {
         $this->baseDir = $dir;
         chdir($dir);
-        Platform::putEnv('COMPOSER', "{$dir}/composer.json");
+        putenv('COMPOSER=' . "{$dir}/composer.json");
     }
 
     /**

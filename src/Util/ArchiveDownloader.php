@@ -153,7 +153,6 @@ class ArchiveDownloader
             );
 
             $errors = 0;
-            /** @var \Symfony\Component\Finder\SplFileInfo $item */
             foreach ($finder as $item) {
                 $relative = $item->getRelativePathname();
                 $targetPath = $this->filesystem->normalizePath("{$path}/{$relative}");

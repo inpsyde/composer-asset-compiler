@@ -135,7 +135,6 @@ final class HashBuilder
             }
         }
 
-        /** @var \Symfony\Component\Finder\SplFileInfo $fileInfo */
         foreach ($finder->files() as $fileInfo) {
             $path = $fileInfo->getRealPath();
             $path and $files[] = $path;
