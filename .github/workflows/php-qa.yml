@@ -47,7 +47,7 @@ jobs:
                       dependency-versions: 'highest'
                     - php-ver: '8.2'
                       dependency-versions: 'highest'
-        continue-on-error: ${{ matrix.php-versions == '8.2' }}
+        continue-on-error: ${{ matrix.php-ver == '8.2' }}
 
         steps:
             -   name: Update "USE_COVERAGE" env var based on matrix
