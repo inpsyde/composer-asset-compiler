@@ -21,7 +21,9 @@
 | `GITHUB_API_REPOSITORY`                     | Set the GitHub repository to be used for GitHub pre-compilation adapters. Alternative to `pre-compiled.config.repository` setting.           |
 | `GITHUB_REPOSITORY`                         | Alternative to `GITHUB_API_REPOSITORY`.                                                                                                      |
 
-All variables but `COMPOSER_ASSETS_COMPILER` can have a fall-back set via `default-env` setting.
+## Default env
+
+All variables but `COMPOSER_ASSETS_COMPILER` can have a default value set via `default-env` setting.
 
 
 
