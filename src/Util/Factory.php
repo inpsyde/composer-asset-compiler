@@ -386,7 +386,6 @@ final class Factory
     {
         if (empty($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = HashBuilder::new(
-                $this->config()->defaultEnv(),
                 $this->filesystem(),
                 $this->io()
             );

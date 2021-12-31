@@ -30,6 +30,9 @@ abstract class FunctionalTestCase extends \PHPUnit\Framework\TestCase
     /** @var Factory|null */
     protected $factory = null;
 
+    /** @var TestIo|null */
+    protected $io = null;
+
     /** @var bool */
     private $composerInstalled = false;
 
@@ -56,22 +59,31 @@ abstract class FunctionalTestCase extends \PHPUnit\Framework\TestCase
         $this->cwd and chdir($this->cwd);
         $this->cwd = null;
         $this->baseDir = null;
+        if ($this->io && $this->io->errors) {
+            throw new \Error(implode("\n", $this->io->errors));
+        }
+
+        $this->io = null;
 
         parent::tearDown();
     }
 
     /**
+     * @param int $verbosity
      * @return IOInterface
      */
-    protected function factoryComposerIo(): IOInterface
+    protected function factoryComposerIo(int $verbosity = IOInterface::NORMAL): IOInterface
     {
-        return new NullIO();
+        $this->io = new TestIo($verbosity);
+
+        return $this->io;
     }
 
     /**
+     * @param IOInterface $io
      * @return Composer
      */
-    protected function factoryComposer(): Composer
+    protected function factoryComposer(IOInterface $io): Composer
     {
         if (!$this->baseDir) {
             throw new \Error('Please set base dir.');
@@ -81,33 +93,27 @@ abstract class FunctionalTestCase extends \PHPUnit\Framework\TestCase
         putenv('COMPOSER_AUTH');
         $factory = new ComposerFactory();
 
-        return $factory->createComposer(
-            $this->factoryComposerIo(),
-            null,
-            false,
-            $this->baseDir
-        );
+        return $factory->createComposer($io, null, false, $this->baseDir);
     }
 
     /**
+     * @param int $verbosity
      * @param string $mode
      * @param bool $isDev
      * @param string $ignoreLock
      * @return Factory
      */
     protected function factoryFactory(
+        int $verbosity = IOInterface::NORMAL,
         string $mode = 'tests',
         bool $isDev = true,
         string $ignoreLock = ''
     ): Factory {
 
-        return Factory::new(
-            $this->factoryComposer(),
-            $this->factoryComposerIo(),
-            $mode,
-            $isDev,
-            $ignoreLock
-        );
+        $io = $this->factoryComposerIo($verbosity);
+        $composer = $this->factoryComposer($io);
+
+        return Factory::new($composer, $io, $mode, $isDev, $ignoreLock);
     }
 
     /**
@@ -127,9 +133,28 @@ abstract class FunctionalTestCase extends \PHPUnit\Framework\TestCase
      */
     protected function composerUpdate(string $dir): void
     {
-        $this->moveDir($dir);
+        if ($dir !== $this->baseDir) {
+            $this->moveDir($dir);
+        }
         $process = ProcessFactory::new()->create("composer update -n -q --no-cache", $dir);
         $process->mustRun();
         $this->composerInstalled = true;
+    }
+
+    /**
+     * @param string $dir
+     * @return void
+     */
+    protected function composerCommand(string $command): void
+    {
+        if (!$this->composerInstalled) {
+            if (!$this->baseDir) {
+                throw new \Error('Please install Composer deps or set base dir.');
+            }
+            $this->composerUpdate($this->baseDir);
+        }
+
+        $process = ProcessFactory::new()->create($command, $this->baseDir);
+        $process->mustRun();
     }
 }

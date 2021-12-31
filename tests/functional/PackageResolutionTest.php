@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\Tests;
 
+use Composer\IO\IOInterface;
 use Inpsyde\AssetsCompiler\Asset\Asset;
 use Inpsyde\AssetsCompiler\PreCompilation\GithubActionArtifactAdapter;
 use Inpsyde\AssetsCompiler\PreCompilation\Placeholders;
@@ -52,7 +53,7 @@ class PackageResolutionTest extends FunctionalTestCase
         $this->composerUpdate(getenv('RESOURCES_DIR') . '/05');
 
         /** @var Asset $asset */
-        $factory = $this->factoryFactory('functional-tests');
+        $factory = $this->factoryFactory(IOInterface::NORMAL, 'functional-tests');
         $asset = $factory->assets()->current();
 
         $hash = $factory->hashBuilder()->forAsset($asset) ?? '';

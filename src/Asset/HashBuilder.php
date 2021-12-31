@@ -18,11 +18,7 @@ use Symfony\Component\Finder\Finder as FileFinder;
 
 final class HashBuilder
 {
-    /**
-     * @var array
-     */
-    private $environment;
-
+    private const PATTERN_REGEX = '~^(.+?)/([^/]+\.(?:[a-z0-9]{1,4}(?:\.[a-z0-9]{1,4})?|\*))$~i';
     /**
      * @var array<string, string>
      */
@@ -32,30 +28,28 @@ final class HashBuilder
      * @var Filesystem
      */
     private $filesystem;
+
     /**
      * @var Io
      */
     private $io;
 
     /**
-     * @param array $environment
      * @param Filesystem $filesystem
      * @param Io $io
      * @return HashBuilder
      */
-    public static function new(array $environment, Filesystem $filesystem, Io $io): HashBuilder
+    public static function new(Filesystem $filesystem, Io $io): HashBuilder
     {
-        return new static($environment, $filesystem, $io);
+        return new static($filesystem, $io);
     }
 
     /**
-     * @param array $environment
      * @param Filesystem $filesystem
      * @param Io $io
      */
-    private function __construct(array $environment, Filesystem $filesystem, Io $io)
+    private function __construct(Filesystem $filesystem, Io $io)
     {
-        $this->environment = $environment;
         $this->filesystem = $filesystem;
         $this->io = $io;
     }
@@ -90,13 +84,12 @@ final class HashBuilder
         $hashes = '';
         $done = [];
         foreach ($files as $file) {
-            $normalized = $this->filesystem->normalizePath($file);
-            if (isset($done[$normalized])) {
+            if (isset($done[$file])) {
                 continue;
             }
-            $done[$normalized] = 1;
-            if (file_exists($normalized) && is_readable($normalized)) {
-                $hashes .= @(md5_file($normalized) ?: '');
+            $done[$file] = 1;
+            if (file_exists($file) && is_readable($file)) {
+                $hashes .= @(md5_file($file) ?: '');
             }
         }
 
@@ -121,23 +114,38 @@ final class HashBuilder
             return $files;
         }
 
-        $finder = FileFinder::create()->ignoreUnreadableDirs(true)->ignoreVCS(true);
+        /** @var FileFinder|null $finder */
+        $finder = null;
         foreach ($patterns as $pattern) {
             try {
-                $finder = $finder->in($basePath . '/' . ltrim($pattern, '/'));
+                $pathfinder = FileFinder::create()->ignoreUnreadableDirs(true)->ignoreVCS(true);
+                $hasFile = preg_match(self::PATTERN_REGEX, $pattern, $matches);
+                $dir = "{$basePath}/" . ltrim($hasFile ? $matches[1] : $pattern, './');
+                $hasFile
+                    ? $pathfinder->in("{$dir}/")->name($matches[2])
+                    : $pathfinder->in($dir);
+                $finder = $finder ? $finder->append($pathfinder) : $pathfinder;
             } catch (\Throwable $throwable) {
-                $this->io->writeVerboseError(
-                    "Could not use '{$pattern}' to create package hash",
-                    $throwable->getMessage()
-                );
-
+                $this->io->writeError($throwable->getMessage());
                 continue;
             }
         }
 
+        if (!$finder) {
+            $patternsStr = implode("', '", $patterns);
+            $this->io->writeError("Error building Symfony Finder for '{$patternsStr}'.");
+
+            return $files;
+        }
+
         foreach ($finder->files() as $fileInfo) {
             $path = $fileInfo->getRealPath();
-            $path and $files[] = $path;
+            if ($path) {
+                $rel = $fileInfo->getRelativePath()  . '/' . $fileInfo->getBasename();
+                $normalized = $this->filesystem->normalizePath($rel);
+                $this->io->writeVerbose("Will use '{$normalized}' file to calculate package hash");
+                $files[] = $this->filesystem->normalizePath($path);
+            }
         }
 
         return $files;

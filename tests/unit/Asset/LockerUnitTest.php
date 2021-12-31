@@ -166,7 +166,7 @@ class LockerUnitTest extends UnitTestCase
 
         return new Locker(
             $io,
-            HashBuilder::new([], new Filesystem(), $io),
+            HashBuilder::new(new Filesystem(), $io),
             $ignoreLock
         );
     }

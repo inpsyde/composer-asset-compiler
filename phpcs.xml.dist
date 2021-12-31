@@ -26,5 +26,9 @@
         </properties>
     </rule>
 
+    <rule ref="Inpsyde.CodeQuality.ForbiddenPublicProperty">
+        <exclude-pattern>/tests</exclude-pattern>
+    </rule>
+
 </ruleset>
 

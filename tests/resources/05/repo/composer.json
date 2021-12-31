@@ -12,6 +12,11 @@
         "CAC_HELLO": "world"
       },
       "script": "build",
+      "src-paths": [
+        "src/*/*.css",
+        "./src/*/*.js",
+        "lib/"
+      ],
       "pre-compiled": {
         "adapter": "gh-action-artifact",
         "source": "assets-${mode}-${version}-${CAC_FOO}",
