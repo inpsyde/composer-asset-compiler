@@ -117,7 +117,7 @@ class GithubReleaseZipAdapter implements Adapter
 
             $headers = ['Accept: application/octet-stream'];
             $auth = $ghConfig->basicAuth();
-            $auth and $headers[] = ["Authorization: {$auth}"];
+            $auth and $headers[] = "Authorization: {$auth}";
 
             $type = ArchiveDownloader::ZIP;
             $package = new Package($asset->name() . '-assets', 'release-zip', 'release-zip');
@@ -214,9 +214,9 @@ class GithubReleaseZipAdapter implements Adapter
                 && !empty($item['name'])
                 && ($item['name'] === $targetName)
                 && !empty($item['id'])
-                && is_string($item['id'])
+                && is_scalar($item['id'])
             ) {
-                return $item['id'];
+                return (string)$item['id'];
             }
         }
 
