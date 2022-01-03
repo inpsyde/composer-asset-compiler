@@ -141,7 +141,7 @@ class Handler
 
         if (!$saved) {
             $this->io->write(
-                "  Could not use pre-processed assets for '{$name}'",
+                "  Could not use pre-processed assets for '{$name}'".
                 '  will now install using default configuration.'
             );
 

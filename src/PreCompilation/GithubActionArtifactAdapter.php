@@ -181,7 +181,7 @@ class GithubActionArtifactAdapter implements Adapter
         }
 
         $repo = $config->repo() ?? '';
-        $artifactUrl or $this->io->write("  Artifact '{$name}' not found in '{$repo}'.");
+        $artifactUrl or $this->io->writeError("  Artifact '{$name}' not found in '{$repo}'.");
 
         return $artifactUrl;
     }

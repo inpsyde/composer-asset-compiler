@@ -112,9 +112,6 @@ class GithubReleaseZipAdapter implements Adapter
 
             $distUrl = $this->retrieveArchiveUrl($source, $endpoint, $ghConfig, $version);
             if (!$distUrl) {
-                $repo = $ghConfig->repo() ?: '';
-                $this->io->writeError("  Release binary '{$source}' not found in {$repo}.");
-
                 return false;
             }
 
@@ -199,7 +196,7 @@ class GithubReleaseZipAdapter implements Adapter
 
         $id = $this->findBinaryId($assets, $targetName);
         $repo = $config->repo() ?: '';
-        $id or $this->io->write("  Release binary '{$targetName}' not found.");
+        $id or $this->io->writeError("  Release binary '{$targetName}' not found.");
 
         return $id ? "https://api.github.com/repos/{$repo}/releases/assets/{$id}" : null;
     }
