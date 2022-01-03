@@ -22,6 +22,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 final class CompileAssets extends BaseCommand
 {
     use LowLevelErrorWriteTrait;
+    use ModeOptionTrait;
 
     /**
      * @return void
@@ -43,6 +44,12 @@ final class CompileAssets extends BaseCommand
                 InputOption::VALUE_REQUIRED,
                 'Set the mode to run command in. '
                 . 'Overrides value of COMPOSER_ASSETS_COMPILER, if set.'
+            )
+            ->addOption(
+                'env',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'DEPRECATED. Use "mode" instead'
             )
             ->addOption(
                 'ignore-lock',
@@ -73,7 +80,7 @@ final class CompileAssets extends BaseCommand
             $plugin->activate($composer, $io);
 
             $noDev = $input->hasOption('no-dev');
-            $mode = $input->hasOption('mode') ? $input->getOption('mode') : null;
+            $mode = $this->determineMode($input, $output);
 
             $ignoreLockRaw = $input->hasParameterOption('--ignore-lock', true)
                 ? $input->getOption('ignore-lock')

@@ -20,6 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 final class AssetHash extends BaseCommand
 {
     use LowLevelErrorWriteTrait;
+    use ModeOptionTrait;
 
     /**
      * @return void
@@ -41,6 +42,12 @@ final class AssetHash extends BaseCommand
                 InputOption::VALUE_REQUIRED,
                 'Set the mode to run command in. '
                 . 'Overrides value of COMPOSER_ASSETS_COMPILER, if set.'
+            )
+            ->addOption(
+                'env',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'DEPRECATED. Use "mode" instead'
             );
     }
 
@@ -60,8 +67,7 @@ final class AssetHash extends BaseCommand
             $composer = $this->getComposer(true, false);
             $io = $this->getIO();
             $noDev = $input->hasOption('no-dev');
-            $mode = $input->hasOption('mode') ? $input->getOption('mode') : null;
-            is_string($mode) or $mode = null;
+            $mode = $this->determineMode($input, $output);
 
             $factory = Factory::new($composer, $io, $mode, !$noDev);
             $package = $composer->getPackage();
