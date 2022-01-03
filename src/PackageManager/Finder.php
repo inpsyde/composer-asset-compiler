@@ -113,7 +113,7 @@ class Finder
             return $manager->withDefaultEnv($this->defaultEnv);
         }
 
-        $this->io->writeVerbose(" Will use default package manager for {$name}.");
+        $this->io->writeVerbose("Will use default package manager for {$name}.");
 
         $this->discovered = $this->discovered ?: PackageManager::discover($this->executor, $path);
 
@@ -123,8 +123,8 @@ class Finder
         }
 
         $this->io->writeError(
-            " Could not found a package manager in the system.",
-            ' Make sure either Yarn or npm are installed.'
+            "Could not found a package manager in the system.",
+            'Make sure either Yarn or npm are installed.'
         );
 
         throw new \Exception('Package manager not found.');
@@ -168,14 +168,14 @@ class Finder
 
         $valid = !$checkValid || $packageManager->isValid();
         $error = $byConfig
-            ? " Package manager configuration is invalid for '{$name}'."
+            ? "Package manager configuration is invalid for '{$name}'."
             : null;
         if ($valid && $checkExec && !$packageManager->isExecutable($this->executor, $dir)) {
             $valid = false;
             $pmName = $packageManager->name();
             $error = $byLockFile
-                ? " '{$name}' has a {$pmName}-specific lock file, "
-                : " '{$name}' seems to require {$pmName} via configuration, ";
+                ? "'{$name}' has a {$pmName}-specific lock file, "
+                : "'{$name}' seems to require {$pmName} via configuration, ";
             $error .= "but that package manager is not available on the system.";
         }
 
