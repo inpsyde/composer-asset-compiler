@@ -12,7 +12,7 @@ All the above can be obtained with configuration in the root package via a `pack
 
 ## Add or change configuration
 
-An example `assets-compiler.json`:
+Let's take the example:
 
 ```json
 {
@@ -71,7 +71,7 @@ Packages' settings might be set also via patterns, for example:
 
 ## Defaults
 
-More often than not, when defining _Composer Assets Compiler_ configuration in the root package the configuration is the same for all packages. That means we're going to have a lot of duplication.
+More often than not, when defining _Composer Assets Compiler_ configuration in the root package, the configuration is the same for all packages. That means we're going to have a lot of duplication.
 
 For example:
 
@@ -98,7 +98,7 @@ For example:
 }
 ```
 
-In such cases, _Composer Assets Compiler_ permit to have a more compact configuration via the usage of defaults.
+In such cases, _Composer Assets Compiler_ allow us to have a more compact configuration via the usage of defaults.
 
 For example:
 
@@ -111,7 +111,7 @@ For example:
         "package-manager": "yarn"
       },
       "packages": {
-        "acme/*": "force-defaults",
+        "acme/*": "$force-defaults",
         "foo/bar": true
       }
     }
@@ -121,17 +121,16 @@ For example:
 
 Above, we have defined the configuration once in the `"defaults"` property, and then instructed _Composer Assets Compiler_ to use that configuration for the listed packages.
 
-To do that, for each package we can use either `"force-defaults"` or `true`.
+To do that, for each package we can use either `"$force-defaults"` or `true`.
 
 - `true` means: _"if the package has a configuration, use it, otherwise use the defaults"_
-- `force-defaults` means: _"process the assets for this package always using defaults"_
+- `$force-defaults` means: _"process the assets for this package always using defaults"_
 
 
 
 ## Root package is a package
 
-Please note that the root package is a package. Which means it might have assets to compile and so
-it supports "normal" _Composer Assets Compiler_ such as `"script"`, `"dependencies"`, and such.
+Please note that the root package is a package. Which means it might have assets to compile, and so it supports "normal" _Composer Assets Compiler_ such as `"script"`, `"dependencies"`, and such.
 
 ```json
 {
@@ -158,7 +157,7 @@ it supports "normal" _Composer Assets Compiler_ such as `"script"`, `"dependenci
 
 By default, when the root package have dependencies listed in `packages` property, it will process them _in addition_ to packages that have configuration defined at package level.
 
-It might be desirable to compile _only_ packages listed in the `packages` property, beside the root package's assets (if any).
+It might be desirable to compile _only_ packages listed in the `packages` property (if any), beside the root package's assets.
 
 To obtain that, it is possible to use the `auto-discover` setting with a value of `false`.
 
@@ -170,7 +169,7 @@ In the ["Script"](./003-Script.md#default-environment) chapter, we have seen how
 
 Root package is a package, so we can have a `default-env` setting also in root package.
 
-However, `default-env` defined in the root package has a "special" meaning, because it would provide a default also for  dependencies, in the case dependencies don't define `default-env` for missing environment variables.
+However, `default-env` defined in the root package has a "special" meaning, because it would provide a default also for dependencies, in the case dependencies don't define `default-env` for missing environment variables.
 
 
 

@@ -2,17 +2,17 @@
 
 By default, _Composer Asset Compiler_ loops installed Composer packages, and for each of them installs frontend dependencies and run a compiling script.
 
-Doing that can can take *several minutes per package*.
+Doing that can can take *several minutes per package*. For a project with 20 or more packages to compile assets for, that is *a lot*.
 
-For a project with 20 or more packages, to compile assets for, that is *a lot*.
+To solve that problem, _Composer Asset Compiler_ implements the so-called "pre-compilation".
 
-To solve this problem, this plugin implements a so-called "pre-compilation". It works as follows:
+It works as follows:
 
 1. The packages' assets are compiled separately and provided to a storage service supported by the plugin. At the time of writing, the plugin supports _GitHub Artifacts_, _GitHub Release Binary_, and "generic" archive URLs.
 2. When the Composer plugin finds a package to process, instead of immediately processing it, it checks if the package supports pre-compilation, and if so, it tries to download the pre-compiled assets.
 3. If pre-compiled assets are found, they are downloaded and used; if they are not found, the plugin continues installing dependencies and processing the assets "on the fly", as usual.
 
-The asset compilation plugin does not care how the assets are compiled (step *1.* above): as long as an archive with pre-compiled assets is found, the plugin can work with it.
+_Composer Asset Compiler_ does not care how the assets are compiled (step *1.* above): as long as an archive with pre-compiled assets is found, the plugin can work with it.
 
 Here's an example of how we can configure pre-compilation for a package:
 
@@ -35,7 +35,7 @@ Here's an example of how we can configure pre-compilation for a package:
 }
 ```
 
-The `pre-compiled` object tells us that the package supports pre-compilation.
+The `pre-compiled` object tells us the package supports pre-compilation.
 
 Let's look at the configuration in detail.
 
@@ -76,15 +76,13 @@ It may contain dynamic placeholders (like the `${ref}` in the snippet above). Mo
 
 `pre-compiled.config` is a configuration object for the adapter, and its only mandatory property is `pre-compiled.config.repository` that is the owner and name of the GitHub repository.
 
-For example, `"repository": "acme/some-theme"` means that the repository URL is `https://github.com/acme/some-theme.git`.
+For example, `"repository": "acme/some-theme"` means the repository URL is `https://github.com/acme/some-theme.git`.
 
 If the repository is private, we need to specify the username of a GitHub user who has access to the repository, and an [access token](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token) for that user.
 
 The username can be set via the `pre-compiled.config.user` property or via the `GITHUB_USER_NAME` environment variable in the system running the _Composer Asset Compiler_.
 
-The access token could be set via the `pre-compiled.config.token` property, but this is discouraged.
-
-A safer approach is to use the `GITHUB_USER_TOKEN` environment variable or rely on Composer authentication using the [`github-oauth` method](https://getcomposer.org/doc/articles/authentication-for-private-packages.md#github-oauth). In the latter case, configuring the username is not necessary.
+The access token could be set via the `pre-compiled.config.token` property, but this is discouraged. A safer approach is to use the `GITHUB_USER_TOKEN` environment variable or rely on Composer authentication using the [`github-oauth` method](https://getcomposer.org/doc/articles/authentication-for-private-packages.md#github-oauth). In the latter case, configuring the username is not necessary.
 
 
 
@@ -117,11 +115,11 @@ The supported placeholders are:
 
 ## Pre-compilation by stability
 
-Sometimes we would like to have a different mechanism for pre-compilation, depending on whether the package being installed has a stability `stable` or not.
+Sometimes we would like to have a different mechanism for pre-compilation, depending on whether the installed package has a `stable` stability or not.
 
 For example, when a package is required from a version (e. g. `"~1.1.0"`), we might want to use the `"gh-release-zip"` adapter, whereas when it is required from a branch (e. g. `"dev-main"`) we might want to use the `"gh-action-artifact"`.
 
-That can be achieved by using two sets of `pre-compiled` configuration, one specifying "stable" `stability` and one specifying "dev" `stability`.
+That can be achieved by using two sets of `pre-compiled` configuration, one specifying `"stable"` and another `"dev"` for `stability`.
 
 For example:
 

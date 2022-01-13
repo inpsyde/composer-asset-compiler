@@ -1,6 +1,6 @@
 # Introduction
 
-When installing Composer project dependencies that have both PHP and frontend code we have to make a choice:
+When installing Composer project's dependencies that have both PHP and frontend code we have to make a choice:
 
 - put all packages' frontend assets under version control
 - "compile" assets after packages are pulled by Composer
@@ -14,10 +14,10 @@ In the second case, a lot of manual work is required, and in the case of transit
 _Composer Assets Compiler_ solves the problem by using the following workflow:
 
 1. Each package contains a configuration, e. g. the _npm_ or _Yarn_ script to run to compile assets.
-2. After the "project" is installed via Composer, the plugin loops all the packages installed looking for that configuration.
+2. After the "project" is installed via Composer, the plugin loops all the installed dependencies, looking for that configuration.
 3. All found packages are "compiled", by first installing the frontend dependencies (with *npm* or *Yarn*) and then executing the script.
 
-That means the first step to enable the workflow is to add configuration in the packages.
+That means the first step to enable the workflow is to add _Composer Assets Compiler_ configuration in the packages.
 
 
 

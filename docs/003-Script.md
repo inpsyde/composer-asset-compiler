@@ -54,7 +54,7 @@ It is possible to define multiple scripts which will be executed in series. Like
 
 ## Short form
 
-When `script` is the _only_ configuration needed, it is possible to use a shorter form, and have something like:
+When `script` is the _only_ configuration needed, it is possible to use a shorter form, something like this:
 
 ```json
 {
@@ -98,9 +98,9 @@ we might want to pass the Gulp task name.
 
 Manually, we would do that via `npm run gulp -- task-name` or `yarn gulp task-name`.
 
-Considering that _Composer Assets Compiler_ is agnostic about the package manager in use, it requires the _npm_ syntax, converting it correctly if the used package manager is _Yarn_.
+Since _Composer Assets Compiler_ is agnostic about the package manager in use, it requires the _npm_ syntax, converting it correctly if the used package manager is _Yarn_.
 
-That means we would have a _Composer Assets Compiler_ configuration like:
+That means we can have a _Composer Assets Compiler_ configuration like this:
 
 ```json
 {
@@ -111,7 +111,7 @@ That means we would have a _Composer Assets Compiler_ configuration like:
 }
 ```
 
-and that will work with both _npm_ and _Yarn_.
+and it will work with both _npm_ and _Yarn_.
 
 
 
@@ -132,7 +132,7 @@ For example:
 
 With that, we could set the `COMPILE_TASK` environment variable to, for example, `"build"` and the plugin will end up executing `gulp build`.
 
-It is important to note that in the case interpolated environment variables are not defined, the script might result invalid.
+It is important to note that in the case the interpolated environment variables are not defined, the script might result invalid.
 
 To prevent that, it is possible to use a `default-env` configuration.
 
@@ -158,9 +158,9 @@ We could have a configuration like:
 
 Thanks to that, in the case the `COMPILE_TASK` environment variable is not defined, its value will default to `build`, and the script will stay valid.
 
-A special mention has to be made in the regard of `default-env` when used in the root package.
+A special mention has to be made in the regard of `default-env` when used in the *root* package.
 
-In that case, defaults defined for the root package might apply also for dependencies, in the case dependencies don't define `default-env` for missing environment variables.
+In that case, defaults defined for the root package might also apply for dependencies, in the case dependencies don't define `default-env` for missing environment variables.
 
 
 

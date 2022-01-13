@@ -6,7 +6,7 @@ For example, having some behavior when running locally, or on a CI pipeline, and
 
 To satisfy that requirement, _Composer Assets Compiler_ introduces the concept of "execution mode".
 
-The "execution mode" is an arbitrary string, which can be set in two ways:
+**The "execution mode" is an arbitrary string, which can be set in two ways:**
 
 - via the `COMPOSER_ASSET_COMPILER` environment variable
 - via the `--mode` flag passed to the `composer compile-assets` command.
@@ -21,13 +21,13 @@ When no mode is set explicitly, _Composer Assets Compiler_ will default to the s
 
 ## Configuration by mode
 
-No matter how the mode is determined, it can be used to differentiate configuration per mode.
+No matter how the mode is determined, it can be used to have mode-specific configuration.
 
 
 
 ## Root-level mode
 
-For example:
+Let's take the example:
 
 ```json
 {
@@ -64,9 +64,11 @@ In the example above, having the `COMPOSER_ASSET_COMPILER` env variable set to `
 
 
 
-## Default and Default "no-dev"
+## Default and default "no-dev"
 
-If there's no mode defined in the system, or the mode defined in the system does not have a relative configuration entry, _Composer Assets Compiler_ will use the configuration for `"$default"`, if neither that is found there's nothing the plugin can do. That is why is highly suggested to always have a `"$default"` configuration when using mode.
+If there's no mode defined in the system, or the mode defined in the system does not have a related configuration entry, _Composer Assets Compiler_ will use the configuration for `"$default"`, and if neither that is found there's nothing the plugin can do.
+
+That is why **is highly suggested to always have a `"$default"` configuration when using mode-specific configuration**.
 
 When _Composer Assets Compiler_ runs automatically on Composer install or update, and those commands are executed with the `--no-dev` flag, before looking for the `"$default"` configuration, _Composer Assets Compiler_ will look for a `"$default-no-dev"` configuration.
 
@@ -74,11 +76,13 @@ When _Composer Assets Compiler_ runs automatically on Composer install or update
 
 ## Property-level mode
 
-In the previous example, the `"$mode"` key is used "root item", forcing us to have a complete set of configuration per mode. For example, if we would like to have a `pre-compiled` configuration that is the same for all the "modes" we would need to copy and paste it in each mode configuration.
+In the previous example, the `"$mode"` key is used "root item", forcing us to have a complete set of configuration per mode.
+
+For example, if we would like to have a `pre-compiled` configuration that is the same for all the "modes" we would need to copy and paste it in each mode configuration.
 
 That ends up being very verbose with duplicates.
 
-In such cases, it is possible to use the `"$mode"` key at property level, only for the properties that must be mode-specific.
+In such cases, it is possible to use the `"$mode"` key at *property level*, only for the properties that must be mode-specific.
 
 For example:
 
@@ -107,13 +111,15 @@ For example:
 }
 ```
 
+In the example above, `pre-compiled` configuration is the same regardless execution mode, whereas the `script` configuration is mode-specific.
+
 
 
 ## Deprecated "env"
 
 In _Composer Assets Compiler_ < 3.0, the `"$mode"` property was called `"env"`.
 
-That generated confusion because it has nothing to do with _environment_ variables nor with the `default-env` configuration. That's why it was replaced by "$mode"`in _Composer Assets Compiler_ 3.
+That generated confusion because it has nothing to do with _environment_ variables nor with the `default-env` configuration. That's why it was replaced by `"$mode"` in _Composer Assets Compiler_ 3.
 
 However, to facilitate migration for packages previously using a lower version, the `"env"` key is still supported in version 3, but support might be removed in future versions.
 

@@ -4,7 +4,7 @@ On larger projects, with many packages to process, the package manager cache som
 
 When that happens, one possible solution is to set `isolated-cache` _Composer Assets Compiler_ setting to true.
 
-That ensures that each package is processed in a different cache folder (under the system temp folder), and usually fixes cache-related problem.
+That ensures that each package is processed in a different cache folder (under the system temp folder), and that usually fixes cache-related problem.
 
 It works by passing `--cache` command flag to _npm_ or `--cache-folder` flag to _Yarn_.
 

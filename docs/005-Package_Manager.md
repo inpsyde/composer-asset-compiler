@@ -33,7 +33,7 @@ Instead of letting _Composer Asset Compiler_ determine the best package manager 
 
 ## Fall-back
 
-It might happen that the package manager _Composer Asset Compiler_ determines as the best choice for a package is not installed in the system.
+It might happen that _Composer Asset Compiler_ determines a package manager is the best choice for a package, but it is not installed in the system.
 
 In that case, _Composer Asset Compiler_ will default to the other package manager.
 

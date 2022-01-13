@@ -14,8 +14,7 @@ That is especially important when _Composer Assets Compiler_ auto-executes on Co
 
 ## Custom source files
 
-Very likely, the compiled assets will change when the assets "sources" are changed.
-_Composer Assets Compiler_ is not aware of where sources are located, so it can't calculate the bash based on them.
+Very likely, the compiled assets will change when the assets "sources" are changed. _Composer Assets Compiler_ is not aware of where sources are located, so it can't take those into account when calculating the hash.
 
 That's why there's a `src-paths` configuration, that can be used to instruct _Composer Assets Compiler_ about the source files to use as a base for the package's hash.
 
@@ -34,14 +33,15 @@ That's why there's a `src-paths` configuration, that can be used to instruct _Co
 }
 ```
 
-Please note that to match path patters _Composer Asset Compiler_ uses [Symfony Finder](https://symfony.com/doc/current/components/finder.html#location) component, which means the "on or more folders" wildcard is `*`, not `**`.
+Please note _Composer Asset Compiler_ uses [Symfony Finder](https://symfony.com/doc/current/components/finder.html#location) component behind the scenes, which means the wildcard to indicate "one or more folders" is `*`, not `**`.
+
 
 
 ## What affect hash generation
 
 - The content of `package.json`, `package-lock.json`, `npm-shrinkwrap.json`, and `yarn.lock` files (if exising)
-- The content of any file found in the paths provided in `src-paths`
-- The "evaluated" `script`, which might depend on environment variables, `default-env` configuration, and execution mode.
+- The content of any file found in the paths in the `src-paths` config (if any)
+- The "evaluated" `script`, which might depend on: environment variables, `default-env` configuration, and execution mode.
 - The "dependencies" configuration.
 
 

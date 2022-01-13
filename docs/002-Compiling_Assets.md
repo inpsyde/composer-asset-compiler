@@ -1,9 +1,9 @@
 # Compiling Assets
 
-The compiling assets process can start in two ways:
+The assets compiling process can start in two ways:
 
 - automatically, after each `composer install` / `composer update`
-- manually, via the custom `composer compile-assets` command that the plugin provides.
+- manually, via the custom `composer compile-assets` command the plugin provides.
 
 
 
