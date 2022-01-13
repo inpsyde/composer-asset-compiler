@@ -68,7 +68,7 @@ class ConfigUnitTest extends UnitTestCase
      */
     public function testForAssetConfigInRootForcedDefaults(): void
     {
-        $config = Config::forAssetConfigInRoot('force-defaults', $this->factoryModeResolver());
+        $config = Config::forAssetConfigInRoot('$force-defaults', $this->factoryModeResolver());
 
         static::assertSame([], $config->defaultEnv());
         static::assertNull($config->dependencies());

@@ -35,7 +35,7 @@ class Config
     public const NONE = 'none';
 
     private const CONFIG_FILE = 'assets-compiler.json';
-    private const FORCE_DEFAULTS = 'force-defaults';
+    private const FORCE_DEFAULTS = '$force-defaults';
     private const BY_PACKAGE_OR_DEFAULTS = 'package-or-defaults';
     private const DISABLED = 'disabled';
     private const DEPENDENCIES_OPTIONS = [self::INSTALL, self::UPDATE, self::NONE];

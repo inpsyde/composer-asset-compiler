@@ -109,7 +109,7 @@ class FinderUnitTest extends UnitTestCase
         $this->findPackages(
             [
                 'packages' => [
-                    'me/foo' => 'force-defaults',
+                    'me/foo' => '$force-defaults',
                 ],
                 'auto-discover' => false,
                 'stop-on-failure' => true,
@@ -147,7 +147,7 @@ class FinderUnitTest extends UnitTestCase
         $found = $this->findPackages(
             [
                 'packages' => [
-                    'me/*' => 'force-defaults',
+                    'me/*' => '$force-defaults',
                 ],
                 'defaults' => [
                     'dependencies' => 'update',
