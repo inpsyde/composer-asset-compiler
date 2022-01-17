@@ -143,8 +143,8 @@ Please note that the root package is a package. Which means it might have assets
         "package-manager": "yarn"
       },
       "packages": {
-        "acme/foo": "force-defaults",
-        "acme/bar": "force-defaults"
+        "acme/foo": "$force-defaults",
+        "acme/bar": "$force-defaults"
       }
     }
   }
