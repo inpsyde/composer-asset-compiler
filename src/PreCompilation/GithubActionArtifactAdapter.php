@@ -172,31 +172,40 @@ class GithubActionArtifactAdapter implements Adapter
             throw new \Exception("Could not obtain a valid API response from {$endpoint}.");
         }
 
-        $archiveUrl = null;
-        foreach ((array)$json['artifacts'] as $artifactData) {
-            if (!is_array($artifactData)) {
-                continue;
-            }
-            $name = $artifactData['name'] ?? null;
-            $url = $name ? ($artifactData['archive_download_url'] ?? null) : null;
-            if (($name === $artifactName) && $url && filter_var($url, FILTER_VALIDATE_URL)) {
-                $archiveUrl = $url;
-                break;
-            }
-        }
-
-        if (!$archiveUrl) {
-            $this->io->writeVerbose("  Artifact '{$artifactName}' not found in '{$repo}'.");
-
-            return '';
-        }
-
-        /** @var string $archiveUrl */
-
-        if ($authString) {
+        $archiveUrl = $this->findArchiveUrl($artifactName, (array)$json['artifacts'], $repo);
+        if ($archiveUrl && $authString) {
             $archiveUrl = preg_replace('~^https://(.+)~', $authString . '$1', $archiveUrl);
         }
 
         return $archiveUrl ?: '';
+    }
+
+    /**
+     * @param string $artifactName
+     * @param array $artifactsData
+     * @param string $repo
+     * @return string|null
+     */
+    private function findArchiveUrl(
+        string $artifactName,
+        array $artifactsData,
+        string $repo
+    ): ?string {
+
+        foreach ($artifactsData as $artifactData) {
+            if (!is_array($artifactData) || (($artifactData['name'] ?? null) !== $artifactName)) {
+                continue;
+            }
+            $url = $artifactData['archive_download_url'] ?? null;
+            $expired = $artifactData['expired'] ?? true;
+            if (!$expired && filter_var($url, FILTER_VALIDATE_URL)) {
+                /** @var string $url */
+                return $url;
+            }
+        }
+
+        $this->io->writeVerbose("  Artifact '{$artifactName}' not found in '{$repo}'.");
+
+        return null;
     }
 }
