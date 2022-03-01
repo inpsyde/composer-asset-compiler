@@ -30,9 +30,13 @@ class GitHubConfig
     /**
      * @param array $config
      * @param array $env
+     *
+     * phpcs:disable Generic.Metrics.CyclomaticComplexity
      */
     private function __construct(array $config, array $env)
     {
+        // phpcs:enable Generic.Metrics.CyclomaticComplexity
+
         $user = $config[self::TOKEN_USER]
             ?? EnvResolver::readEnv('GITHUB_USER_NAME', $env)
             ?? EnvResolver::readEnv('GITHUB_API_USER', $env)

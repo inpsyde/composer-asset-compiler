@@ -31,7 +31,6 @@ use Symfony\Component\Process\Process;
 
 final class Factory
 {
-
     /**
      * @var Composer
      */

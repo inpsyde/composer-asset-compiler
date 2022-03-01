@@ -21,7 +21,6 @@ use Inpsyde\AssetsCompiler\Util\Io;
 
 class Processor
 {
-
     /**
      * @var Io
      */

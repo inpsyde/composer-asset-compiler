@@ -10,7 +10,6 @@ use Composer\Util\RemoteFilesystem;
 
 class HttpClient
 {
-
     /**
      * @var Io
      */

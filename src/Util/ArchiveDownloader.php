@@ -130,7 +130,7 @@ class ArchiveDownloader
             // So we first unpack in a temporary folder and then move unpacked files from the temp
             // dir to final target dir. That's surely slower, but necessary.
 
-            $tempDir = dirname($path) . '/.tmp' . substr(md5(uniqid($path, true)), 0, 8);
+            $tempDir = dirname($path) . '/.tmp' . (substr(md5(uniqid($path, true)), 0, 8) ?: '');
             $this->io->writeVerbose(
                 "Archive target path '{$path}' is an existing directory.",
                 "Downloading and unpacking '{$distUrl}' in the temporary folder '{$tempDir}'..."
@@ -146,7 +146,6 @@ class ArchiveDownloader
             );
 
             $errors = 0;
-            /** @var \Symfony\Component\Finder\SplFileInfo $item */
             foreach ($finder as $item) {
                 $relative = $item->getRelativePathname();
                 $targetPath = $this->filesystem->normalizePath("{$path}/{$relative}");

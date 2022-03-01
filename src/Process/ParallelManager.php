@@ -17,7 +17,6 @@ use Symfony\Component\Process\Process;
 
 class ParallelManager
 {
-
     /**
      * @var callable
      */
@@ -34,7 +33,7 @@ class ParallelManager
     private $maxParallel;
 
     /**
-     * @var int
+     * @var positive-int
      */
     private $poll;
 

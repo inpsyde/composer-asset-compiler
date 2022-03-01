@@ -135,9 +135,12 @@ class ArchiveDownloaderAdapter implements Adapter
      * @param string $source
      * @param array $config
      * @return string|null
+     *
+     * phpcs:disable Generic.Metrics.CyclomaticComplexity
      */
     private function sanitizeAndMaybeAuthorizeSource(string $source, array $config): ?string
     {
+        // phpcs:enable Generic.Metrics.CyclomaticComplexity
         if (!filter_var($source, FILTER_VALIDATE_URL)) {
             $this->io->writeVerboseError("  '{$source}' is not a valid URL.");
 

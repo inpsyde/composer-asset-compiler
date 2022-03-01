@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <psalm
-    totallyTyped="true"
     useDocblockPropertyTypes="true"
     usePhpDocMethodsWithoutMagicCall="true"
     strictBinaryOperands="true"
@@ -16,5 +15,6 @@
 
    <issueHandlers>
         <MixedAssignment errorLevel="suppress" />
+        <RedundantCastGivenDocblockType errorLevel="suppress" />
     </issueHandlers>
 </psalm>

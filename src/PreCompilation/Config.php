@@ -151,9 +151,12 @@ final class Config
      * @psalm-assert-if-true array{source:string, target:string, adapter:string|null} $this->parsed
      * @psalm-assert-if-true EnvResolver $this->envResolver
      * @psalm-assert-if-false null $this->parsed
+     *
+     * phpcs:disable Generic.Metrics.CyclomaticComplexity
      */
     private function parse(): bool
     {
+        // phpcs:enable Generic.Metrics.CyclomaticComplexity
         if (is_bool($this->valid)) {
             return $this->valid;
         }

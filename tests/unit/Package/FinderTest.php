@@ -30,7 +30,6 @@ use org\bovigo\vfs\vfsStreamFile;
 
 class FinderTest extends TestCase
 {
-
     /**
      * @test
      */
