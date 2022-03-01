@@ -190,26 +190,38 @@ class GithubReleaseZipAdapter implements Adapter
             $assetsName .= '.zip';
         }
 
-        $id = null;
-        foreach ((array)$json['assets'] as $assetData) {
-            if (!is_array($assetData)) {
-                continue;
-            }
-            $name = $assetData['name'] ?? null;
-            $id = $name ? ($assetData['id'] ?? null) : null;
-            if (($name === $assetsName) && $id) {
-                break;
-            }
-        }
-
+        $id = $this->findAssetId($assetsName, (array)$json['assets'], $repo);
         if (!$id) {
-            $this->io->writeVerbose("  Release zip '{$assetsName}' not found in '{$repo}'.");
-
             return '';
         }
 
         return $authString
             ? "{$authString}api.github.com/repos/{$repo}/releases/assets/{$id}"
             : "https://api.github.com/repos/{$repo}/releases/assets/{$id}";
+    }
+
+    /**
+     * @param string $assetsName
+     * @param array $assetsData
+     * @param string $repo
+     * @return string|null
+     */
+    private function findAssetId(string $assetsName, array $assetsData, string $repo): ?string
+    {
+        foreach ($assetsData as $assetData) {
+            if (!is_array($assetData)) {
+                continue;
+            }
+            $name = $assetData['name'] ?? null;
+            $id = $name ? ($assetData['id'] ?? null) : null;
+            if (($name === $assetsName) && $id) {
+                /** @var string */
+                return $id;
+            }
+        }
+
+        $this->io->writeVerbose("  Release zip '{$assetsName}' not found in '{$repo}'.");
+
+        return null;
     }
 }
