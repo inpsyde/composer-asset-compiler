@@ -216,7 +216,7 @@ class GithubReleaseZipAdapter implements Adapter
             $id = $name ? ($assetData['id'] ?? null) : null;
             if (($name === $assetsName) && $id) {
                 /** @var string */
-                return $id;
+                return (string) $id;
             }
         }
 
