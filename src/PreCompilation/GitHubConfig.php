@@ -16,6 +16,7 @@ use Inpsyde\AssetsCompiler\Util\Env;
 class GitHubConfig
 {
     private const REPO = 'repository';
+    private const REF = 'reference';
     private const TOKEN = 'token';
     private const TOKEN_USER = 'user';
 
@@ -57,11 +58,16 @@ class GitHubConfig
             ?? Env::readEnv('GITHUB_API_REPOSITORY', $env)
             ?? Env::readEnv('GITHUB_REPOSITORY', $env)
             ?? null;
+        $ref = $config[self::REF]
+            ?? Env::readEnv('GITHUB_API_REPOSITORY_REF', $env)
+            ?? Env::readEnv('GITHUB_REPOSITORY_REF', $env)
+            ?? null;
 
         $this->config = [
             self::TOKEN => $token && is_string($token) ? $token : null,
             self::TOKEN_USER => $user && is_string($user) ? $user : null,
             self::REPO => $repo && is_string($repo) ? $repo : null,
+            self::REF => $ref && is_string($ref) ? $ref : null,
         ];
     }
 
@@ -87,6 +93,14 @@ class GitHubConfig
     public function repo(): ?string
     {
         return $this->config[self::REPO];
+    }
+
+    /**
+     * @return string|null
+     */
+    public function ref(): ?string
+    {
+        return $this->config[self::REF];
     }
 
     /**

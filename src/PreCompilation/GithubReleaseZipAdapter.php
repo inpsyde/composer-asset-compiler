@@ -152,7 +152,8 @@ class GithubReleaseZipAdapter implements Adapter
             return [null, null];
         }
 
-        $endpoint = "https://api.github.com/repos/{$repo}/releases/tags/{$version}";
+        $ref = $config->ref() ?? $version;
+        $endpoint = "https://api.github.com/repos/{$repo}/releases/tags/{$ref}";
         if (!filter_var($endpoint, FILTER_VALIDATE_URL)) {
             return [null, null];
         }
