@@ -21,6 +21,7 @@ final class AssetHash extends BaseCommand
 {
     use LowLevelErrorWriteTrait;
     use ModeOptionTrait;
+    use ObtainComposerTrait;
 
     /**
      * @return void
@@ -63,8 +64,7 @@ final class AssetHash extends BaseCommand
         // phpcs:enable
 
         try {
-            /** @var \Composer\Composer $composer */
-            $composer = $this->getComposer(true, false);
+            $composer = $this->obtainComposer();
             $io = $this->getIO();
             $noDev = $input->hasOption('no-dev');
             $mode = $this->determineMode($input, $output);

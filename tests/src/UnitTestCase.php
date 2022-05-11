@@ -37,7 +37,14 @@ abstract class UnitTestCase extends \PHPUnit\Framework\TestCase
 
         $output = \Mockery::mock(OutputInterface::class);
         $output->allows('getVerbosity')->andReturn($verbosity);
-        $output->allows('isQuiet')->andReturn($verbosity === OutputInterface::VERBOSITY_QUIET);
+        $output->allows('isQuiet')
+            ->andReturn($verbosity === OutputInterface::VERBOSITY_QUIET);
+        $output->allows('isDebug')
+            ->andReturn($verbosity === OutputInterface::VERBOSITY_DEBUG);
+        $output->allows('isVeryVerbose')
+            ->andReturn($verbosity === OutputInterface::VERBOSITY_VERY_VERBOSE);
+        $output->allows('isVerbose')
+            ->andReturn($verbosity === OutputInterface::VERBOSITY_VERBOSE);
         $output->allows('write');
 
         $composerIo = new ConsoleIO($input, $output, new HelperSet());

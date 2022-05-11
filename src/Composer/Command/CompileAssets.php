@@ -23,6 +23,7 @@ final class CompileAssets extends BaseCommand
 {
     use LowLevelErrorWriteTrait;
     use ModeOptionTrait;
+    use ObtainComposerTrait;
 
     /**
      * @return void
@@ -72,8 +73,7 @@ final class CompileAssets extends BaseCommand
         // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
 
         try {
-            /** @var Composer $composer */
-            $composer = $this->getComposer(true, false);
+            $composer = $this->obtainComposer();
             $io = $this->getIO();
 
             $plugin = new Plugin();
