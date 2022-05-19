@@ -791,7 +791,7 @@ Let's take this example:
 }
 ```
 
-This configuration can be improved thanks to the **`"default"`** setting.
+This configuration can be improved thanks to the **`"defaults"`** setting.
 
 For example, the snippet above can be re-written in a less verbose way like this:
 
@@ -818,7 +818,7 @@ By defining a set of defaults and then using `true` for the packages, we are ins
 
 Actually, `true` means that defaults will be used *unless* different settings are provided at package level.
 
-To *force* the settings to be used to be the defaults, overriding any package-level configuration, it is possible to use `"force-default"` instead of `true`.
+To *force* the settings to be used to be the defaults, overriding any package-level configuration, it is possible to use `"force-defaults"` instead of `true`.
 
 For example:
 
@@ -831,8 +831,8 @@ For example:
                 "script": "build"
             },
             "packages": {
-                "some-vendor/foo-*": "force-default",
-                "other-vendor/bar-*": "force-default"
+                "some-vendor/foo-*": "force-defaults",
+                "other-vendor/bar-*": "force-defaults"
             }
         }
     }
