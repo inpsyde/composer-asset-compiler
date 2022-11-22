@@ -118,7 +118,7 @@ final class HashBuilder
         $finder = null;
         foreach ($patterns as $pattern) {
             try {
-                $pathfinder = FileFinder::create()->ignoreUnreadableDirs(true)->ignoreVCS(true);
+                $pathfinder = FileFinder::create()->ignoreUnreadableDirs(true)->ignoreVCS(true)->sortByName();
                 $hasFile = preg_match(self::PATTERN_REGEX, $pattern, $matches);
                 $dir = "{$basePath}/" . ltrim($hasFile ? $matches[1] : $pattern, './');
                 $hasFile
