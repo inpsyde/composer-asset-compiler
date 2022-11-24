@@ -13,8 +13,8 @@
       },
       "script": "build",
       "src-paths": [
-        "src/*/*.css",
-        "./src/*/*.js",
+        "src/*/*",
+        "./src/*/*.js*",
         "lib/"
       ],
       "pre-compiled": {

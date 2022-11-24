@@ -35,6 +35,7 @@ class HashBuildingTest extends FunctionalTestCase
         static::assertSame(40, strlen($hash));
         static::assertTrue($this->io->hasOutputThatMatches('~two/a\.css~'));
         static::assertTrue($this->io->hasOutputThatMatches('~two/three/b\.js~'));
+        static::assertTrue($this->io->hasOutputThatMatches('~two/three/b1\.jsx~'));
         static::assertTrue($this->io->hasOutputThatMatches('~some-file\.js~'));
         static::assertSame([], $this->io->errors);
     }

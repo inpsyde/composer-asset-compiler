@@ -18,7 +18,7 @@ use Symfony\Component\Finder\Finder as FileFinder;
 
 final class HashBuilder
 {
-    private const PATTERN_REGEX = '~^(.+?)/([^/]+\.(?:[a-z0-9]{1,4}(?:\.[a-z0-9]{1,4})?|\*))$~i';
+    private const PATTERN_REGEX = '~^(.+?)/([^/]+)$~';
     /**
      * @var array<string, string>
      */
