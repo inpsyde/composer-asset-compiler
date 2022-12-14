@@ -13,7 +13,7 @@
       },
       "script": "build",
       "src-paths": [
-        "src/*/*.css",
+        "src/*.css",
         "./src/*/*.js",
         "lib/"
       ],
