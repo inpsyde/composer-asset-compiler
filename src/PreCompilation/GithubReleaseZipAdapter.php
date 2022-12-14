@@ -166,7 +166,7 @@ class GithubReleaseZipAdapter implements Adapter
 
     /**
      * @param string $targetName
-     * @param string $endpoint
+     * @param non-empty-string $endpoint
      * @param GitHubConfig $config
      * @param string $version
      * @return string|null

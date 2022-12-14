@@ -61,7 +61,7 @@ class HttpClient
     }
 
     /**
-     * @param string $url
+     * @param non-empty-string $url
      * @param array $options
      * @param string|null $authorization
      * @return string

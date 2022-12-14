@@ -155,7 +155,7 @@ class GithubActionArtifactAdapter implements Adapter
 
     /**
      * @param string $name
-     * @param string $endpoint
+     * @param non-empty-string $endpoint
      * @param GitHubConfig $config
      * @return string|null
      */
