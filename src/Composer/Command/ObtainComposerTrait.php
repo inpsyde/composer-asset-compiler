@@ -14,7 +14,9 @@ trait ObtainComposerTrait
     private function obtainComposer(): Composer
     {
         if (is_callable([$this, 'requireComposer'])) {
-            return $this->requireComposer(false);
+            /** @var Composer $composer */
+            $composer = $this->requireComposer(false);
+            return $composer;
         }
 
         /**
