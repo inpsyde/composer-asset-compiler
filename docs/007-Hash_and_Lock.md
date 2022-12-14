@@ -25,8 +25,8 @@ That's why there's a `src-paths` configuration, that can be used to instruct _Co
     "composer-asset-compiler": {
       "script": "build",
       "src-paths": [
-        "./js/*/*.js",
-        "./sass/*/*.scss"
+        "./js/*.js",
+        "./sass/*.scss"
       ]
     }
   }
