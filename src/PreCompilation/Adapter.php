@@ -8,7 +8,6 @@ use Inpsyde\AssetsCompiler\Asset\Asset;
 
 interface Adapter
 {
-
     /**
      * @return string
      */

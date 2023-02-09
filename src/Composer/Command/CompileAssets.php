@@ -71,7 +71,10 @@ final class CompileAssets extends BaseCommand
         // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
 
         try {
-            /** @var Composer $composer */
+            /**
+             * @psalm-suppress DeprecatedMethod
+             * @var Composer $composer
+             */
             $composer = $this->getComposer(true, false);
             $io = $this->getIO();
 

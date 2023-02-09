@@ -17,7 +17,6 @@ use Inpsyde\AssetsCompiler\Asset\RootConfig;
 
 class Finder
 {
-
     /**
      * @var RootConfig
      */

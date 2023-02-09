@@ -80,6 +80,8 @@ class Factory
      * @param Config|null $rootLevelPackageConfig
      * @param Defaults $defaults
      * @return Asset|null
+     *
+     * phpcs:disable Generic.Metrics.CyclomaticComplexity.TooHigh
      */
     public function attemptFactory(
         PackageInterface $package,

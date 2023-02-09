@@ -135,6 +135,8 @@ class ArchiveDownloaderAdapter implements Adapter
      * @param string $source
      * @param array $config
      * @return string|null
+     *
+     * phpcs:disable Generic.Metrics.CyclomaticComplexity.TooHigh
      */
     private function sanitizeAndMaybeAuthorizeSource(string $source, array $config): ?string
     {

@@ -10,7 +10,6 @@ use Composer\Util\RemoteFilesystem;
 
 class HttpClient
 {
-
     /**
      * @var Io
      */
@@ -80,7 +79,7 @@ class HttpClient
             } elseif ($this->client instanceof RemoteFilesystem) {
                 /** @psalm-suppress UndefinedMethod */
                 $origin = (string)RemoteFilesystem::getOrigin($url);
-                /** @psalm-suppress InternalMethod */
+                /** @psalm-suppress InternalMethod, ArgumentTypeCoercion */
                 $result = $this->client->getContents($origin, $url, false, $options);
             }
 

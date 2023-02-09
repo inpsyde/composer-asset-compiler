@@ -30,6 +30,8 @@ class GitHubConfig
     /**
      * @param array $config
      * @param array $env
+     *
+     * phpcs:disable Generic.Metrics.CyclomaticComplexity.TooHigh
      */
     private function __construct(array $config, array $env)
     {

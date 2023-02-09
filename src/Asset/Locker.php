@@ -105,7 +105,7 @@ class Locker
         $file = ($asset->path() ?? '') . '/' . self::LOCK_FILE;
         $name = $asset->name();
 
-        if (!@file_put_contents($file, $this->hashBuilder->forAsset($asset))) { // phpcs:ignore
+        if (!@file_put_contents($file, (string) $this->hashBuilder->forAsset($asset))) { // phpcs:ignore
             $this->io->writeVerboseError(" Could not write lock file {$file} for {$name}.");
         }
     }

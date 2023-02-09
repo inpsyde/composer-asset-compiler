@@ -33,7 +33,6 @@ final class Plugin implements
     Capable,
     CommandProvider
 {
-
     private const MODE_NONE = 0;
     private const MODE_COMMAND = 1;
     private const MODE_COMPOSER_INSTALL = 4;
@@ -55,8 +54,6 @@ final class Plugin implements
     private $mode = self::MODE_NONE;
 
     /**
-     * @return array
-     *
      * @see Plugin::onAutorunBecauseInstall()
      * @see Plugin::onAutorunBecauseUpdate()
      */

@@ -62,7 +62,10 @@ final class AssetHash extends BaseCommand
         // phpcs:enable
 
         try {
-            /** @var \Composer\Composer $composer */
+            /**
+             * @psalm-suppress DeprecatedMethod
+             * @var \Composer\Composer $composer
+             */
             $composer = $this->getComposer(true, false);
             $io = $this->getIO();
             $seed = $input->hasOption('seed') ? $input->getOption('seed') : null;
