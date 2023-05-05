@@ -1,6 +1,7 @@
 # Composer Asset Compiler
 
-[![PHP Quality Assurance](https://github.com/inpsyde/composer-asset-compiler/actions/workflows/php-qa.yml/badge.svg)](https://github.com/inpsyde/composer-asset-compiler/actions/workflows/php-qa.yml)
+[![PHP Static Analysis](https://github.com/inpsyde/composer-asset-compiler/actions/workflows/php-static-analysis.yml/badge.svg)](https://github.com/inpsyde/composer-asset-compiler/actions/workflows/php-static-analysis.yml)
+[![PHP Unit Tests](https://github.com/inpsyde/composer-asset-compiler/actions/workflows/php-unit-tests.yml/badge.svg)](https://github.com/inpsyde/composer-asset-compiler/actions/workflows/php-unit-tests.yml)
 
 ----
 

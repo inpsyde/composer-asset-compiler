@@ -42,11 +42,7 @@ jobs:
   coding-standards-analysis-php:
     if: ${{ (github.event_name != 'workflow_dispatch') || ((github.event.inputs.jobs == 'Run all') || (github.event.inputs.jobs == 'Run PHPCS only')) }}
     uses: inpsyde/reusable-workflows/.github/workflows/coding-standards-php.yml@main
-    secrets:
-      COMPOSER_AUTH_JSON: ${{ secrets.MHH_PACKAGIST_AUTH_JSON }}
 
   static-code-analysis-php:
     if: ${{ (github.event_name != 'workflow_dispatch') || ((github.event.inputs.jobs == 'Run all') || (github.event.inputs.jobs == 'Run Psalm only')) }}
     uses: inpsyde/reusable-workflows/.github/workflows/static-analysis-php.yml@main
-    secrets:
-      COMPOSER_AUTH_JSON: ${{ secrets.MHH_PACKAGIST_AUTH_JSON }}
