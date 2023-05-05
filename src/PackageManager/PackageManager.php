@@ -306,6 +306,7 @@ final class PackageManager
         // then we remove `--`.
         $cmdParams = '';
         if (substr_count($command, ' -- ', 1) === 1) {
+            /** @psalm-suppress PossiblyUndefinedArrayOffset */
             [$commandNoArgs, $cmdParams] = explode(' -- ', $command, 2);
             $commandNoArgsClean = trim($commandNoArgs);
             if ($commandNoArgsClean) {
