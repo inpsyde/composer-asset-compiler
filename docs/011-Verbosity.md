@@ -1,6 +1,6 @@
 ---
 title: Verbosity
-nav_order: 11
+nav_order: 12
 ---
 
 # Verbosity

@@ -1,4 +1,9 @@
-# Composer Asset Compiler
+---
+title: Introduction
+nav_order: 1
+---
+
+# Introduction
 
 ## What is this
 
@@ -60,7 +65,7 @@ The example above is the simplest use case, but the Composer Assets Compiler has
 
 ## Documentation
 
-- [Introduction](./001-Introduction.md)
+- [Why bother](./001-Why-Bother.md)
 - [Compiling Assets](./002-Compiling_Assets.md)
 - [Script](./003-Script.md)
 - [Dependencies](./004-Dependencies.md)

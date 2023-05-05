@@ -1,9 +1,9 @@
 ---
-title: Introduction
-nav_order: 1
+title: Why Bother
+nav_order: 2
 ---
 
-# Introduction
+# Why bother
 
 When installing Composer project's dependencies that have both PHP and frontend code we have to make a choice:
 
