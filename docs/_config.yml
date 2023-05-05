@@ -1,0 +1,40 @@
+title: Inpsyde Composer Asset Compiler
+description: >-
+  Composer plugin that installs and compile frontend dependencies for installed Composer packages based on configuration.
+
+baseurl: /composer-asset-compiler # Your repo name with a leading slash.
+
+# Aux links for the upper right navigation
+aux_links:
+  "Inpsyde Composer Asset Compiler":
+    - https://github.com/inpsyde/composer-asset-compiler
+
+# Footer "Edit this page on GitHub" link text
+gh_edit_repository: https://github.com/inpsyde/composer-asset-compiler # Your repo GitHub URL
+
+# Everything above is repo specific.
+
+###############################################################
+
+# This section is repo specific. These can be omitted if defaults make sense.
+
+gh_edit_branch: v3.x # The default branch of the repo. Default: main
+gh_edit_source: docs # The directory containing the docs. Default: docs
+
+###############################################################
+
+# Everything below should be copy and pasted into package repos
+remote_theme: inpsyde/jekyll-inpsyde-theme
+
+###############################################################
+
+# Everything below should be copy and pasted into package repos
+# To be replaced by jekyll-inpsyde-theme's `_config.yml` when GitHub Pages supports Jekyll v4.
+
+plugins:
+  - jekyll-remote-theme
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jemoji
+
+permalink: pretty
