@@ -1,0 +1,80 @@
+name: PHP Unit Tests
+
+on:
+  push:
+    paths:
+      - '**workflows/php-unit-tests.yml'
+      - '**.php'
+      - '**phpunit.xml.dist'
+      - '**composer.json'
+  pull_request:
+    paths:
+      - '**workflows/php-unit-tests.yml'
+      - '**.php'
+      - '**phpunit.xml.dist'
+      - '**composer.json'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, 'skip tests') }}
+    env:
+      USE_COVERAGE: no
+    strategy:
+      fail-fast: false
+      matrix:
+        php-ver: [ '7.2', '7.3', '7.4', '8.0', '8.1', '8.2' ]
+        composer-ver: [ '^1', '~2.0.0', '~2.1.0', '~2.2.0', '~2.3.0', '~2.4.0', '~2.5.0' ]
+        exclude:
+          - php-ver: '8.1'
+            composer-ver: '^1'
+          - php-ver: '8.1'
+            composer-ver: '~2.0.0'
+          - php-ver: '8.2'
+            composer-ver: '^1'
+          - php-ver: '8.2'
+            composer-ver: '~2.0.0'
+          - php-ver: '8.2'
+            composer-ver: '~2.1.0'
+
+    steps:
+      - name: Update "USE_COVERAGE" env var based on matrix
+        if: ${{ matrix.php-ver == '8.0' && matrix.deps-mode == 'highest' }}
+        run: echo "USE_COVERAGE=yes" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-ver }}
+          ini-values: zend.assertions=1, error_reporting=-1, display_errors=On
+          coverage: ${{ ((env.USE_COVERAGE == 'yes') && 'xdebug') || 'none' }}
+          tools: cs2pr
+
+      - name: Adjust Composer dependencies
+        run: |
+            composer remove --dev --no-update "inpsyde/php-coding-standards"
+            composer remove --dev --no-update "vimeo/psalm"
+            composer require --dev --no-update "composer/composer:${{ matrix.composer-ver }}"
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@v2
+
+      - name: Run unit tests
+        run: |
+            ./vendor/bin/phpunit --atleast-version 9 && ./vendor/bin/phpunit --migrate-configuration || echo 'Config does not need updates.'
+            ./vendor/bin/phpunit --testsuite=unit ${{ ((env.USE_COVERAGE == 'yes') && '--coverage-html=coverage-report') || '--no-coverage' }}
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        if: ${{ env.USE_COVERAGE == 'yes' }}
+        with:
+          name: coverage-report
+          path: coverage-report/
