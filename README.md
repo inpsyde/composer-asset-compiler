@@ -1,6 +1,6 @@
 # Composer Asset Compiler
 
-![PHP Quality Assurance](https://github.com/inpsyde/composer-asset-compiler/workflows/PHP%20Quality%20Assurance/badge.svg)
+[![PHP Quality Assurance](https://github.com/inpsyde/composer-asset-compiler/actions/workflows/php-qa.yml/badge.svg)](https://github.com/inpsyde/composer-asset-compiler/actions/workflows/php-qa.yml)
 
 ----
 
