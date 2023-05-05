@@ -1,5 +1,5 @@
 ---
-title: Dependencies
+title: Package Manager
 nav_order: 6
 ---
 
