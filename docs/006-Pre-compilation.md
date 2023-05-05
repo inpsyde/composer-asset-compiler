@@ -1,3 +1,8 @@
+---
+title: Pre-compilation
+nav_order: 6
+---
+
 # Pre-compilation
 
 By default, _Composer Asset Compiler_ loops installed Composer packages, and for each of them installs frontend dependencies and run a compiling script.

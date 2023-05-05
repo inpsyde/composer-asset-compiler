@@ -1,3 +1,8 @@
+---
+title: Verbosity
+nav_order: 11
+---
+
 # Verbosity
 
 _Composer Assets Compiler_ is a Composer plugin, which means that all Composer commands' ["global options"](https://getcomposer.org/doc/03-cli.md#global-options) apply.

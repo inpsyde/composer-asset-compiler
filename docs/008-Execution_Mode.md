@@ -1,3 +1,8 @@
+---
+title: Execution mode
+nav_order: 8
+---
+
 # Execution mode
 
 Sometimes developers might desire to have a different configuration based on conditions, for example, _where_ the plugin is executed.

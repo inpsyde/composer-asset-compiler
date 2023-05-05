@@ -1,3 +1,8 @@
+---
+title: Configuration file
+nav_order: 9
+---
+
 # Configuration file
 
 Sometimes the _Composer Assets Compiler_ configuration object can become very large and "pollute" the `composer.json`.

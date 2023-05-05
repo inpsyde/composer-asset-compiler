@@ -1,3 +1,8 @@
+---
+title: Parallel Assets Processing
+nav_order: 13
+---
+
 # Parallel Assets Processing
 
 _Composer Assets Compiler_ processes multiple packages in parallel to speed up the process.

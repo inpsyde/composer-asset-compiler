@@ -1,3 +1,8 @@
+---
+title: Dependencies
+nav_order: 4
+---
+
 # Dependencies
 
 Before the script is executed, package's dependencies are installed. By default, that means that executing either `npm install` or `yarn`.

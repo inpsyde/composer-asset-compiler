@@ -1,3 +1,8 @@
+---
+title: Environment Variables
+nav_order: 16
+---
+
 # Environment Variables
 
 | Name                                        | Description                                                                                                                                  |

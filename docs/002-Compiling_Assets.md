@@ -1,3 +1,8 @@
+---
+title: Compiling Assets
+nav_order: 2
+---
+
 # Compiling Assets
 
 The assets compiling process can start in two ways:

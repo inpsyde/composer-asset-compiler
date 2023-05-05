@@ -1,3 +1,8 @@
+---
+title: Configuration Cheat-Sheet
+nav_order: 14
+---
+
 # Configuration Cheat-Sheet
 
 | Name                | Description                                                                                                                      | Root-only | Default   |

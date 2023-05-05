@@ -1,3 +1,8 @@
+---
+title: Script
+nav_order: 3
+---
+
 # Script
 
 The most important configuration for packages is **`script`**: it points to a script defined in package's `package.json`.

@@ -1,3 +1,8 @@
+---
+title: Introduction
+nav_order: 1
+---
+
 # Introduction
 
 When installing Composer project's dependencies that have both PHP and frontend code we have to make a choice:

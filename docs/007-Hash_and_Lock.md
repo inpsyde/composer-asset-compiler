@@ -1,3 +1,8 @@
+---
+title: Hash and Lock
+nav_order: 7
+---
+
 # Hash and Lock
 
 Each time the assets for a package are processed, a lock file named **`.composer_compiled_assets`** is saved in the root directory of the package.

@@ -1,5 +1,9 @@
-# CLI parameters
+---
+title: CLI parameters
+nav_order: 15
+---
 
+# CLI parameters
 
 
 ## Command: `compile-assets`

@@ -1,3 +1,8 @@
+---
+title: Dependencies
+nav_order: 5
+---
+
 # Package Manager
 
 _Composer Asset Compiler_ can work with both _npm_ and _Yarn_. Nevertheless, some packages might require the usage of a specific package manager.

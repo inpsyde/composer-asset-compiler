@@ -1,3 +1,8 @@
+---
+title: Packages Configuration in Root
+nav_order: 10
+---
+
 # Packages Configuration in Root
 
 Sometimes when building a _project_ with several dependencies, we might have the need to change the _Composer Assets Compiler_ behavior for installed dependencies.

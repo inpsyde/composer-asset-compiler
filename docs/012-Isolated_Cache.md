@@ -1,6 +1,11 @@
+---
+title: Isolated cache
+nav_order: 12
+---
+
 # Isolated cache
 
-On larger projects, with many packages to process, the package manager cache sometimes  gets "messed up" and processing fails.
+On larger projects, with many packages to process, the package manager cache sometimes gets "messed up" and processing fails.
 
 When that happens, one possible solution is to set `isolated-cache` _Composer Assets Compiler_ setting to true.
 
