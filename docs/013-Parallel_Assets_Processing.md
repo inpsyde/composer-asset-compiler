@@ -9,10 +9,3 @@ _Composer Assets Compiler_ parallel execution implementation is quite simple and
 The number of processes that run concurrently can be controlled by the `max-processes` configuration and the interval by the `processes-poll` configuration.
 
 Using a `max-processes` value that matches the number of system CPUs can increase performance, provided there is also sufficient memory.
-
-
-
-------
-
-| [← Isolated Cache](./012-Isolated_Cache.md) | [Configuration Cheat-Sheet →](./014-Configuration-Cheat-Sheet.md) |
-|:--------------------------------------------|------------------------------------------------------------------:|

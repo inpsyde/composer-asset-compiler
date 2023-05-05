@@ -39,10 +39,3 @@ _Composer Assets Compiler_ is a Composer plugin. As of Composer 2.2, plugins mus
   }
 }
 ```
-
-
-
-------
-
-| [← Introduction](./001-Introduction.md) | [ Script →](./003-Script.md) |
-|:----------------------------------------|-----------------------------:|

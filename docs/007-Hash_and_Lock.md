@@ -67,10 +67,3 @@ composer assets-hash
 That can be useful to generate the filename of the archive during pre-compilation, in case we want to use the `${hash}` placeholder.
 
 The command accept a `--mode` flag because [mode](./008-Execution_Mode.md) might affect the calculated hash.
-
-
-
-------
-
-| [← Pre-compilation](./006-Pre-compilation.md) | [Execution Mode →](./008-Execution_Mode.md) |
-|:----------------------------------------------|--------------------------------------------:|

@@ -13,10 +13,3 @@ It might occur that the custom cache folder is not writable, in that case _Compo
 For obvious reasons, enabling `isolated-cache` comes at the cost of performance, but can be useful in some situations.
 
 That is why the preferred way to solve *both* "botched cache" and performance problems is to use pre-compiled assets.
-
-
-
-------
-
-| [← Verbosity](./011-Verbosity.md) | [Parallel Assets Processing →](./013-Parallel_Assets_Processing.md) |
-|:----------------------------------|--------------------------------------------------------------------:|

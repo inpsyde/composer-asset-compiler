@@ -16,10 +16,3 @@ Composer options that control `verbosity` have multiple effects on _Composer Ass
 | `-q` / `-quite`    | `--silent` | `--silent`  |
 
 Moreover, when using Composer with the `--no-interaction` flag, _Yarn_ gets the `--non-interactive` flag, but _npm_ has no corresponding flag.
-
-
-
-------
-
-| [← Packages Configuration in Root](./010-Packages_Configuration_in_Root.md) | [Isolated Cache →](./012-Isolated_Cache.md) |
-|:----------------------------------------------------------------------------|--------------------------------------------:|

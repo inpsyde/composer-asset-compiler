@@ -122,10 +122,3 @@ In _Composer Assets Compiler_ < 3.0, the `"$mode"` property was called `"env"`.
 That generated confusion because it has nothing to do with _environment_ variables nor with the `default-env` configuration. That's why it was replaced by `"$mode"` in _Composer Assets Compiler_ 3.
 
 However, to facilitate migration for packages previously using a lower version, the `"env"` key is still supported in version 3, but support might be removed in future versions.
-
-
-
-------
-
-| [← Hash and Lock](./007-Hash_and_Lock.md) | [Configuration File →](./009-Configuration_File.md) |
-|:------------------------------------------|----------------------------------------------------:|

@@ -24,10 +24,3 @@
 ## Default env
 
 All variables **but** `COMPOSER_ASSETS_COMPILER` can have a default value set via `default-env` setting.
-
-
-
-------
-
-| [← CLI Parameters](015-CLI-Parameters.md) |     |
-|:------------------------------------------|----:|

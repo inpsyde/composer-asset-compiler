@@ -38,10 +38,3 @@ It might happen that _Composer Asset Compiler_ determines a package manager is t
 In that case, _Composer Asset Compiler_ will default to the other package manager.
 
 If neither _npm_ nor _Yarn_ are installed _Composer Asset Compiler_ execution will fail.
-
-
-
-------
-
-| [← Dependencies](./004-Dependencies.md) | [Pre-compilation →](./006-Pre-compilation.md) |
-|:----------------------------------------|----------------------------------------------:|

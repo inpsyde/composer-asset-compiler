@@ -18,11 +18,3 @@
 | `stop-on-failure`   | If false, assets processing will continue for other packages if an error occurs for one package.                                 | YES       | true      |
 | `timeout-increment` | The increment in seconds to add to assets processing timeout for each package to process.                                        | YES       | false     |
 | `wipe-node-modules` | Whether the `node_modules` folder of packages should be deleted after processing. Only applies to folders created by the plugin. | YES       | false     |
-
-
-
-
-------
-
-| [← Parallel Assets Processing](./013-Parallel_Assets_Processing.md) | [CLI-Parameters →](./015-CLI-Parameters.md) |
-|:--------------------------------------------------------------------|--------------------------------------------:|

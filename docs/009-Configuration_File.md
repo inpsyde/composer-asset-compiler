@@ -7,10 +7,3 @@ In such cases, it is possible to use the same configuration that is stored in th
 When adding that file, it is not necessary to also add anything in `composer.json`.
 
 If one package has _both_ `assets-compiler.json` file *and* the `extra.composer-asset-compiler` in `composer.json`, the latter will be ignored and only the contents of the `assets-compiler.json` file will be taken into account.
-
-
-
-------
-
-| [← Execution Mode](./008-Execution_Mode.md) | [Packages Configuration in Root →](./010-Packages_Configuration_in_Root.md) |
-|:--------------------------------------------|----------------------------------------------------------------------------:|

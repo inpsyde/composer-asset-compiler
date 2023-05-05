@@ -170,10 +170,3 @@ In the ["Script"](./003-Script.md#default-environment) chapter, we have seen how
 Root package is a package, so we can have a `default-env` setting also in root package.
 
 However, `default-env` defined in the root package has a "special" meaning, because it would provide a default also for dependencies, in the case dependencies don't define `default-env` for missing environment variables.
-
-
-
-------
-
-| [← Configuration File](./009-Configuration_File.md) | [Verbosity →](./011-Verbosity.md) |
-|:----------------------------------------------------|----------------------------------:|

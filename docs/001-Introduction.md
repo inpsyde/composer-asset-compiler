@@ -18,10 +18,3 @@ _Composer Assets Compiler_ solves the problem by using the following workflow:
 3. All found packages are "compiled", by first installing the frontend dependencies (with *npm* or *Yarn*) and then executing the script.
 
 That means the first step to enable the workflow is to add _Composer Assets Compiler_ configuration in the packages.
-
-
-
-------
-
-|     | [Compiling Assets →](./002-Compiling_Assets.md) |
-|:----|------------------------------------------------:|

@@ -11,10 +11,3 @@ This behavior can be customized with the `dependencies` configuration. It can ta
 When `"none"` is used, no dependencies are installed at all, and the `script` is executed right away.
 
 When `"update"` is used, dependencies are updated using either `npm update --no-save` or `yarn upgrade`.
-
-
-
-------
-
-| [← Script](./003-Script.md) | [Package Manager →](./005-Package_Manager.md) |
-|:----------------------------|----------------------------------------------:|

@@ -161,10 +161,3 @@ Thanks to that, in the case the `COMPILE_TASK` environment variable is not defin
 A special mention has to be made in the regard of `default-env` when used in the *root* package.
 
 In that case, defaults defined for the root package might also apply for dependencies, in the case dependencies don't define `default-env` for missing environment variables.
-
-
-
-------
-
-| [← Compiling Assets](./002-Compiling_Assets.md) | [Dependencies →](./004-Dependencies.md) |
-|:------------------------------------------------|----------------------------------------:|
