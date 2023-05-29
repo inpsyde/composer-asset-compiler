@@ -143,14 +143,9 @@ class Config
         array $rootEnv = []
     ): Config {
 
-        $configFile = null;
-        if (is_string($path)) {
-            $path = $filesystem->normalizePath($path);
-            $configFile = "{$path}/" . self::CONFIG_FILE;
-            file_exists($configFile) or $configFile = null;
-        }
-
-        $raw = $configFile
+        $path = $filesystem->normalizePath($path);
+        $configFile = "{$path}/" . self::CONFIG_FILE;
+        $raw =  file_exists($configFile)
             ? JsonFile::parseJson(file_get_contents($configFile) ?: '')
             : $package->getExtra()[self::EXTRA_KEY] ?? [];
 
