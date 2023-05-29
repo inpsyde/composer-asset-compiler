@@ -108,7 +108,7 @@ class Factory
         $isRoot = ($package instanceof RootPackageInterface);
         $path = $isRoot
             ? $this->rootDir
-            : $this->installationManager->getInstallPath($package);
+            : ($this->installationManager->getInstallPath($package) ?? '');
 
         if (!$config && (!$rootLevelPackageConfig || $packageOrDefaultAllowed)) {
             $packageLevelConfig = Config::forComposerPackage(

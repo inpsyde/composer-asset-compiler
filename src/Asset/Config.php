@@ -129,7 +129,7 @@ class Config
 
     /**
      * @param PackageInterface $package
-     * @param string|null $path
+     * @param string $path
      * @param ModeResolver $modeResolver
      * @param Filesystem $filesystem
      * @param array<string, string> $rootEnv
@@ -137,7 +137,7 @@ class Config
      */
     public static function forComposerPackage(
         PackageInterface $package,
-        ?string $path,
+        string $path,
         ModeResolver $modeResolver,
         Filesystem $filesystem,
         array $rootEnv = []
@@ -161,11 +161,6 @@ class Config
         $instance = new static($data, $modeResolver, $rootEnv);
         $instance->byPackage = true;
         if ($isRoot) {
-            if (!is_string($path)) {
-                // This never happens when asset compiler calls this method, but it is a public
-                // method and the type allows it. So let it throw a telling error.
-                throw new \Error('Root configuration can not be constructed without a valid path.');
-            }
             $instance->byRootPackage = true;
             $name = $package->getName();
             $instance->rootConfig = RootConfig::new(
