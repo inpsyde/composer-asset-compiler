@@ -56,7 +56,7 @@ Please note _Composer Asset Compiler_ uses [Symfony Finder](https://symfony.com/
 When compiling assets via the `compile-assets` command, it is possible to pass a `--ignore-lock` flag to always build assets, regardless the presence and the content of the lock file.
 
 ````shell
-composer compile-assets --ignore-lock
+composer compile-assets --ignore-lock=*
 ````
 
 

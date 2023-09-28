@@ -8,11 +8,11 @@ nav_order: 16
 
 ## Command: `compile-assets`
 
-| Parameter                    | Description                                                                                                                                                   |
-|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `--ignore-lock[=<packages>]` | Ignores locks for all or specific packages. Multiple packets must be comma-separated.                                                                         |
-| `--mode=<mode>`              | Specifies the "execution mode" which is used to select between multiple configuration variants.                                                               |
-| `--no-dev`                   | Simulate auto-run on Composer installation/update with the `--no-dev` flag.<br />This causes the plugin to check for `$default-no-dev` as the default "mode". |
+| Parameter                  | Description                                                                                                                                                   |
+|----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--ignore-lock=<packages>` | Ignores locks of packages specified as a comma-separated list. If a wildcard is passed instead (`*`), ALL locks are ignored.                                  |
+| `--mode=<mode>`            | Specifies the "execution mode" which is used to select between multiple configuration variants.                                                               |
+| `--no-dev`                 | Simulate auto-run on Composer installation/update with the `--no-dev` flag.<br />This causes the plugin to check for `$default-no-dev` as the default "mode". |
 
 
 
