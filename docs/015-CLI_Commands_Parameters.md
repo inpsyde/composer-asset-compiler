@@ -23,3 +23,15 @@ nav_order: 16
 | `--mode=<mode>` | Sets the "execution mode" which might affect the hash of the assets.                                                                                          |
 | `--no-dev`      | Simulate auto-run on Composer installation/update with the `--no-dev` flag.<br />This causes the plugin to check for `$default-no-dev` as the default "mode". |
 
+
+
+## Command: `assets-info`
+
+| Parameter       | Description                                                                                                                                                   |
+|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `... <asset>`   | Variadic number of asset names to limit information to. Can not be used together with `--root`.                                                               |
+| `--mode=<mode>` | Sets the "execution mode" which might affect the hash of the assets.                                                                                          |
+| `--no-dev`      | Simulate auto-run on Composer installation/update with the `--no-dev` flag.<br />This causes the plugin to check for `$default-no-dev` as the default "mode". |
+| `--root`        | Get information only for root package. Can not be used if any asset name is given as argument.                                                                |
+| `--table`       | Format output as table.                                                                                                                                       |
+| `--fields`      | Comma-separated properties to print.                                                                                                                          |

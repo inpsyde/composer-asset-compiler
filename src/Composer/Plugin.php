@@ -76,6 +76,7 @@ final class Plugin implements
         return [
             new Command\CompileAssets(),
             new Command\AssetHash(),
+            new Command\AssetsInfo(),
         ];
     }
 
