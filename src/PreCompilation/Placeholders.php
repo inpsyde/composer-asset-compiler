@@ -22,30 +22,7 @@ class Placeholders
     public const VERSION = 'version';
     public const REFERENCE = 'ref';
 
-    /**
-     * @var string
-     */
-    private $mode;
-
-    /**
-     * @var string|null
-     */
-    private $hash;
-
-    /**
-     * @var string|null
-     */
-    private $version;
-
-    /**
-     * @var string|null
-     */
-    private $reference;
-
-    /**
-     * @var string
-     */
-    private $uid;
+    private string $uid;
 
     /**
      * @param Asset $asset
@@ -59,17 +36,17 @@ class Placeholders
     }
 
     /**
-     * @param string $env
+     * @param string $mode
      * @param string|null $hash
      * @param string|null $version
      * @param string|null $reference
      */
-    private function __construct(string $env, ?string $hash, ?string $version, ?string $reference)
-    {
-        $this->mode = $env;
-        $this->hash = $hash;
-        $this->version = $version;
-        $this->reference = $reference;
+    private function __construct(
+        private string $mode,
+        private ?string $hash,
+        private ?string $version,
+        private ?string $reference
+    ) {
 
         $values = [$hash ?? '', $version ?? '', $reference ?? '', random_bytes(32)];
         $base = sha1(implode('|', $values));
@@ -97,7 +74,9 @@ class Placeholders
      */
     public function hasStableVersion(): bool
     {
-        return $this->version && VersionParser::parseStability($this->version) === 'stable';
+        return ($this->version !== null)
+            && ($this->version !== '')
+            && (VersionParser::parseStability($this->version) === 'stable');
     }
 
     /**
@@ -107,7 +86,7 @@ class Placeholders
      */
     public function replace(string $original, array $environment): string
     {
-        if (!$original || (strpos($original, '${') === false)) {
+        if (($original === '') || (!str_contains($original, '${'))) {
             return $original;
         }
 
@@ -128,6 +107,8 @@ class Placeholders
             $original
         );
 
-        return $replaced ? Env::replaceEnvVariables($replaced, $environment) : '';
+        return ($replaced !== null) && ($replaced !== '')
+            ? Env::replaceEnvVariables($replaced, $environment)
+            : '';
     }
 }

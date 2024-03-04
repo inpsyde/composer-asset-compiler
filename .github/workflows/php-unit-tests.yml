@@ -28,19 +28,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-ver: [ '7.2', '7.3', '7.4', '8.0', '8.1', '8.2' ]
-        composer-ver: [ '^1', '~2.0.0', '~2.1.0', '~2.2.0', '~2.3.0', '~2.4.0', '~2.5.0' ]
-        exclude:
-          - php-ver: '8.1'
-            composer-ver: '^1'
-          - php-ver: '8.1'
-            composer-ver: '~2.0.0'
-          - php-ver: '8.2'
-            composer-ver: '^1'
-          - php-ver: '8.2'
-            composer-ver: '~2.0.0'
-          - php-ver: '8.2'
-            composer-ver: '~2.1.0'
+        php-ver: [ '8.0', '8.1', '8.2', '8.3' ]
+        composer-ver: [ '2.3', '2.4', '2.5', '2.6', '2' ]
 
     steps:
       - name: Update "USE_COVERAGE" env var based on matrix
@@ -48,7 +37,7 @@ jobs:
         run: echo "USE_COVERAGE=yes" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -56,24 +45,22 @@ jobs:
           php-version: ${{ matrix.php-ver }}
           ini-values: zend.assertions=1, error_reporting=-1, display_errors=On
           coverage: ${{ ((env.USE_COVERAGE == 'yes') && 'xdebug') || 'none' }}
-          tools: cs2pr
+          tools: cs2pr, composer:v${{ matrix.composer-ver }}
 
       - name: Adjust Composer dependencies
         run: |
             composer remove --dev --no-update "inpsyde/php-coding-standards"
             composer remove --dev --no-update "vimeo/psalm"
-            composer require --dev --no-update "composer/composer:${{ matrix.composer-ver }}"
+            composer require --dev --no-update "composer/composer:~${{ matrix.composer-ver }}.0"
 
       - name: Install dependencies
-        uses: ramsey/composer-install@v2
+        uses: ramsey/composer-install@v3
 
       - name: Run unit tests
-        run: |
-            ./vendor/bin/phpunit --atleast-version 9 && ./vendor/bin/phpunit --migrate-configuration || echo 'Config does not need updates.'
-            ./vendor/bin/phpunit --testsuite=unit ${{ ((env.USE_COVERAGE == 'yes') && '--coverage-html=coverage-report') || '--no-coverage' }}
+        run: ./vendor/bin/phpunit --testsuite=unit ${{ ((env.USE_COVERAGE == 'yes') && '--coverage-html=coverage-report') || '--no-coverage' }}
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ env.USE_COVERAGE == 'yes' }}
         with:
           name: coverage-report

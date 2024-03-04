@@ -211,18 +211,18 @@ class FinderUnitTest extends UnitTestCase
         $finder = Finder::new(
             $rootConfig->packagesData(),
             $envResolver,
-            $defaults ? Defaults::new($defaults) : Defaults::empty(),
+            $defaults ? Defaults::new($defaults) : Defaults::newEmpty(),
             $config,
             $rootConfig->stopOnFailure()
         );
 
-        return $finder->find($this->composerRepo(), $root, $factory, $rootConfig->autoDiscover());
+        return $finder->find($this->factoryComposerRepo(), $root, $factory, $rootConfig->autoDiscover());
     }
 
     /**
      * @return RepositoryInterface
      */
-    private function composerRepo(): RepositoryInterface
+    private function factoryComposerRepo(): RepositoryInterface
     {
         $loader = new ArrayLoader();
 

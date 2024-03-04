@@ -14,27 +14,17 @@ namespace Inpsyde\AssetsCompiler\Tests;
 use Composer\Composer;
 use Composer\Factory as ComposerFactory;
 use Composer\IO\IOInterface;
-use Composer\IO\NullIO;
 use Composer\Util\Filesystem;
 use Inpsyde\AssetsCompiler\Process\Factory as ProcessFactory;
 use Inpsyde\AssetsCompiler\Util\Factory;
 
 abstract class FunctionalTestCase extends \PHPUnit\Framework\TestCase
 {
-    /** @var string|null */
-    protected $cwd = null;
-
-    /** @var string|null */
-    protected $baseDir = null;
-
-    /** @var Factory|null */
-    protected $factory = null;
-
-    /** @var TestIo|null */
-    protected $io = null;
-
-    /** @var bool */
-    private $composerInstalled = false;
+    protected string|null $cwd = null;
+    protected string|null $baseDir = null;
+    protected Factory|null $factory = null;
+    protected TestIo|null $io = null;
+    private bool $composerInstalled = false;
 
     /**
      * @return void
@@ -120,7 +110,7 @@ abstract class FunctionalTestCase extends \PHPUnit\Framework\TestCase
      * @param string $dir
      * @return void
      */
-    protected function moveDir(string $dir)
+    protected function moveDir(string $dir): void
     {
         $this->baseDir = $dir;
         chdir($dir);

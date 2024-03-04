@@ -6,7 +6,7 @@
     "require": {},
     "extra": {
         "composer-asset-compiler": {
-            "commands": "yarn",
+            "package-manager": "yarn",
             "script": "run"
         }
     }

@@ -15,38 +15,23 @@ use Symfony\Component\Process\Process;
 
 class Factory
 {
-    /**
-     * @var bool
-     */
-    private $newMethod;
+    private bool $newMethod;
+    private float $timeout;
 
     /**
-     * @var float
-     */
-    private $timeout;
-
-    /**
-     * @var callable|null
-     */
-    private $factory;
-
-    /**
-     * @param callable(string, ?string=):?Process|null $factory
      * @return Factory
      */
-    public static function new(callable $factory = null): Factory
+    public static function new(): Factory
     {
-        return new self($factory);
+        return new self();
     }
 
     /**
-     * @param callable(string, ?string=):?Process $factory
      */
-    private function __construct(callable $factory = null)
+    private function __construct()
     {
-        $this->newMethod = !$factory && method_exists(Process::class, 'fromShellCommandline');
+        $this->newMethod = method_exists(Process::class, 'fromShellCommandline');
         $this->timeout = 86400.0;
-        $this->factory = $factory;
     }
 
     /**
@@ -56,25 +41,12 @@ class Factory
      */
     public function create(string $command, string $cwd): Process
     {
-        if ($this->factory) {
-            $process = ($this->factory)($command, $cwd);
-            if (!$process instanceof Process) {
-                throw new \Exception('Could not factory a process from given factory.');
-            }
-
-            return $process;
-        }
-
-        if ($this->newMethod) {
-            $process = Process::fromShellCommandline($command, $cwd, null, null, $this->timeout);
-
-            return $process;
-        }
-
         /**
          * @psalm-suppress InvalidArgument
          * @noinspection PhpParamsInspection
          */
-        return new Process($command, $cwd, null, null, $this->timeout);
+        return $this->newMethod
+            ? Process::fromShellCommandline($command, $cwd, null, null, $this->timeout)
+            : new Process($command, $cwd, null, null, $this->timeout);
     }
 }

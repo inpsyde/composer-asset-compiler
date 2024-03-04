@@ -15,8 +15,8 @@ Composer options that control `verbosity` have multiple effects on _Composer Ass
 
 | Composer flag      | _npm_      | _Yarn_      |
 |--------------------|------------|-------------|
-| `-v` / `--verbose` | `-d`       |
-| `-vv`              | `-dd`      |
+| `-v` / `--verbose` | `-d`       |             |
+| `-vv`              | `-dd`      |             |
 | `-vvv`             | `-ddd`     | `--verbose` |
 | `-q` / `-quite`    | `--silent` | `--silent`  |
 

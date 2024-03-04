@@ -49,35 +49,14 @@ final class PackageManager
         ],
     ];
 
-    /**
-     * @var list<string>|null
-     */
-    private static $tested = null;
+    /** @var list<string>|null */
+    private static array|null $tested = null;
 
-    /**
-     * @var array{update: null|string, install: null|string}
-     */
-    private $dependencies;
-
-    /**
-     * @var string|null
-     */
-    private $script;
-
-    /**
-     * @var string
-     */
-    private $cacheClean;
-
-    /**
-     * @var array
-     */
-    private $defaultEnvironment;
-
-    /**
-     * @var string|null
-     */
-    private $name;
+    /** @var array{update: null|string, install: null|string} */
+    private array $dependencies;
+    private string|null $script;
+    private string $cacheClean = '';
+    private string|null $name = null;
 
     /**
      * @param ProcessExecutor $executor
@@ -104,58 +83,52 @@ final class PackageManager
 
     /**
      * @param string $manager
-     * @param array $defaultEnv
      * @return PackageManager
      */
-    public static function fromDefault(string $manager, array $defaultEnv = []): PackageManager
+    public static function fromDefault(string $manager): PackageManager
     {
         $manager = strtolower($manager);
 
         if (!array_key_exists($manager, self::SUPPORTED_DEFAULTS)) {
-            return new self([], $defaultEnv);
+            return new self([]);
         }
 
-        return new self(self::SUPPORTED_DEFAULTS[$manager], $defaultEnv);
+        return new self(self::SUPPORTED_DEFAULTS[$manager]);
     }
 
     /**
      * @param ProcessExecutor $executor
      * @param string $workingDir
-     * @param array $defaultEnvironment
      * @return PackageManager
      */
     public static function discover(
         ProcessExecutor $executor,
-        string $workingDir,
-        array $defaultEnvironment = []
+        string $workingDir
     ): PackageManager {
 
         $tested = self::test($executor, $workingDir);
         if ($tested === []) {
-            return new self([], $defaultEnvironment);
+            return new self([]);
         }
 
-        return static::fromDefault(reset($tested), $defaultEnvironment);
+        return static::fromDefault(reset($tested));
     }
 
     /**
      * @param array $config
-     * @param array $defaultEnvironment
      * @return PackageManager
      */
-    public static function new(array $config, array $defaultEnvironment = []): PackageManager
+    public static function new(array $config): PackageManager
     {
-        return new self($config, $defaultEnvironment);
+        return new self($config);
     }
 
     /**
      * @param array $config
-     * @param array $defaultEnvironment
      */
-    private function __construct(array $config, array $defaultEnvironment = [])
+    private function __construct(array $config)
     {
         $this->reset();
-        $this->defaultEnvironment = $defaultEnvironment;
         $this->dependencies = $this->parseDependencies($config);
         $this->script = $this->parseScript($config);
 
@@ -179,17 +152,27 @@ final class PackageManager
 
         $clean = $config[self::CLEAN_CACHE] ?? null;
         $defaults = self::SUPPORTED_DEFAULTS[$isYarn ? self::YARN : self::NPM];
-        $this->cacheClean = ($clean && is_string($clean)) ? $clean : $defaults[self::CLEAN_CACHE];
+        $this->cacheClean = (($clean !== '') && is_string($clean))
+            ? $clean
+            : $defaults[self::CLEAN_CACHE];
     }
 
     /**
      * @return bool
      *
      * @psalm-assert-if-true non-empty-string $this->script
+     * @psalm-assert-if-true array{
+     *     install:non-empty-string,
+     *     update:non-empty-string
+     * } $this->dependencies
      */
     public function isValid(): bool
     {
-        return !empty($this->dependencies[self::DEPS_INSTALL]) && $this->scriptCmd('test');
+        $script = $this->scriptCmd('test') ?? '';
+        $install = $this->dependencies[self::DEPS_INSTALL] ?? '';
+        $update = $this->dependencies[self::DEPS_UPDATE] ?? '';
+
+        return ($script !== '') && ($install !== '') && ($update !== '');
     }
 
     /**
@@ -201,17 +184,14 @@ final class PackageManager
             return false;
         }
 
-        if ($this->name) {
-            return $this->name === self::NPM;
-        }
-
-        if ($this->script && stripos($this->script, 'npm') !== false) {
-            $this->name = self::NPM;
-
+        if ($this->name === self::NPM) {
             return true;
         }
 
-        return false;
+        $isNpm = str_contains($this->script, 'npm');
+        $isNpm and $this->name = self::NPM;
+
+        return $isNpm;
     }
 
     /**
@@ -223,17 +203,14 @@ final class PackageManager
             return false;
         }
 
-        if ($this->name) {
-            return $this->name === self::YARN;
-        }
-
-        if ($this->script && stripos($this->script, 'yarn') !== false) {
-            $this->name = self::YARN;
-
+        if ($this->name === self::YARN) {
             return true;
         }
 
-        return false;
+        $isYarn = str_contains($this->script, 'yarn');
+        $isYarn and $this->name = self::YARN;
+
+        return $isYarn;
     }
 
     /**
@@ -252,12 +229,9 @@ final class PackageManager
      * @param array $environment
      * @return PackageManager
      */
-    public function withDefaultEnv(array $environment): PackageManager
+    public function withDefaultEnv(): PackageManager
     {
-        return new self(
-            [self::DEPENDENCIES => $this->dependencies, self::SCRIPT => $this->script],
-            $environment
-        );
+        return new self([self::DEPENDENCIES => $this->dependencies, self::SCRIPT => $this->script]);
     }
 
     /**
@@ -293,7 +267,7 @@ final class PackageManager
      */
     public function scriptCmd(string $command, array $env = []): ?string
     {
-        if (!$this->script) {
+        if (($this->script === null) || ($this->script === '')) {
             return null;
         }
 
@@ -350,7 +324,6 @@ final class PackageManager
         $this->dependencies = [self::DEPS_INSTALL => null, self::DEPS_UPDATE => null];
         $this->name = null;
         $this->cacheClean = '';
-        $this->defaultEnvironment = [];
     }
 
     /**
@@ -362,7 +335,7 @@ final class PackageManager
         $dependencies = $config[self::DEPENDENCIES] ?? null;
         $install = null;
         $update = null;
-        if ($dependencies && is_array($dependencies)) {
+        if (($dependencies !== []) && is_array($dependencies)) {
             $install = $dependencies[self::DEPS_INSTALL] ?? null;
             $update = $dependencies[self::DEPS_UPDATE] ?? null;
             (($install !== '') && is_string($install)) or $install = null;
@@ -372,9 +345,9 @@ final class PackageManager
         /** @var non-empty-string|null $install */
         /** @var non-empty-string|null $update */
 
-        if (($install === null) && $update) {
+        if (($install === null) && ($update !== null)) {
             $install = $update;
-        } elseif (($update === null) && $install) {
+        } elseif (($update === null) && ($install !== null)) {
             $update = $install;
         }
 
@@ -402,7 +375,7 @@ final class PackageManager
      */
     private function maybeVerbose(?string $cmd, Io $io): ?string
     {
-        if (!$cmd) {
+        if (($cmd === null) || ($cmd === '')) {
             return $cmd;
         }
 
@@ -455,15 +428,11 @@ final class PackageManager
             return $cmd;
         }
 
-        switch (true) {
-            case $io->isQuiet():
-                return "{$cmd} --silent";
-            case $io->isVeryVeryVerbose():
-                return "{$cmd} -ddd";
-            case $io->isVeryVerbose():
-                return "{$cmd} -dd";
-        }
-
-        return $io->isVerbose() ? "{$cmd} -d" : $cmd;
+        return match (true) {
+            $io->isQuiet() => "{$cmd} --silent",
+            $io->isVeryVeryVerbose() => "{$cmd} -ddd",
+            $io->isVeryVerbose() => "{$cmd} -dd",
+            default => $io->isVerbose() ? "{$cmd} -d" : $cmd,
+        };
     }
 }

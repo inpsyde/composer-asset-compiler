@@ -20,30 +20,7 @@ use Inpsyde\AssetsCompiler\Util\Io;
 
 class Finder
 {
-    /**
-     * @var ProcessExecutor
-     */
-    private $executor;
-
-    /**
-     * @var Filesystem
-     */
-    private $filesystem;
-
-    /**
-     * @var Io
-     */
-    private $io;
-
-    /**
-     * @var array
-     */
-    private $defaultEnv;
-
-    /**
-     * @var PackageManager|null
-     */
-    private $discovered;
+    private PackageManager|null $discovered = null;
 
     /**
      * @param ProcessExecutor $executor
@@ -70,16 +47,11 @@ class Finder
      * @param array $defaultEnv
      */
     private function __construct(
-        ProcessExecutor $executor,
-        Filesystem $filesystem,
-        Io $io,
-        array $defaultEnv
+        private ProcessExecutor $executor,
+        private Filesystem $filesystem,
+        private Io $io,
+        private array $defaultEnv
     ) {
-
-        $this->executor = $executor;
-        $this->filesystem = $filesystem;
-        $this->io = $io;
-        $this->defaultEnv = $defaultEnv;
     }
 
     /**
@@ -95,22 +67,21 @@ class Finder
         $manager = $config->packageManager();
 
         if ($manager && $this->checkIsValid($manager, $name, $path, true, true)) {
-            return $manager->withDefaultEnv($this->defaultEnv);
+            return $manager->withDefaultEnv();
         }
 
         $manager = null;
-        switch (true) {
-            case file_exists("{$path}/package-lock.json"):
-            case file_exists("{$path}/npm-shrinkwrap.json"):
-                $manager = PackageManager::fromDefault(PackageManager::NPM);
-                break;
-            case file_exists("{$path}/yarn.lock"):
-                $manager = PackageManager::fromDefault(PackageManager::YARN);
-                break;
+        if (
+            file_exists("{$path}/npm-shrinkwrap.json")
+            || file_exists("{$path}/package-lock.json")
+        ) {
+            $manager = PackageManager::fromDefault(PackageManager::NPM);
+        } elseif (file_exists("{$path}/yarn.lock")) {
+            $manager = PackageManager::fromDefault(PackageManager::YARN);
         }
 
         if ($manager && $this->checkIsValid($manager, $name, $path, false, true)) {
-            return $manager->withDefaultEnv($this->defaultEnv);
+            return $manager->withDefaultEnv();
         }
 
         $this->io->writeVerbose("Will use default package manager for {$name}.");
@@ -119,7 +90,7 @@ class Finder
 
         $manager = $this->discovered;
         if ($this->checkIsValid($manager, $name, $path, true, false)) {
-            return $manager->withDefaultEnv($this->defaultEnv);
+            return $manager->withDefaultEnv();
         }
 
         $this->io->writeError(
@@ -136,10 +107,10 @@ class Finder
      */
     public function findForAsset(Asset $asset): PackageManager
     {
-        $path = $asset->path();
+        $path = $asset->path() ?? '';
         $config = $asset->config();
-        if (!$path || !$config) {
-            return PackageManager::new([], []);
+        if (($path === '') || ($config === null)) {
+            return PackageManager::new([]);
         }
 
         return $this->findForConfig($config, $asset->name(), $path);
@@ -179,7 +150,7 @@ class Finder
             $error .= "but that package manager is not available on the system.";
         }
 
-        if (!$valid && $error) {
+        if (!$valid && ($error !== null)) {
             $this->io->writeVerboseError($error);
         }
 

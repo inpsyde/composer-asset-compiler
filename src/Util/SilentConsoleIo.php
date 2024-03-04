@@ -15,9 +15,6 @@ use Composer\IO\ConsoleIO;
 
 /**
  * @psalm-suppress PropertyNotSetInConstructor
- *
- * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
- * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
  */
 class SilentConsoleIo extends ConsoleIO
 {
@@ -41,7 +38,7 @@ class SilentConsoleIo extends ConsoleIO
     /**
      * @return bool
      */
-    public function isVerbose()
+    public function isVerbose(): bool
     {
         return false;
     }
@@ -49,7 +46,7 @@ class SilentConsoleIo extends ConsoleIO
     /**
      * @return bool
      */
-    public function isVeryVerbose()
+    public function isVeryVerbose(): bool
     {
         return false;
     }
@@ -57,7 +54,7 @@ class SilentConsoleIo extends ConsoleIO
     /**
      * @return bool
      */
-    public function isDebug()
+    public function isDebug(): bool
     {
         return false;
     }
@@ -68,8 +65,11 @@ class SilentConsoleIo extends ConsoleIO
      * @param int $verbosity
      * @return void
      */
-    public function write($messages, $newline = true, $verbosity = self::NORMAL)
-    {
+    public function write(
+        mixed $messages,
+        bool $newline = true,
+        int $verbosity = self::NORMAL
+    ): void {
     }
 
     /**
@@ -78,8 +78,11 @@ class SilentConsoleIo extends ConsoleIO
      * @param int $verbosity
      * @return void
      */
-    public function writeError($messages, $newline = true, $verbosity = self::NORMAL)
-    {
+    public function writeError(
+        mixed $messages,
+        bool $newline = true,
+        int $verbosity = self::NORMAL
+    ): void {
     }
 
     /**
@@ -88,8 +91,11 @@ class SilentConsoleIo extends ConsoleIO
      * @param int $verbosity
      * @return void
      */
-    public function writeRaw($messages, $newline = true, $verbosity = self::NORMAL)
-    {
+    public function writeRaw(
+        mixed $messages,
+        bool $newline = true,
+        int $verbosity = self::NORMAL
+    ): void {
     }
 
     /**
@@ -98,7 +104,10 @@ class SilentConsoleIo extends ConsoleIO
      * @param int $verbosity
      * @return void
      */
-    public function writeErrorRaw($messages, $newline = true, $verbosity = self::NORMAL)
-    {
+    public function writeErrorRaw(
+        mixed $messages,
+        bool $newline = true,
+        int $verbosity = self::NORMAL
+    ): void {
     }
 }

@@ -1,9 +1,9 @@
 ---
-title: CLI parameters
+title: CLI commands and parameters
 nav_order: 16
 ---
 
-# CLI parameters
+# CLI commands and parameters
 
 
 ## Command: `compile-assets`
@@ -16,9 +16,10 @@ nav_order: 16
 
 
 
-## Command: `assets-hash`
+## Command: `asset-hash`
 
 | Parameter       | Description                                                                                                                                                   |
 |-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `--mode=<mode>` | Sets the "execution mode" which might affect the hash of the assets.                                                                                          |
 | `--no-dev`      | Simulate auto-run on Composer installation/update with the `--no-dev` flag.<br />This causes the plugin to check for `$default-no-dev` as the default "mode". |
+

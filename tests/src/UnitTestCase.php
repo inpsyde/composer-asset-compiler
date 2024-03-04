@@ -33,10 +33,12 @@ abstract class UnitTestCase extends \PHPUnit\Framework\TestCase
     ): Io {
 
         $input = \Mockery::mock(InputInterface::class);
-        $input->allows('isInteractive')->andReturns($interactive);
+        $input->allows('isInteractive')
+            ->andReturns($interactive);
 
         $output = \Mockery::mock(OutputInterface::class);
-        $output->allows('getVerbosity')->andReturn($verbosity);
+        $output->allows('getVerbosity')
+            ->andReturn($verbosity);
         $output->allows('isQuiet')
             ->andReturn($verbosity === OutputInterface::VERBOSITY_QUIET);
         $output->allows('isDebug')
@@ -47,8 +49,6 @@ abstract class UnitTestCase extends \PHPUnit\Framework\TestCase
             ->andReturn($verbosity === OutputInterface::VERBOSITY_VERBOSE);
         $output->allows('write');
 
-        $composerIo = new ConsoleIO($input, $output, new HelperSet());
-
-        return Io::new($composerIo);
+        return Io::new(new ConsoleIO($input, $output, new HelperSet()));
     }
 }

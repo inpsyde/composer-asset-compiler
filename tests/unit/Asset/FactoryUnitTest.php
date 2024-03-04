@@ -40,11 +40,11 @@ class FactoryUnitTest extends UnitTestCase
         $factory = $this->factoryFactory();
 
         $json = <<<'JSON'
-{
-	"dependencies": "update",
-	"script": "destroy"
-}
-JSON;
+        {
+            "dependencies": "update",
+            "script": "destroy"
+        }
+        JSON;
         $package = new Package('test/test-package', '1.0.0.0', 'v1');
 
         $asset = $factory->attemptFactory(
@@ -65,20 +65,20 @@ JSON;
     public function testCreateWithConfigByEnvAllowedPackageLevelAndDefaults(): void
     {
         $json = <<<'JSON'
-{
-    "composer-asset-compiler": {
-        "env": {
-            "meh": {
-                "script": ["hello", "world"]
-            },
-            "$default": {
-                "dependencies": "update",
-                "script": "test"
-            }	        
+        {
+            "composer-asset-compiler": {
+                "env": {
+                    "meh": {
+                        "script": ["hello", "world"]
+                    },
+                    "$default": {
+                        "dependencies": "update",
+                        "script": "test"
+                    }	        
+                }
+            }
         }
-    }
-}
-JSON;
+        JSON;
 
         $factory = $this->factoryFactory('meh');
 
@@ -106,11 +106,11 @@ JSON;
         $factory = $this->factoryFactory();
 
         $json = <<<'JSON'
-{
-	"dependencies": "update",
-	"script": "destroy"
-}
-JSON;
+        {
+            "dependencies": "update",
+            "script": "destroy"
+        }
+        JSON;
         $package = new Package('test/test-package', '1.0.0.0', 'v1');
         $package->setExtra(json_decode($json, true));
 
@@ -129,22 +129,22 @@ JSON;
     /**
      * @test
      */
-    public function testCreateWithConfigAllowedPackageLevelAndNoDefaults()
+    public function testCreateWithConfigAllowedPackageLevelAndNoDefaults(): void
     {
         $factory = $this->factoryFactory();
 
         $json = <<<'JSON'
-{
-	"dependencies": "update",
-	"script": "destroy"
-}
-JSON;
+        {
+            "dependencies": "update",
+            "script": "destroy"
+        }
+        JSON;
         $package = new Package('test/test-package', '1.0.0.0', 'v1');
 
         $asset = $factory->attemptFactory(
             $package,
             $this->factoryConfig($json),
-            Defaults::empty()
+            Defaults::newEmpty()
         );
 
         static::assertTrue($asset->isValid());
@@ -161,17 +161,17 @@ JSON;
         $factory = $this->factoryFactory();
 
         $json = <<<'JSON'
-{
-	"dependencies": "update",
-	"script": "destroy"
-}
-JSON;
+        {
+            "dependencies": "update",
+            "script": "destroy"
+        }
+        JSON;
         $package = new Package('test/test-package', '1.0.0.0', 'v1');
 
         $asset = $factory->attemptFactory(
             $package,
             $this->factoryConfig($json),
-            Defaults::empty()
+            Defaults::newEmpty()
         );
 
         static::assertTrue($asset->isValid());
@@ -218,7 +218,7 @@ JSON;
             ]
         );
 
-        $asset = $factory->attemptFactory($package, null, Defaults::empty());
+        $asset = $factory->attemptFactory($package, null, Defaults::newEmpty());
 
         static::assertTrue($asset->isValid());
         static::assertSame(['this_is_nice'], $asset->script());
@@ -270,14 +270,14 @@ JSON;
     /**
      * @test
      */
-    public function testCreateWithoutConfigAllowedPackageLevelButNoPackageConfigAndNoDefaults(): void
+    public function testCreateWithoutConfigAllowedPackageLevelNoPackageConfigAndNoDefaults(): void
     {
         $factory = $this->factoryFactory('develop');
 
         $package = new Package('test/test-package', '1.0.0.0', 'v1');
         $package->setExtra([]);
 
-        $asset = $factory->attemptFactory($package, null, Defaults::empty());
+        $asset = $factory->attemptFactory($package, null, Defaults::newEmpty());
 
         static::assertNull($asset);
     }
@@ -308,7 +308,7 @@ JSON;
             ]
         );
 
-        $asset = $factory->attemptFactory($package, null, Defaults::empty());
+        $asset = $factory->attemptFactory($package, null, Defaults::newEmpty());
 
         static::assertTrue($asset->isValid());
         static::assertSame('prod', $asset->env()['ENCORE_ENV']);
@@ -317,10 +317,10 @@ JSON;
         static::assertSame(['encore ${ENCORE_ENV}'], $scripts);
         $script = array_pop($scripts);
 
-        $yarnNoEnv = PackageManager::fromDefault('yarn', []);
+        $yarnNoEnv = PackageManager::fromDefault('yarn');
         static::assertSame('yarn encore prod', $yarnNoEnv->scriptCmd($script, $asset->env()));
 
-        $yarnWithEnv = PackageManager::fromDefault('yarn', ['ENCORE_ENV' => 'dev']);
+        $yarnWithEnv = PackageManager::fromDefault('yarn');
         static::assertSame(
             'yarn encore prod',
             $yarnWithEnv->scriptCmd($script, $asset->env())
@@ -337,7 +337,7 @@ JSON;
         $package = new Package('test/test-package', '1.0.0.0', 'v1');
         $package->setExtra(['composer-asset-compiler' => "build"]);
 
-        $asset = $factory->attemptFactory($package, null, Defaults::empty());
+        $asset = $factory->attemptFactory($package, null, Defaults::newEmpty());
 
         static::assertTrue($asset->isValid());
         static::assertSame(['build'], $asset->script());
@@ -361,7 +361,7 @@ JSON;
             ]
         );
 
-        $asset = $factory->attemptFactory($package, null, Defaults::empty());
+        $asset = $factory->attemptFactory($package, null, Defaults::newEmpty());
 
         static::assertTrue($asset->isValid());
         static::assertSame(['build'], $asset->script());
@@ -377,11 +377,11 @@ JSON;
         $factory = $this->factoryFactory();
 
         $json = <<<'JSON'
-{
-	"dependencies": "update",
-	"script": "test"
-}
-JSON;
+        {
+            "dependencies": "update",
+            "script": "test"
+        }
+        JSON;
         $rootPackage = new RootPackage('test/root-package', '1.0.0.0', 'v1');
 
         $noRootPackage = new Package('test/some-package', '1.0.0.0', 'v1');

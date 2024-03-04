@@ -11,8 +11,6 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\Composer\Command;
 
-use Composer\Command\BaseCommand;
-use Composer\Composer;
 use Inpsyde\AssetsCompiler\Asset\Locker;
 use Inpsyde\AssetsCompiler\Composer\Plugin;
 use Symfony\Component\Console\Input\InputInterface;
@@ -21,37 +19,15 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 final class CompileAssets extends BaseCommand
 {
-    use LowLevelErrorWriteTrait;
-    use ModeOptionTrait;
-    use ObtainComposerTrait;
-
     /**
      * @return void
      */
-    protected function configure()
+    protected function configure(): void
     {
         $this
+            ->configureCommon()
             ->setName('compile-assets')
             ->setDescription('Run assets compilation workflow.')
-            ->addOption(
-                'no-dev',
-                null,
-                InputOption::VALUE_NONE,
-                'Tell the command to fallback to no-dev mode configuration.'
-            )
-            ->addOption(
-                'mode',
-                null,
-                InputOption::VALUE_REQUIRED,
-                'Set the mode to run command in. '
-                . 'Overrides value of COMPOSER_ASSETS_COMPILER, if set.'
-            )
-            ->addOption(
-                'env',
-                null,
-                InputOption::VALUE_REQUIRED,
-                'DEPRECATED. Use "mode" instead'
-            )
             ->addOption(
                 'ignore-lock',
                 null,
@@ -64,28 +40,24 @@ final class CompileAssets extends BaseCommand
     /**
      * @param InputInterface $input
      * @param OutputInterface $output
-     * @return int
-     *
-     * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
+     * @return 0|1
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
-
         try {
-            $composer = $this->obtainComposer();
+            $composer = $this->requireComposer(false);
             $io = $this->getIO();
 
             $plugin = new Plugin();
             $plugin->activate($composer, $io);
 
             $noDev = $input->hasOption('no-dev');
-            $mode = $this->determineMode($input, $output);
+            $mode = $this->determineMode($input);
 
             $ignoreLockRaw = $input->hasParameterOption('--ignore-lock', true)
                 ? $input->getOption('ignore-lock')
                 : null;
-            $ignoreLock = ($ignoreLockRaw && is_string($ignoreLockRaw)) ? $ignoreLockRaw : '';
+            $ignoreLock = is_string($ignoreLockRaw) ? $ignoreLockRaw : '';
             ($ignoreLock === '*/*') and $ignoreLock = Locker::IGNORE_ALL;
 
             $plugin->runByCommand(

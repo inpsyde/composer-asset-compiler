@@ -16,30 +16,12 @@ use Symfony\Component\Process\Process;
 
 final class Results
 {
-    /**
-     * @var int
-     */
-    private $total;
-
-    /**
-     * @var \SplQueue<array{Process, Asset}>|null
-     */
-    private $successful;
-
-    /**
-     * @var \SplQueue<array{Process, Asset}>|null
-     */
-    private $erroneous;
-
-    /**
-     * @var bool
-     */
-    private $timedOut = false;
+    private bool $timedOut = false;
 
     /**
      * @return Results
      */
-    public static function empty(): Results
+    public static function newEmpty(): Results
     {
         $instance = new static(0, null, null);
         $instance->timedOut = false;
@@ -71,7 +53,7 @@ final class Results
      * @param \SplQueue<array{Process, Asset}>|null $erroneous
      * @return Results
      */
-    public static function timeout(
+    public static function newWithTimeout(
         int $total,
         ?\SplQueue $successful,
         ?\SplQueue $erroneous
@@ -89,14 +71,10 @@ final class Results
      * @param \SplQueue<array{Process, Asset}>|null $erroneous
      */
     private function __construct(
-        int $total,
-        ?\SplQueue $successful,
-        ?\SplQueue $erroneous
+        private int $total,
+        private ?\SplQueue $successful,
+        private ?\SplQueue $erroneous
     ) {
-
-        $this->total = $total;
-        $this->successful = $successful;
-        $this->erroneous = $erroneous;
     }
 
     /**
@@ -166,7 +144,7 @@ final class Results
     }
 
     /**
-     * @return \SplQueue<array{Process, Asset}>|null
+     * @return \SplQueue<list{Process, Asset}>|null
      */
     public function successes(): ?\SplQueue
     {

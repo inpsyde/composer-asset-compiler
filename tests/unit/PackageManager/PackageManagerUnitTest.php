@@ -18,7 +18,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class PackageManagerUnitTest extends UnitTestCase
 {
-    public function testFromDefaultFailsForUnknown()
+    /**
+     * @test
+     */
+    public function testFromDefaultFailsForUnknown(): void
     {
         $commands = PackageManager::fromDefault('foo');
         $io = $this->factoryIo();
@@ -29,7 +32,10 @@ class PackageManagerUnitTest extends UnitTestCase
         static::assertNull($commands->scriptCmd('x'));
     }
 
-    public function testFromDefaultWorksForKnown()
+    /**
+     * @test
+     */
+    public function testFromDefaultWorksForKnown(): void
     {
         $yarn = PackageManager::fromDefault('Yarn');
         $npm = PackageManager::fromDefault('NPM');
@@ -47,9 +53,10 @@ class PackageManagerUnitTest extends UnitTestCase
     }
 
     /**
+     * @test
      * @runInSeparateProcess
      */
-    public function testDiscoverYarn()
+    public function testDiscoverYarn(): void
     {
         $executor = \Mockery::mock(ProcessExecutor::class);
         $executor
@@ -69,9 +76,10 @@ class PackageManagerUnitTest extends UnitTestCase
     }
 
     /**
+     * @test
      * @runInSeparateProcess
      */
-    public function testDiscoverNpm()
+    public function testDiscoverNpm(): void
     {
         $executor = \Mockery::mock(ProcessExecutor::class);
 
@@ -93,9 +101,10 @@ class PackageManagerUnitTest extends UnitTestCase
     }
 
     /**
+     * @test
      * @runInSeparateProcess
      */
-    public function testDiscoverNothing()
+    public function testDiscoverNothing(): void
     {
         $executor = \Mockery::mock(ProcessExecutor::class);
 
@@ -117,9 +126,9 @@ class PackageManagerUnitTest extends UnitTestCase
     }
 
     /**
-     * @return void
+     * @test
      */
-    public function testYarnVerbosity()
+    public function testYarnVerbosity(): void
     {
         $commands = PackageManager::fromDefault('Yarn');
 
@@ -139,9 +148,9 @@ class PackageManagerUnitTest extends UnitTestCase
     }
 
     /**
-     * @return void
+     * @test
      */
-    public function testNpmVerbosity()
+    public function testNpmVerbosity(): void
     {
         $commands = PackageManager::fromDefault('npm');
 
@@ -161,9 +170,9 @@ class PackageManagerUnitTest extends UnitTestCase
     }
 
     /**
-     * @return void
+     * @test
      */
-    public function testNpmVerbosityWhenVerbosityInCommandDefined()
+    public function testNpmVerbosityWhenVerbosityInCommandDefined(): void
     {
         $commands = PackageManager::new(
             [
@@ -197,7 +206,10 @@ class PackageManagerUnitTest extends UnitTestCase
         static::assertSame('npm update -d', $commands->updateCmd($quietNoInt));
     }
 
-    public function testAdditionalArguments()
+    /**
+     * @test
+     */
+    public function testAdditionalArguments(): void
     {
         $yarn = PackageManager::fromDefault('yarn');
         $npm = PackageManager::fromDefault('npm');

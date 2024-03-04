@@ -20,7 +20,7 @@ Let's assume we have a website project having a `composer.json` that looks like 
     "require": {
         "acme/foo": "^1",
         "acme/bar": "^2",
-        "inpsyde/composer-assets-compiler": "^3"
+        "inpsyde/composer-assets-compiler": "^4"
     },
     "extra": {
         "composer-asset-compiler": { "auto-run": true }
@@ -65,27 +65,32 @@ The example above is the simplest use case, but the plugin has many possible con
 
 ## Documentation
 
-- [Introduction](docs/001-Introduction.md)
-- [Compiling Assets](docs/002-Compiling_Assets.md)
-- [Script](docs/003-Script.md)
-- [Dependencies](docs/004-Dependencies.md)
-- [Package Manager](docs/005-Package_Manager.md)
-- [Pre-compilation](docs/006-Pre-compilation.md)
-- [Hash and Lock](docs/007-Hash_and_Lock.md)
-- [Execution Mode](docs/008-Execution_Mode.md)
-- [Configuration File](docs/009-Configuration_File.md)
-- [Packages Configuration in Root](docs/010-Packages_Configuration_in_Root.md)
-- [Verbosity](docs/011-Verbosity.md)
-- [Isolated Cache](docs/012-Isolated_Cache.md)
-- [Parallel Assets Processing](docs/013-Parallel_Assets_Processing.md)
-- [Configuration Cheat-Sheet](docs/014-Configuration-Cheat-Sheet.md)
-- [CLI Parameters](docs/015-CLI-Parameters.md)
-- [Environment Variables](docs/016-Environment_Variables.md)
+- [Why bother](./docs/001-Why_Bother.md)
+- [Compiling Assets](./docs/002-Compiling_Assets.md)
+- [Script](./docs/003-Script.md)
+- [Dependencies](./docs/004-Dependencies.md)
+- [Package Manager](./docs/005-Package_Manager.md)
+- [Pre-compilation](./docs/006-Pre-compilation.md)
+- [Hash and Lock](./docs/007-Hash_Lock.md)
+- [Execution Mode](./docs/008-Execution_Mode.md)
+- [Configuration File](./docs/009-Configuration_File.md)
+- [Packages Configuration in Root](./docs/010-Packages_Configuration_Root.md)
+- [Verbosity](./docs/011-Verbosity.md)
+- [Isolated Cache](./docs/012-Isolated_Cache.md)
+- [Parallel Assets Processing](./docs/013-Parallel_Assets_Processing.md)
+- [Configuration Cheat-Sheet](./docs/014-Configuration_Cheat-Sheet.md)
+- [CLI Commands and Parameters](./docs/015-CLI_Commands_Parameters.md)
+- [Environment Variables](./docs/016-Environment_Variables.md)
+
+## Requirements
+
+- PHP 8.0+
+- Composer 2.3+
 
 ## License and Copyright
 
-Copyright (c) 2022 [Inpsyde GmbH](https://inpsyde.com/en/).
+Copyright (c) Syde GmbH [Syde GmbH](https://syde.com/).
 
 _Composer Asset Compiler_ code is licensed under [MIT license](./LICENSE).
 
-The team at Inpsyde is engineering the Web since 2006.
+The team at Syde is engineering the Web since 2006.

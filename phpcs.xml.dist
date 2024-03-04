@@ -7,7 +7,7 @@
 
 	<arg value="sp"/>
 	<arg name="colors"/>
-	<config name="testVersion" value="7.2-"/>
+	<config name="testVersion" value="8.0-"/>
 
 	<rule ref="Inpsyde">
 		<exclude name="WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler" />

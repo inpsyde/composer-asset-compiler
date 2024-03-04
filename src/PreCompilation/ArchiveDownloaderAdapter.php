@@ -20,16 +20,6 @@ use Inpsyde\AssetsCompiler\Util\Io;
 class ArchiveDownloaderAdapter implements Adapter
 {
     /**
-     * @var Io
-     */
-    private $io;
-
-    /**
-     * @var ArchiveDownloaderFactory
-     */
-    private $downloaderFactory;
-
-    /**
      * @param Io $io
      * @param ArchiveDownloaderFactory $downloaderFactory
      * @return ArchiveDownloaderAdapter
@@ -47,12 +37,9 @@ class ArchiveDownloaderAdapter implements Adapter
      * @param ArchiveDownloaderFactory $downloaderFactory
      */
     private function __construct(
-        Io $io,
-        ArchiveDownloaderFactory $downloaderFactory
+        private Io $io,
+        private ArchiveDownloaderFactory $downloaderFactory
     ) {
-
-        $this->io = $io;
-        $this->downloaderFactory = $downloaderFactory;
     }
 
     /**
@@ -95,9 +82,11 @@ class ArchiveDownloaderAdapter implements Adapter
 
         /** @var string $type */
 
-        $safeSource = $this->sanitizeSource($source);
-        [$distUrl, $auth] = $safeSource ? $this->extractAuth($safeSource, $config) : [null, null];
-        if (!$distUrl) {
+        $safeSource = $this->sanitizeSource($source) ?? '';
+        [$distUrl, $auth] = ($safeSource !== '')
+            ? $this->extractAuth($safeSource, $config)
+            : [null, null];
+        if (($distUrl === null) || ($distUrl === '')) {
             return false;
         }
 
@@ -106,7 +95,7 @@ class ArchiveDownloaderAdapter implements Adapter
             $package->setDistType($type);
             $package->setDistUrl($distUrl);
             $package->setTargetDir($targetDir);
-            if ($auth) {
+            if (($auth !== null) && ($auth !== '')) {
                 $package->setTransportOptions(['http' => ['header' => ["Authorization: {$auth}"]]]);
             }
 
@@ -130,16 +119,12 @@ class ArchiveDownloaderAdapter implements Adapter
             return is_string($type) ? strtolower($type) : null;
         }
 
-        switch (strtolower(pathinfo($source, PATHINFO_EXTENSION) ?: '')) {
-            case 'rar':
-                return ArchiveDownloader::RAR;
-            case 'tar':
-                return ArchiveDownloader::TAR;
-            case 'xz':
-                return ArchiveDownloader::XZ;
-        }
-
-        return ArchiveDownloader::ZIP;
+        return match (strtolower(pathinfo($source, PATHINFO_EXTENSION) ?: '')) {
+            'rar' => ArchiveDownloader::RAR,
+            'tar' => ArchiveDownloader::TAR,
+            'xz' => ArchiveDownloader::XZ,
+            default => ArchiveDownloader::ZIP,
+        };
     }
 
     /**
@@ -152,7 +137,7 @@ class ArchiveDownloaderAdapter implements Adapter
             ? filter_var($source, FILTER_SANITIZE_URL)
             : false;
 
-        if (!$safeSource || !is_string($safeSource)) {
+        if (($safeSource === '') || !is_string($safeSource)) {
             $this->io->writeError("  '{$source}' is not a valid URL.");
 
             return null;
@@ -169,10 +154,10 @@ class ArchiveDownloaderAdapter implements Adapter
     private function extractAuth(string $source, array $config): array
     {
         preg_match('~^(https?://)(?:([^:]+)(?::([^@]+))?@)?(.+)~i', $source, $matches);
-        $schema = $matches[1] ?? null;
-        $url = $matches[4] ?? null;
+        $schema = $matches[1] ?? '';
+        $url = $matches[4] ?? '';
 
-        if (!$schema || !$url) {
+        if (($schema === '') || ($url === '')) {
             $this->io->writeError("  '{$source}' is not a valid URL.");
 
             return [null, null];
@@ -180,7 +165,7 @@ class ArchiveDownloaderAdapter implements Adapter
 
         $auth = $config['auth'] ?? null;
         is_array($auth) and $auth = $this->extractBasicAuth($auth);
-        if (is_string($auth) && preg_match('~^[^\s]+\s.+$~', $auth)) {
+        if (is_string($auth) && preg_match('~^\S+\s.+$~', $auth)) {
             return [$source, $auth];
         }
 
@@ -193,7 +178,7 @@ class ArchiveDownloaderAdapter implements Adapter
 
     /**
      * @param array $config
-     * @return string|null
+     * @return non-empty-string|null
      */
     private function extractBasicAuth(array $config): ?string
     {
@@ -205,10 +190,12 @@ class ArchiveDownloaderAdapter implements Adapter
             ?? $config['token']
             ?? '';
 
-        if (!$user || !is_string($user) || !is_string($pass)) {
+        if (($user === '') || !is_string($user) || !is_string($pass)) {
             return null;
         }
 
-        return 'Basic ' . base64_encode("{$user}:{$pass}");
+        return ($pass === '')
+            ? 'Basic ' . base64_encode($user)
+            : 'Basic ' . base64_encode("{$user}:{$pass}");
     }
 }

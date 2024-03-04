@@ -38,23 +38,12 @@ final class Plugin implements
     private const MODE_COMPOSER_INSTALL = 4;
     private const MODE_COMPOSER_UPDATE = 8;
 
-    /**
-     * @var IOInterface
-     */
-    private $io;
+    private IOInterface $io;
+    private Composer $composer;
+    private int $mode = self::MODE_NONE;
 
     /**
-     * @var Composer
-     */
-    private $composer;
-
-    /**
-     * @var int
-     */
-    private $mode = self::MODE_NONE;
-
-    /**
-     * @return array<string, list<array{string, int}>>
+     * @return array<non-falsy-string, list<array{non-falsy-string, int}>>
      *
      * @see Plugin::onAutorunBecauseInstall()
      * @see Plugin::onAutorunBecauseUpdate()
@@ -72,7 +61,7 @@ final class Plugin implements
     }
 
     /**
-     * @return array<string, string>
+     * @return array<class-string, class-string>
      */
     public function getCapabilities(): array
     {
@@ -80,18 +69,21 @@ final class Plugin implements
     }
 
     /**
-     * @return array<BaseCommand>
+     * @return list<BaseCommand>
      */
     public function getCommands(): array
     {
-        return [new Command\CompileAssets(), new Command\AssetHash()];
+        return [
+            new Command\CompileAssets(),
+            new Command\AssetHash(),
+        ];
     }
 
     /**
      * @param Composer $composer
      * @param IOInterface $io
      */
-    public function activate(Composer $composer, IOInterface $io)
+    public function activate(Composer $composer, IOInterface $io): void
     {
         $this->composer = $composer;
         $this->io = $io;
@@ -120,19 +112,19 @@ final class Plugin implements
     }
 
     /**
-     * @param string|null $env
+     * @param string|null $mode
      * @param bool $isDev
      * @param string $ignoreLock
      * @return void
      */
     public function runByCommand(
-        ?string $env,
+        ?string $mode,
         bool $isDev,
         string $ignoreLock = ''
     ): void {
 
         $this->mode = self::MODE_COMMAND;
-        $this->run(Factory::new($this->composer, $this->io, $env, $isDev, $ignoreLock));
+        $this->run(Factory::new($this->composer, $this->io, $mode, $isDev, $ignoreLock));
     }
 
     /**
@@ -224,7 +216,7 @@ final class Plugin implements
      * @param IOInterface $io
      * @return void
      */
-    public function deactivate(Composer $composer, IOInterface $io)
+    public function deactivate(Composer $composer, IOInterface $io): void
     {
         // noop
     }
@@ -234,7 +226,7 @@ final class Plugin implements
      * @param IOInterface $io
      * @return void
      */
-    public function uninstall(Composer $composer, IOInterface $io)
+    public function uninstall(Composer $composer, IOInterface $io): void
     {
         // noop
     }
