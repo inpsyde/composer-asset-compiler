@@ -1052,7 +1052,7 @@ Via Composer, package name is `inpsyde/composer-assets-compiler`.
 
 ## License
 
-Copyright (c) 2020 Inpsyde GmbH
+Copyright (c) 2024 Inpsyde GmbH
 
 This code is licensed under the [MIT License](LICENSE).
 
