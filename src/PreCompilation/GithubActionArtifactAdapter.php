@@ -179,6 +179,11 @@ class GithubActionArtifactAdapter implements Adapter
             if (!is_array($artifactData)) {
                 continue;
             }
+
+            if (!empty($artifactData['expired'])) {
+                continue;
+            }
+
             $name = $artifactData['name'] ?? null;
             $url = $name ? ($artifactData['archive_download_url'] ?? null) : null;
             if (($name === $artifactName) && $url && filter_var($url, FILTER_VALIDATE_URL)) {
