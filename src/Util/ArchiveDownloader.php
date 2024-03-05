@@ -125,12 +125,15 @@ class ArchiveDownloader
                 throw new \Error("Could not use '{$path}' as target for unpacking '{$distUrl}'.");
             }
 
-            // If here, target path is an existing directory. We can't use download callback to
-            // download there, or Composer will delete every existing file in it.
-            // So we first unpack in a temporary folder and then move unpacked files from the temp
-            // dir to final target dir. That's surely slower, but necessary.
-
-            $tempDir = dirname($path) . '/.tmp' . (substr(md5(uniqid($path, true)), 0, 8) ?: '');
+            /**
+             * If here, target path is an existing directory. We can't use download callback to
+             * download there, or Composer will delete every existing file in it.
+             * So we first unpack in a temporary folder and then move unpacked files from the temp
+             * dir to final target dir. That's surely slower, but necessary.
+             * @psalm-suppress RedundantCastGivenDocblockType
+             */
+            $hash = (string) substr(md5(uniqid($path, true)), 0, 8);
+            $tempDir = dirname($path) . '/.tmp' . $hash;
             $this->io->writeVerbose(
                 "Archive target path '{$path}' is an existing directory.",
                 "Downloading and unpacking '{$distUrl}' in the temporary folder '{$tempDir}'..."

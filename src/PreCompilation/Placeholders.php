@@ -77,6 +77,7 @@ class Placeholders
         $replaced = preg_replace_callback(
             '~\$\{\s*(' . implode('|', array_keys($replace)) . ')\s*\}~i',
             static function (array $matches) use ($replace): string {
+                /** @psalm-suppress RedundantCastGivenDocblockType */
                 $key = strtolower((string)($matches[1] ?? ''));
 
                 return $replace[$key] ?? '';

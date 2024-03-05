@@ -163,6 +163,8 @@ class GithubReleaseZipAdapter implements Adapter
      * @param string $owner
      * @param GitHubConfig $config
      * @return string
+     *
+     * phpcs:disable Generic.Metrics.CyclomaticComplexity.TooHigh
      */
     private function retrieveArchiveUrl(
         string $assetsName,
@@ -170,6 +172,7 @@ class GithubReleaseZipAdapter implements Adapter
         string $owner,
         GitHubConfig $config
     ): string {
+        // phpcs:enable Generic.Metrics.CyclomaticComplexity.TooHigh
 
         $token = $config->token();
         $repo = $config->repo() ?? '';

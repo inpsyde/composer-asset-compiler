@@ -149,6 +149,8 @@ class GithubActionArtifactAdapter implements Adapter
      * @param string $owner
      * @param GitHubConfig $config
      * @return string
+     *
+     * phpcs:disable Generic.Metrics.CyclomaticComplexity.TooHigh
      */
     private function retrieveArchiveUrl(
         string $artifactName,
@@ -156,6 +158,7 @@ class GithubActionArtifactAdapter implements Adapter
         string $owner,
         GitHubConfig $config
     ): string {
+        // phpcs:enable Generic.Metrics.CyclomaticComplexity.TooHigh
 
         $token = $config->token();
         $repo = $config->repo() ?? '';
@@ -172,8 +175,29 @@ class GithubActionArtifactAdapter implements Adapter
             throw new \Exception("Could not obtain a valid API response from {$endpoint}.");
         }
 
-        $archiveUrl = $this->findArchiveUrl($artifactName, (array)$json['artifacts'], $repo);
-        if ($archiveUrl && $authString) {
+        $archiveUrl = null;
+        foreach ((array)$json['artifacts'] as $artifactData) {
+            if (!is_array($artifactData) || empty($artifactData['expired'])) {
+                continue;
+            }
+
+            $name = $artifactData['name'] ?? null;
+            $url = $name ? ($artifactData['archive_download_url'] ?? null) : null;
+            if (($name === $artifactName) && $url && filter_var($url, FILTER_VALIDATE_URL)) {
+                $archiveUrl = $url;
+                break;
+            }
+        }
+
+        if (!$archiveUrl) {
+            $this->io->writeVerbose("  Artifact '{$artifactName}' not found in '{$repo}'.");
+
+            return '';
+        }
+
+        /** @var string $archiveUrl */
+
+        if ($authString) {
             $archiveUrl = preg_replace('~^https://(.+)~', $authString . '$1', $archiveUrl);
         }
 
