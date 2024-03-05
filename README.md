@@ -87,10 +87,19 @@ The example above is the simplest use case, but the plugin has many possible con
 - PHP 8.0+
 - Composer 2.3+
 
+When installed with "dev" dependencies, via Composer the following packages are directly required:
+
+- `composer/composer` (MIT)
+- `phpunit/phpunit` (BSD-3-Clause)
+- `mockery/mockery` (BSD-3-Clause)
+- `inpsyde/php-coding-standards` (MIT)
+- `vimeo/psalm` (MIT)
+- `mikey179/vfsstream` (BSD-3-Clause)
+
+
 ## License and Copyright
 
-Copyright (c) Syde GmbH [Syde GmbH](https://syde.com/).
-
-_Composer Asset Compiler_ code is licensed under [MIT license](./LICENSE).
+_Composer Asset Compiler_ is a free software, and is released under the terms of the MIT license.
+See [LICENSE](./LICENSE) for complete license.
 
 The team at Syde is engineering the Web since 2006.
