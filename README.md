@@ -84,8 +84,4 @@ The example above is the simplest use case, but the plugin has many possible con
 
 ## License and Copyright
 
-Copyright (c) 2022 [Inpsyde GmbH](https://inpsyde.com/en/).
-
-_Composer Asset Compiler_ code is licensed under [MIT license](./LICENSE).
-
-The team at Inpsyde is engineering the Web since 2006.
+This repository is a free software, and is released under the terms of the MIT license. See [LICENSE](./LICENSE) for complete license.
