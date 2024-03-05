@@ -80,7 +80,6 @@ class EnvResolver
         return (string)preg_replace_callback(
             '~\$\{([a-z0-9_]+)\}~i',
             static function (array $var) use ($defaultEnv): string {
-                /** @psalm-suppress RedundantCastGivenDocblockType */
                 return (string)static::readEnv((string)$var[1], $defaultEnv);
             },
             $string
