@@ -1169,8 +1169,6 @@ Via Composer, package name is `inpsyde/composer-assets-compiler`.
 
 ## License
 
-Copyright (c) 2020 Inpsyde GmbH
+## License and Copyright
 
-This code is licensed under the [MIT License](LICENSE).
-
-The team at [Inpsyde](https://inpsyde.com) is engineering the web since 2006.
+This repository is a free software, and is released under the terms of the MIT license. See [LICENSE](./LICENSE) for complete license.
