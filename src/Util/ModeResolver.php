@@ -21,16 +21,6 @@ class ModeResolver
     private const MODE_KEY_LEGACY = 'env';
 
     /**
-     * @var string|null
-     */
-    private $mode;
-
-    /**
-     * @var bool
-     */
-    private $isDev;
-
-    /**
      * @param string|null $env
      * @param bool $isDev
      * @return ModeResolver
@@ -44,10 +34,10 @@ class ModeResolver
      * @param string|null $mode
      * @param bool $isDev
      */
-    final private function __construct(?string $mode, bool $isDev)
-    {
-        $this->mode = $mode;
-        $this->isDev = $isDev;
+    final private function __construct(
+        private ?string $mode,
+        private bool $isDev
+    ) {
     }
 
     /**
@@ -55,7 +45,7 @@ class ModeResolver
      */
     public function mode(): string
     {
-        if ($this->mode) {
+        if (($this->mode !== null) && ($this->mode !== '')) {
             return $this->mode;
         }
 
@@ -64,20 +54,16 @@ class ModeResolver
 
     /**
      * @param array $config
-     * @return mixed|null
-     *
-     * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
+     * @return mixed
      */
-    public function resolveConfig(array $config)
+    public function resolveConfig(array $config): mixed
     {
-        // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
-
         $envs = $config[self::MODE_KEY] ?? $config[self::MODE_KEY_LEGACY] ?? null;
-        if (!$envs || !is_array($envs)) {
+        if (($envs === null) || ($envs === []) || !is_array($envs)) {
             return null;
         }
 
-        $envCandidates = $this->mode ? [$this->mode] : [];
+        $envCandidates = ($this->mode !== null) ? [$this->mode] : [];
         $this->isDev or $envCandidates[] = self::MODE_DEFAULT_NO_DEV;
         $envCandidates[] = self::MODE_DEFAULT;
 

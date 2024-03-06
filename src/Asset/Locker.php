@@ -18,35 +18,22 @@ class Locker
     public const LOCK_FILE = '.composer_compiled_assets';
     public const IGNORE_ALL = '*';
 
-    /**
-     * @var Io
-     */
-    private $io;
+    private bool $ignoreAll;
 
-    /**
-     * @var HashBuilder
-     */
-    private $hashBuilder;
-
-    /**
-     * @var boolean
-     */
-    private $ignoreAll;
-
-    /**
-     * @var list<string>
-     */
-    private $ignored = [];
+    /** @var list<string> */
+    private array $ignored = [];
 
     /**
      * @param Io $io
      * @param HashBuilder $hashBuilder
      * @param string $ignoreLock
      */
-    public function __construct(Io $io, HashBuilder $hashBuilder, string $ignoreLock = '')
-    {
-        $this->io = $io;
-        $this->hashBuilder = $hashBuilder;
+    public function __construct(
+        private Io $io,
+        private HashBuilder $hashBuilder,
+        string $ignoreLock = ''
+    ) {
+
         $this->ignoreAll = ($ignoreLock === self::IGNORE_ALL);
         if (!$this->ignoreAll && $ignoreLock) {
             $names = array_map('trim', explode(',', $ignoreLock));
@@ -65,14 +52,14 @@ class Locker
         }
 
         $file = ($asset->path() ?? '') . '/' . self::LOCK_FILE;
-        if (!@file_exists($file)) {
+        if (!file_exists($file) || !is_readable($file)) {
             return false;
         }
 
         $name = $asset->name();
         foreach ($this->ignored as $ignored) {
             if (
-                $ignored === $name
+                ($ignored === $name)
                 || fnmatch($ignored, $name, FNM_PATHNAME | FNM_PERIOD | FNM_CASEFOLD)
             ) {
                 $this->io->writeVerboseComment("  Ignoring lock file for {$name}.");
@@ -82,7 +69,8 @@ class Locker
         }
 
         $content = @file_get_contents($file);
-        if (!$content) {
+
+        if (($content === false) || ($content === '')) {
             $this->io->writeVerboseError("  Could not read content of lock file {$file}.");
 
             @unlink($file);
@@ -90,9 +78,9 @@ class Locker
             return false;
         }
 
-        $hash = $this->hashBuilder->forAsset($asset);
+        $hash = $this->hashBuilder->forAsset($asset) ?? '';
 
-        return $hash && trim($content) === $hash;
+        return ($hash !== '') && (trim($content) === $hash);
     }
 
     /**
@@ -103,9 +91,9 @@ class Locker
     {
         $file = ($asset->path() ?? '') . '/' . self::LOCK_FILE;
         $name = $asset->name();
-        $content = $this->hashBuilder->forAsset($asset);
+        $content = $this->hashBuilder->forAsset($asset) ?? '';
 
-        if ($content && !@file_put_contents($file, $content)) {
+        if (($content !== '') && (@file_put_contents($file, $content) === false)) {
             $this->io->writeVerboseError(" Could not write lock file {$file} for {$name}.");
         }
     }

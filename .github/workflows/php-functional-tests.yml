@@ -1,15 +1,15 @@
-name: PHP Unit Tests
+name: PHP Functional Tests
 
 on:
   push:
     paths:
-      - '**workflows/php-unit-tests.yml'
+      - '**workflows/php-functional-tests.yml'
       - '**.php'
       - '**phpunit.xml.dist'
       - '**composer.json'
   pull_request:
     paths:
-      - '**workflows/php-unit-tests.yml'
+      - '**workflows/php-functional-tests.yml'
       - '**.php'
       - '**phpunit.xml.dist'
       - '**composer.json'
@@ -23,19 +23,12 @@ jobs:
   unit-tests:
     runs-on: ubuntu-latest
     if: ${{ !contains(github.event.head_commit.message, 'skip tests') }}
-    env:
-      USE_COVERAGE: no
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         php-ver: [ '8.0', '8.1', '8.2', '8.3' ]
-        composer-ver: [ '2.3', '2.4', '2.5', '2.6', '2' ]
 
     steps:
-      - name: Update "USE_COVERAGE" env var based on matrix
-        if: ${{ matrix.php-ver == '8.0' && matrix.deps-mode == 'highest' }}
-        run: echo "USE_COVERAGE=yes" >> $GITHUB_ENV
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -44,24 +37,17 @@ jobs:
         with:
           php-version: ${{ matrix.php-ver }}
           ini-values: zend.assertions=1, error_reporting=-1, display_errors=On
-          coverage: ${{ ((env.USE_COVERAGE == 'yes') && 'xdebug') || 'none' }}
-          tools: cs2pr, composer:v${{ matrix.composer-ver }}
+          coverage: 'none'
+          tools: cs2pr, composer:v2
 
       - name: Adjust Composer dependencies
         run: |
             composer remove --dev --no-update "inpsyde/php-coding-standards"
             composer remove --dev --no-update "vimeo/psalm"
-            composer require --dev --no-update "composer/composer:~${{ matrix.composer-ver }}.0"
+            composer require --dev --no-update "composer/composer:^2"
 
       - name: Install dependencies
         uses: ramsey/composer-install@v3
 
-      - name: Run unit tests
-        run: ./vendor/bin/phpunit --testsuite=unit ${{ ((env.USE_COVERAGE == 'yes') && '--coverage-html=coverage-report') || '--no-coverage' }}
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        if: ${{ env.USE_COVERAGE == 'yes' }}
-        with:
-          name: coverage-report
-          path: coverage-report/
+      - name: Run functional tests
+        run: ./vendor/bin/phpunit --testsuite=functional --no-coverage

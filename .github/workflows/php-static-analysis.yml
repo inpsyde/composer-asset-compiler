@@ -35,17 +35,25 @@ concurrency:
 jobs:
   lint-php:
     uses: inpsyde/reusable-workflows/.github/workflows/lint-php.yml@main
+    if: ${{ (github.event_name != 'workflow_dispatch') || ((github.event.inputs.jobs == 'Run lint only') || (github.event.inputs.jobs == 'Run all')) }}
     strategy:
       matrix:
-        php: ["7.2", "7.3", "7.4", "8.0", "8.1", "8.2"]
-    if: ${{ (github.event_name != 'workflow_dispatch') || ((github.event.inputs.jobs == 'Run all') || (github.event.inputs.jobs == 'Run lint only')) }}
+        php: [ '8.0', '8.1', '8.2', '8.3' ]
     with:
       PHP_VERSION: ${{ matrix.php }}
 
   coding-standards-analysis-php:
-    if: ${{ (github.event_name != 'workflow_dispatch') || ((github.event.inputs.jobs == 'Run all') || (github.event.inputs.jobs == 'Run PHPCS only')) }}
+    if: ${{ (github.event_name != 'workflow_dispatch') || ((github.event.inputs.jobs == 'Run PHPCS only') || (github.event.inputs.jobs == 'Run all')) }}
     uses: inpsyde/reusable-workflows/.github/workflows/coding-standards-php.yml@main
+    with:
+      PHP_VERSION: '8.0'
 
   static-code-analysis-php:
-    if: ${{ (github.event_name != 'workflow_dispatch') || ((github.event.inputs.jobs == 'Run all') || (github.event.inputs.jobs == 'Run Psalm only')) }}
+    if: ${{ (github.event_name != 'workflow_dispatch') || ((github.event.inputs.jobs == 'Run Psalm only') || (github.event.inputs.jobs == 'Run all')) }}
     uses: inpsyde/reusable-workflows/.github/workflows/static-analysis-php.yml@main
+    strategy:
+      matrix:
+        php: [ '8.0', '8.1', '8.2', '8.3' ]
+    with:
+      PHP_VERSION: ${{ matrix.php }}
+      PSALM_ARGS: '--no-suggestions --report-show-info=false --find-unused-psalm-suppress --no-diff --no-cache --no-file-cache --long-progress'

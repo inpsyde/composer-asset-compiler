@@ -13,32 +13,26 @@ namespace Inpsyde\AssetsCompiler\Tests;
 
 use Composer\IO\BaseIO;
 
-/*
- * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
- * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
- */
 class TestIo extends BaseIO
 {
-    /**
-     * @var int
-     */
-    private $verbosity;
+    /** @var list<string>  */
+    public array $outputs = [];
+
+    /** @var list<string> */
+    public array $errors = [];
 
     /**
-     * @var list<string>
+     * @param int $verbosity
      */
-    public $outputs = [];
-
-    /**
-     * @var list<string>
-     */
-    public $errors = [];
-
-    public function __construct(int $verbosity = self::NORMAL)
-    {
-        $this->verbosity = $verbosity;
+    public function __construct(
+        private int $verbosity = self::NORMAL
+    ) {
     }
 
+    /**
+     * @param string $regex
+     * @return bool
+     */
     public function hasOutputThatMatches(string $regex): bool
     {
         foreach ($this->outputs as $output) {
@@ -50,6 +44,10 @@ class TestIo extends BaseIO
         return false;
     }
 
+    /**
+     * @param string $regex
+     * @return bool
+     */
     public function hasErrorThatMatches(string $regex): bool
     {
         foreach ($this->errors as $output) {
@@ -61,89 +59,183 @@ class TestIo extends BaseIO
         return false;
     }
 
-    public function isInteractive()
+    /**
+     * @return false
+     */
+    public function isInteractive(): bool
     {
         return false;
     }
 
-    public function isVerbose()
+    /**
+     * @return bool
+     */
+    public function isVerbose(): bool
     {
         return $this->verbosity > self::NORMAL;
     }
 
-    public function isVeryVerbose()
+    /**
+     * @return bool
+     */
+    public function isVeryVerbose(): bool
     {
         return $this->verbosity > self::VERBOSE;
     }
 
-    public function isDebug()
+    /**
+     * @return bool
+     */
+    public function isDebug(): bool
     {
         return $this->verbosity > self::VERY_VERBOSE;
     }
 
-    public function isDecorated()
+    /**
+     * @return false
+     */
+    public function isDecorated(): bool
     {
         return false;
     }
 
-    public function write($messages, $newline = true, $verbosity = self::NORMAL)
-    {
+    /**
+     * @param string|list<string> $messages
+     * @param bool $newline
+     * @param int $verbosity
+     * @return void
+     */
+    public function write(
+        mixed $messages,
+        bool $newline = true,
+        int $verbosity = self::NORMAL
+    ): void {
+
         if ($verbosity > $this->verbosity) {
             return;
         }
-        foreach ((array)$messages as $message) {
+        foreach ((array) $messages as $message) {
             $this->outputs[] = $message;
         }
     }
 
-    public function writeError($messages, $newline = true, $verbosity = self::NORMAL)
-    {
+    /**
+     * @param string|list<string> $messages
+     * @param bool $newline
+     * @param int $verbosity
+     * @return void
+     */
+    public function writeError(
+        mixed $messages,
+        bool $newline = true,
+        int $verbosity = self::NORMAL
+    ): void {
+
         if ($verbosity > $this->verbosity) {
             return;
         }
-        foreach ((array)$messages as $message) {
+        foreach ((array) $messages as $message) {
             $this->errors[] = $message;
         }
     }
 
-    public function overwrite($messages, $newline = true, $size = null, $verbosity = self::NORMAL)
-    {
+    /**
+     * @param string|list<string> $messages
+     * @param bool $newline
+     * @param int|null $size
+     * @param int $verbosity
+     * @return void
+     */
+    public function overwrite(
+        mixed $messages,
+        bool $newline = true,
+        ?int $size = null,
+        int $verbosity = self::NORMAL
+    ): void {
+
         // TODO: Implement overwrite() method.
     }
 
-    public function overwriteError($messages, $newline = true, $size = null, $verbosity = self::NORMAL)
-    {
+    /**
+     * @param string|list<string> $messages
+     * @param bool $newline
+     * @param int|null $size
+     * @param int $verbosity
+     * @return void
+     */
+    public function overwriteError(
+        mixed $messages,
+        bool $newline = true,
+        ?int $size = null,
+        int $verbosity = self::NORMAL
+    ): void {
+
         // TODO: Implement overwriteError() method.
     }
 
-    public function ask($question, $default = null)
+    /**
+     * @param string $question
+     * @param mixed|null $default
+     * @return mixed
+     */
+    public function ask(string $question, mixed $default = null): mixed
     {
         return $default;
     }
 
-    public function askConfirmation($question, $default = true)
+    /**
+     * @param string $question
+     * @param mixed $default
+     * @return bool
+     */
+    public function askConfirmation(string $question, bool $default = true): bool
     {
         return $default;
     }
 
-    public function askAndValidate($question, $validator, $attempts = null, $default = null)
-    {
+    /**
+     * @param string $question
+     * @param callable $validator
+     * @param int|null $attempts
+     * @param mixed $default
+     * @return mixed
+     */
+    public function askAndValidate(
+        string $question,
+        callable $validator,
+        ?int $attempts = null,
+        mixed $default = null
+    ): mixed {
+
         return $default;
     }
 
-    public function askAndHideAnswer($question)
+    /**
+     * @param string $question
+     * @return string|null
+     */
+    public function askAndHideAnswer(string $question): ?string
     {
         return null;
     }
 
+    /**
+     * @param string $question
+     * @param array $choices
+     * @param mixed $default
+     * @param mixed $attempts
+     * @param string $errorMessage
+     * @param bool $multiselect
+     * @return mixed
+     */
     public function select(
-        $question,
-        $choices,
-        $default,
-        $attempts = false,
-        $errorMessage = 'Value "%s" is invalid',
-        $multiselect = false
-    ) {
+        string $question,
+        array $choices,
+        mixed $default,
+        mixed $attempts = false,
+        string $errorMessage = 'Value "%s" is invalid',
+        bool $multiselect = false
+    ): mixed {
 
         return $default;
     }

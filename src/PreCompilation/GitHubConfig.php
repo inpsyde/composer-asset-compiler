@@ -20,10 +20,8 @@ class GitHubConfig
     private const TOKEN = 'token';
     private const TOKEN_USER = 'user';
 
-    /**
-     * @var array<string, string|null>
-     */
-    private $config;
+    /** @var array<string, string|null> */
+    private array $config;
 
     /**
      * @param array $config
@@ -64,10 +62,10 @@ class GitHubConfig
             ?? null;
 
         $this->config = [
-            self::TOKEN => $token && is_string($token) ? $token : null,
-            self::TOKEN_USER => $user && is_string($user) ? $user : null,
-            self::REPO => $repo && is_string($repo) ? $repo : null,
-            self::REF => $ref && is_string($ref) ? $ref : null,
+            self::TOKEN => ($token !== '') && is_string($token) ? $token : null,
+            self::TOKEN_USER => ($user !== '') && is_string($user) ? $user : null,
+            self::REPO => ($repo !== '') && is_string($repo) ? $repo : null,
+            self::REF => ($ref !== '') && is_string($ref) ? $ref : null,
         ];
     }
 
@@ -108,10 +106,10 @@ class GitHubConfig
      */
     public function basicAuth(): ?string
     {
-        $user = $this->user();
-        $token = $this->token();
+        $user = $this->user() ?? '';
+        $token = $this->token() ?? '';
 
-        if ($user && $token) {
+        if (($user !== '') && ($token !== '')) {
             return 'Basic ' . base64_encode("{$user}:{$token}");
         }
 

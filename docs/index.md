@@ -20,7 +20,7 @@ Let's assume we have a website project having a `composer.json` that looks like 
     "require": {
         "acme/foo": "^1",
         "acme/bar": "^2",
-        "inpsyde/composer-assets-compiler": "^3"
+        "inpsyde/composer-assets-compiler": "^4"
     },
     "extra": {
         "composer-asset-compiler": { "auto-run": true }
@@ -65,19 +65,19 @@ The example above is the simplest use case, but the Composer Assets Compiler has
 
 ## Documentation
 
-- [Why bother](./001-Why-Bother.md)
+- [Why bother](./001-Why_Bother.md)
 - [Compiling Assets](./002-Compiling_Assets.md)
 - [Script](./003-Script.md)
 - [Dependencies](./004-Dependencies.md)
 - [Package Manager](./005-Package_Manager.md)
 - [Pre-compilation](./006-Pre-compilation.md)
-- [Hash and Lock](./007-Hash_and_Lock.md)
+- [Hash and Lock](./007-Hash_Lock.md)
 - [Execution Mode](./008-Execution_Mode.md)
 - [Configuration File](./009-Configuration_File.md)
-- [Packages Configuration in Root](./010-Packages_Configuration_in_Root.md)
+- [Packages Configuration in Root](./010-Packages_Configuration_Root.md)
 - [Verbosity](./011-Verbosity.md)
 - [Isolated Cache](./012-Isolated_Cache.md)
 - [Parallel Assets Processing](./013-Parallel_Assets_Processing.md)
-- [Configuration Cheat-Sheet](./014-Configuration-Cheat-Sheet.md)
-- [CLI Parameters](./015-CLI-Parameters.md)
+- [Configuration Cheat-Sheet](./014-Configuration_Cheat-Sheet.md)
+- [CLI Commands and Parameters](./015-CLI_Commands_Parameters.md)
 - [Environment Variables](./016-Environment_Variables.md)

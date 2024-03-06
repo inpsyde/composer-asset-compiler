@@ -26,84 +26,34 @@ class ArchiveDownloader
     public const TAR = 'tar';
 
     /**
-     * @var callable(PackageInterface,string):void
-     */
-    private $downloadCallback;
-
-    /**
-     * @var Io
-     */
-    private $io;
-
-    /**
-     * @var Filesystem
-     */
-    private $filesystem;
-
-    /**
      * @param Loop $loop
      * @param DownloaderInterface $downloader
      * @param Io $io
      * @param Filesystem $filesystem
      * @return ArchiveDownloader
      */
-    public static function viaLoop(
+    public static function new(
         Loop $loop,
         DownloaderInterface $downloader,
         Io $io,
         Filesystem $filesystem
     ): ArchiveDownloader {
 
-        $downloadCallback = static function (
-            PackageInterface $package,
-            string $path
-        ) use (
-            $loop,
-            $downloader
-        ): void {
-
-            SyncHelper::downloadAndInstallPackageSync($loop, $downloader, $path, $package);
-        };
-
-        return new self($downloadCallback, $io, $filesystem);
+        return new self($loop, $downloader, $io, $filesystem);
     }
 
     /**
+     * @param Loop $loop
      * @param DownloaderInterface $downloader
-     * @param Io $io
-     * @param Filesystem $filesystem
-     * @return ArchiveDownloader
-     */
-    public static function forV1(
-        DownloaderInterface $downloader,
-        Io $io,
-        Filesystem $filesystem
-    ): ArchiveDownloader {
-
-        $downloadCallback = static function (
-            PackageInterface $package,
-            string $path
-        ) use ($downloader): void {
-            $downloader->download($package, $path);
-        };
-
-        return new self($downloadCallback, $io, $filesystem);
-    }
-
-    /**
-     * @param callable(PackageInterface,string):void $downloadCallback
      * @param Io $io
      * @param Filesystem $filesystem
      */
     private function __construct(
-        callable $downloadCallback,
-        Io $io,
-        Filesystem $filesystem
+        private Loop $loop,
+        private DownloaderInterface $downloader,
+        private Io $io,
+        private Filesystem $filesystem
     ) {
-
-        $this->downloadCallback = $downloadCallback;
-        $this->io = $io;
-        $this->filesystem = $filesystem;
     }
 
     /**
@@ -123,7 +73,7 @@ class ArchiveDownloader
                 $this->io->writeVerbose(
                     "Downloading and unpack '{$distUrl}' in new directory '{$path}'..."
                 );
-                ($this->downloadCallback)($package, $path);
+                $this->downloadAndInstall($package, $path);
 
                 return true;
             }
@@ -136,13 +86,13 @@ class ArchiveDownloader
             // download there, or Composer will delete every existing file in it.
             // So we first unpack in a temporary folder and then move unpacked files from the temp
             // dir to final target dir. That's surely slower, but necessary.
-            $tempDir = dirname($path) . '/.tmp' . (string)substr(md5(uniqid($path, true)), 0, 8);
+            $tempDir = dirname($path) . '/.tmp' . substr(md5(uniqid($path, true)), 0, 8);
             $this->io->writeVerbose(
                 "Archive target path '{$path}' is an existing directory.",
                 "Downloading and unpacking '{$distUrl}' in the temporary folder '{$tempDir}'..."
             );
             $this->filesystem->ensureDirectoryExists($tempDir);
-            ($this->downloadCallback)($package, $tempDir);
+            $this->downloadAndInstall($package, $tempDir);
             $this->filesystem->ensureDirectoryExists($path);
 
             $finder = Finder::create()->in($tempDir)->ignoreVCS(true)->files();
@@ -175,5 +125,20 @@ class ArchiveDownloader
                 $this->filesystem->removeDirectory($tempDir);
             }
         }
+    }
+
+    /**
+     * @param PackageInterface $package
+     * @param string $path
+     * @return void
+     */
+    private function downloadAndInstall(PackageInterface $package, string $path): void
+    {
+        SyncHelper::downloadAndInstallPackageSync(
+            $this->loop,
+            $this->downloader,
+            $path,
+            $package
+        );
     }
 }

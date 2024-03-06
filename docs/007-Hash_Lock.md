@@ -66,7 +66,7 @@ composer compile-assets --ignore-lock=*
 The hash of the package can also be calculated programmatically using the command:
 
 ```shell
-composer assets-hash
+composer asset-hash
 ```
 
 That can be useful to generate the filename of the archive during pre-compilation, in case we want to use the `${hash}` placeholder.

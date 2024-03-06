@@ -190,39 +190,39 @@ class ConfigUnitTest extends UnitTestCase
     private function configSample(): array
     {
         $json = <<<'JSON'
-{
-    "default-env": {
-        "foo": "bar"
-    },
-    "env": {
-        "production": false,
-        "$default-no-dev": {
-            "package-manager": "npm",
-            "script": {
-                "env": {
-                    "test": "build-test",
-                    "$default": "build"
-                }
+        {
+            "default-env": {
+                "foo": "bar"
             },
-            "pre-compiled": {
-                "env": {
-                    "$default": {
-                        "target": "./assets/",
-                        "adapter": "gh-action-artifact",
-                        "source": "assets-${ref}",
-                        "config": {
-                            "repository": "acme/some-theme"
+            "env": {
+                "production": false,
+                "$default-no-dev": {
+                    "package-manager": "npm",
+                    "script": {
+                        "env": {
+                            "test": "build-test",
+                            "$default": "build"
                         }
                     },
-                    "local": {
-                        "adapter": false
+                    "pre-compiled": {
+                        "env": {
+                            "$default": {
+                                "target": "./assets/",
+                                "adapter": "gh-action-artifact",
+                                "source": "assets-${ref}",
+                                "config": {
+                                    "repository": "acme/some-theme"
+                                }
+                            },
+                            "local": {
+                                "adapter": false
+                            }
+                        }
                     }
                 }
             }
         }
-    }
-}
-JSON;
+        JSON;
         return json_decode($json, true);
     }
 }

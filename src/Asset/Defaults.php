@@ -12,26 +12,21 @@ declare(strict_types=1);
 namespace Inpsyde\AssetsCompiler\Asset;
 
 /**
- * @template T of Config|null
+ * @template-covariant T of Config|null
  */
 final class Defaults
 {
     /**
-     * @var T
+     * @return Defaults<null>
      */
-    private $config;
-
-    /**
-     * @return Defaults<Config|null>
-     */
-    public static function empty(): Defaults
+    public static function newEmpty(): Defaults
     {
         return new self(null);
     }
 
     /**
      * @param Config $config
-     * @return Defaults<Config|null>
+     * @return Defaults<Config>
      */
     public static function new(Config $config): Defaults
     {
@@ -39,12 +34,10 @@ final class Defaults
     }
 
     /**
-     * @param Config|null $config
+     * @param T $config
      */
-    private function __construct(?Config $config)
+    private function __construct(private ?Config $config)
     {
-        /** @var T config */
-        $this->config = $config;
     }
 
     /**

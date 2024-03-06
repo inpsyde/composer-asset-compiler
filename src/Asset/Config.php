@@ -52,50 +52,12 @@ class Config
         self::SRC_PATHS => [],
     ];
 
-    /**
-     * @var bool
-     */
-    private $byPackage = false;
-
-    /**
-     * @var bool
-     */
-    private $byRootPackage = false;
-
-    /**
-     * @var ModeResolver
-     */
-    private $modeResolver;
-
-    /**
-     * @var array
-     */
-    private $raw;
-
-    /**
-     * @var RootConfig|null
-     */
-    private $rootConfig = null;
-
-    /**
-     * @var bool
-     */
-    private $dataWasParsed = false;
-
-    /**
-     * @var bool
-     */
-    private $valid = false;
-
-    /**
-     * @var array
-     */
-    private $data = self::BASE_DATA;
-
-    /**
-     * @var array<string, string>
-     */
-    private $rootEnv;
+    private bool $byPackage = false;
+    private bool $byRootPackage = false;
+    private RootConfig|null $rootConfig = null;
+    private bool $dataWasParsed = false;
+    private bool $valid = false;
+    private array $data = self::BASE_DATA;
 
     /**
      * @param array $data
@@ -115,7 +77,7 @@ class Config
      * @return Config
      */
     public static function forAssetConfigInRoot(
-        $config,
+        mixed $config,
         ModeResolver $modeResolver,
         array $rootEnv = []
     ): Config {
@@ -144,9 +106,10 @@ class Config
     ): Config {
 
         $path = $filesystem->normalizePath($path);
+
         $configFile = "{$path}/" . self::CONFIG_FILE;
-        $raw =  file_exists($configFile)
-            ? JsonFile::parseJson(file_get_contents($configFile) ?: '')
+        $raw = file_exists($configFile)
+            ? JsonFile::parseJson((string) file_get_contents($configFile))
             : $package->getExtra()[self::EXTRA_KEY] ?? [];
 
         $isRoot = $package instanceof RootPackageInterface;
@@ -176,7 +139,7 @@ class Config
      * @param ModeResolver $modeResolver
      * @return array
      */
-    private static function parseRaw($raw, ModeResolver $modeResolver): array
+    private static function parseRaw(mixed $raw, ModeResolver $modeResolver): array
     {
         $config = $raw;
 
@@ -188,24 +151,20 @@ class Config
             $config = ($byMode === null) ? $noEnv : $byMode;
         }
 
-        if (is_bool($config)) {
-            $config = $config ? [self::BY_PACKAGE_OR_DEFAULTS => true] : [self::DISABLED => true];
-        }
+        $calculatedConfig = match (true) {
+            ($config === self::DISABLED),
+            ($config === self::FORCE_DEFAULTS),
+            ($config === self::BY_PACKAGE_OR_DEFAULTS) => [$config => true],
+            ($config === true) => [self::BY_PACKAGE_OR_DEFAULTS => true],
+            ($config === false) => [self::DISABLED => true],
+            is_string($config) => [self::DEPENDENCIES => self::INSTALL, self::SCRIPT => $config],
+            is_array($config) => $config,
+            default => [],
+        };
 
-        switch (true) {
-            case ($config === self::DISABLED):
-            case ($config === self::FORCE_DEFAULTS):
-            case ($config === self::BY_PACKAGE_OR_DEFAULTS):
-                $config = [$config => true];
-                break;
-            case (is_string($config)):
-                $config = [self::DEPENDENCIES => self::INSTALL, self::SCRIPT => $raw];
-                break;
-        }
-
-        is_array($config) or $config = [];
-
-        return ($byMode && $noEnv) ? array_merge($noEnv, $config) : $config;
+        return (($byMode !== null) && is_array($noEnv))
+            ? array_merge($noEnv, $calculatedConfig)
+            : $calculatedConfig;
     }
 
     /**
@@ -213,11 +172,11 @@ class Config
      * @param ModeResolver $modeResolver
      * @param array<string, string> $rootEnv
      */
-    final private function __construct(array $raw, ModeResolver $modeResolver, array $rootEnv = [])
-    {
-        $this->raw = $raw;
-        $this->modeResolver = $modeResolver;
-        $this->rootEnv = $rootEnv;
+    final private function __construct(
+        private array $raw,
+        private ModeResolver $modeResolver,
+        private array $rootEnv = []
+    ) {
     }
 
     /**
@@ -257,7 +216,7 @@ class Config
 
         $this->parseData();
 
-        return (bool)$this->data[self::DISABLED];
+        return (bool) $this->data[self::DISABLED];
     }
 
     /**
@@ -271,7 +230,7 @@ class Config
 
         $this->parseData();
 
-        return (bool)$this->data[self::BY_PACKAGE_OR_DEFAULTS];
+        return (bool) $this->data[self::BY_PACKAGE_OR_DEFAULTS];
     }
 
     /**
@@ -285,7 +244,7 @@ class Config
 
         $this->parseData();
 
-        return (bool)$this->data[self::FORCE_DEFAULTS];
+        return (bool) $this->data[self::FORCE_DEFAULTS];
     }
 
     /**
@@ -293,7 +252,8 @@ class Config
      */
     public function isRunnable(): bool
     {
-        return $this->isValid() && ($this->dependencies() || $this->scripts());
+        return $this->isValid()
+            && (($this->dependencies() !== null) || ($this->scripts() !== null));
     }
 
     /**
@@ -302,7 +262,7 @@ class Config
     public function dependencies(): ?string
     {
         $this->parseData();
-        $deps = $this->valid ? (string)$this->data[self::DEPENDENCIES] : null;
+        $deps = $this->valid ? (string) $this->data[self::DEPENDENCIES] : null;
         ($deps === self::NONE) and $deps = null;
 
         return $deps;
@@ -389,7 +349,7 @@ class Config
 
         $config = $this->raw[self::DEF_ENV] ?? null;
         $this->data[self::DEF_ENV] = (is_array($config) || ($config instanceof \stdClass))
-            ? Env::sanitizeEnvVars((array)$config)
+            ? Env::sanitizeEnvVars((array) $config)
             : [];
 
         return $this->data[self::DEF_ENV];
@@ -461,7 +421,7 @@ class Config
 
         $config = $this->raw;
 
-        if (!$config) {
+        if ($config === []) {
             $this->valid = false;
 
             return;
@@ -469,78 +429,78 @@ class Config
 
         $this->data = self::BASE_DATA;
         $scripts = $this->parseScripts($config);
-        $this->data[self::DEPENDENCIES] = $this->parseDependencies($config, (bool)$scripts);
+        $this->data[self::DEPENDENCIES] = $this->parseDependencies($config, $scripts !== null);
         $this->data[self::SCRIPT] = $scripts;
         $this->data[self::PRE_COMPILED] = $this->parsePreCompiled($config);
         $this->data[self::PACKAGE_MANAGER] = $this->parsePackageManager($config);
         $this->data[self::ISOLATED_CACHE] = $this->parseIsolatedCache($config);
         $this->data[self::SRC_PATHS] = $this->parseLockPaths($config);
-
-        $this->valid = $this->data[self::DEPENDENCIES] || $this->data[self::SCRIPT];
+        $this->valid = ($this->data[self::DEPENDENCIES] !== null) || ($scripts !== null);
     }
 
     /**
      * @param array $config
      * @param bool $haveScripts
-     * @return string|null
+     * @return value-of<Config::DEPENDENCIES_OPTIONS>|null
      */
     private function parseDependencies(array $config, bool $haveScripts): ?string
     {
         $default = $haveScripts ? self::INSTALL : null;
         $dependencies = $config[self::DEPENDENCIES] ?? $default;
-        if ($dependencies === false || $dependencies === null) {
+        if (($dependencies === false) || ($dependencies === null)) {
             $dependencies = self::NONE;
         }
 
         if (is_array($dependencies)) {
             $byMode = $this->modeResolver->resolveConfig($dependencies);
-            $dependencies = ($byMode && is_string($byMode)) ? $byMode : null;
+            $dependencies = (($byMode !== '') && is_string($byMode)) ? $byMode : null;
         }
 
         is_string($dependencies) and $dependencies = strtolower($dependencies);
-        if (!in_array($dependencies, self::DEPENDENCIES_OPTIONS, true)) {
-            $dependencies = null;
+        if (in_array($dependencies, self::DEPENDENCIES_OPTIONS, true)) {
+            return $dependencies;
         }
 
-        return $dependencies;
+        return null;
     }
 
     /**
      * @param array $config
-     * @return array<string>|null
+     * @return array<non-empty-string>|null
      */
     private function parseScripts(array $config): ?array
     {
-        $scripts = $config[self::SCRIPT] ?? null;
-
-        $oneScript = $scripts && is_string($scripts);
-        if (!$scripts || (!$oneScript && !is_array($scripts))) {
-            $scripts = null;
+        $scripts = $config[self::SCRIPT] ?? [];
+        $oneScript = is_string($scripts) && ($scripts !== '');
+        if ($oneScript) {
+            $scripts = [$scripts];
         }
 
-        if ($scripts === null || $oneScript) {
-            /** @var string $scripts */
-            return $oneScript ? [$scripts] : null;
+        if (($scripts === []) || !is_array($scripts)) {
+            return null;
         }
 
-        /** @var array $scripts */
+        if ($oneScript) {
+            /** @var array<non-empty-string> $scripts */
+            return $scripts;
+        }
 
         $byMode = $this->modeResolver->resolveConfig($scripts);
-        if ($byMode && (is_array($byMode) || is_string($byMode))) {
-            $scripts = (array)$byMode;
+        if (($byMode !== []) && ($byMode !== '') && (is_array($byMode) || is_string($byMode))) {
+            $scripts = (array) $byMode;
         } elseif ($byMode === null) {
             $scripts = $this->modeResolver->removeModeConfig($scripts);
         }
 
         $allScripts = [];
         foreach ($scripts as $script) {
-            ($script && is_string($script)) and $allScripts[$script] = 1;
+            (($script !== '') && is_string($script)) and $allScripts[] = $script;
         }
 
-        /** @var list<string> $keys */
-        $keys = $allScripts ? array_keys($allScripts) : null;
+        /** @var list<non-empty-string>|null $scripts */
+        $scripts = ($allScripts !== []) ? array_values(array_unique($allScripts)) : null;
 
-        return $keys;
+        return $scripts;
     }
 
     /**
@@ -550,8 +510,8 @@ class Config
     private function parsePreCompiled(array $config): PreCompilation\Config
     {
         $raw = $config[self::PRE_COMPILED] ?? null;
-        if (!$raw || !is_array($raw)) {
-            return PreCompilation\Config::invalid();
+        if (($raw === []) || !is_array($raw)) {
+            return PreCompilation\Config::newInvalid();
         }
 
         return PreCompilation\Config::new($raw, $this->modeResolver);
@@ -563,12 +523,11 @@ class Config
      */
     private function parsePackageManager(array $config): ?PackageManager\PackageManager
     {
-        // 'commands' is deprecated, but we don't have an IO instance here to inform the user
-        $manager = $config[self::PACKAGE_MANAGER] ?? $config['commands'] ?? null;
+        $manager = $config[self::PACKAGE_MANAGER] ?? null;
 
-        if (!$manager) {
-            $byEnv = $this->resolveByEnv('PACKAGE_MANAGER');
-            if (!$byEnv) {
+        if (($manager === null) || ($manager === []) || ($manager === '')) {
+            $byEnv = $this->resolveByEnv('PACKAGE_MANAGER') ?? '';
+            if ($byEnv === '') {
                 return null;
             }
 
@@ -577,7 +536,7 @@ class Config
 
         if (is_array($manager)) {
             $byMode = $this->modeResolver->resolveConfig($manager);
-            if ($byMode && (is_array($byMode) || is_string($byMode))) {
+            if (($byMode !== []) && ($byMode !== '') && (is_array($byMode) || is_string($byMode))) {
                 $manager = $byMode;
             } elseif ($byMode === null) {
                 $manager = $this->modeResolver->removeModeConfig($manager);
@@ -585,7 +544,7 @@ class Config
         }
 
         if (is_string($manager)) {
-            return PackageManager\PackageManager::fromDefault(strtolower($manager));
+            return PackageManager\PackageManager::fromDefault($manager);
         }
 
         return is_array($manager) ? PackageManager\PackageManager::new($manager) : null;
@@ -602,16 +561,17 @@ class Config
             return null;
         }
 
-        if (is_array($isolated)) {
-            $byMode = $this->modeResolver->resolveConfig($isolated);
-            if ($byMode && (is_bool($byMode) || is_string($byMode))) {
-                $isolated = $byMode;
-            } elseif ($byMode === null) {
-                return false;
-            }
+        if (!is_array($isolated)) {
+            return false;
         }
 
-        return (bool)filter_var($isolated, FILTER_VALIDATE_BOOLEAN);
+        $byMode = $this->modeResolver->resolveConfig($isolated);
+
+        return match (true) {
+            is_bool($byMode) => $byMode,
+            is_string($byMode) => filter_var($byMode, FILTER_VALIDATE_BOOLEAN),
+            default => false,
+        };
     }
 
     /**
@@ -624,7 +584,7 @@ class Config
 
         if (is_array($paths)) {
             $byMode = $this->modeResolver->resolveConfig($paths);
-            if ($byMode && (is_array($byMode) || is_string($byMode))) {
+            if (($byMode !== '') && ($byMode !== []) && (is_array($byMode) || is_string($byMode))) {
                 $paths = $byMode;
             } elseif ($byMode === null) {
                 $paths = $this->modeResolver->removeModeConfig($paths);

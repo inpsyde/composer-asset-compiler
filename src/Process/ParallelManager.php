@@ -17,55 +17,20 @@ use Symfony\Component\Process\Process;
 
 class ParallelManager
 {
-    /**
-     * @var callable
-     */
+    /** @var callable */
     private $outputHandler;
-
-    /**
-     * @var Factory
-     */
-    private $factory;
-
-    /**
-     * @var positive-int
-     */
-    private $maxParallel;
-
-    /**
-     * @var positive-int
-     */
-    private $poll;
-
-    /**
-     * @var \SplQueue<array{Process, Asset}>
-     */
-    private $stack;
-
-    /**
-     * @var int
-     */
-    private $total = 0;
-
-    /**
-     * @var int
-     */
-    private $timeout = 0;
-
-    /**
-     * @var int
-     */
-    private $timeoutIncrement;
-
-    /**
-     * @var float
-     */
-    private $executionStarted;
-
-    /**
-     * @var array<string, string>
-     */
-    private $commands;
+    /** @var positive-int */
+    private int $maxParallel;
+    /** @var positive-int  */
+    private int $poll;
+    private int $timeoutIncrement;
+    /** @var \SplQueue<array{Process, Asset}> */
+    private \SplQueue $stack;
+    private int $timeout = 0;
+    private float $executionStarted;
+    /** @var array<string, string> */
+    private array $commands;
+    private int $total = 0;
 
     /**
      * @param callable $outputHandler
@@ -83,27 +48,26 @@ class ParallelManager
         int $timeoutIncrement = 300
     ): ParallelManager {
 
-        return new self($outputHandler, $factory, $maxParallel, $poll, $timeoutIncrement);
+        return new self($factory, $outputHandler, $maxParallel, $poll, $timeoutIncrement);
     }
 
     /**
-     * @param callable $outputHandler
      * @param Factory $factory
+     * @param callable $outputHandler
      * @param int $maxParallel
      * @param int $poll
      * @param int $timeoutIncrement
      */
     private function __construct(
+        private Factory $factory,
         callable $outputHandler,
-        Factory $factory,
         int $maxParallel,
         int $poll,
         int $timeoutIncrement
     ) {
 
         $this->outputHandler = $outputHandler;
-        $this->factory = $factory;
-        $this->maxParallel = $maxParallel >= 1 ? $maxParallel : 4;
+        $this->maxParallel = ($maxParallel >= 1) ? $maxParallel : 4;
         // sanity: between 0.005 and 2 seconds
         $this->poll = min(max($poll, 5000), 2000000);
         // sanity: between 30 and 3600 seconds
@@ -127,7 +91,7 @@ class ParallelManager
         array_unshift($commands, $command);
         $command = implode(' && ', $commands);
 
-        $process = $this->factory->create($command, (string)$asset->path());
+        $process = $this->factory->create($command, (string) $asset->path());
         $this->commands[$asset->name()] = $command;
         $this->stack->enqueue([$process, $asset]);
         $this->total++;
@@ -144,7 +108,7 @@ class ParallelManager
     public function execute(Io $io, bool $stopOnFailure): Results
     {
         if ($this->total <= 0) {
-            return Results::empty();
+            return Results::newEmpty();
         }
 
         $this->executionStarted = microtime(true);
@@ -165,7 +129,7 @@ class ParallelManager
         );
 
         $results = $timedOut
-            ? Results::timeout($this->total, $successful, $erroneous)
+            ? Results::newWithTimeout($this->total, $successful, $erroneous)
             : Results::new($this->total, $successful, $erroneous);
 
         $this->resetStatus();

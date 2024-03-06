@@ -21,8 +21,8 @@ nav_order: 17
 | `GITHUB_API_USER`                           | Alternative to `GITHUB_USER_NAME`.                                                                                                           |
 | `GITHUB_ACTOR`                              | Alternative to `GITHUB_USER_NAME`.                                                                                                           |
 | `GITHUB_USER_TOKEN`                         | Set the GitHub Personal Access Token to be used for GitHub pre-compilation adapters.                                                         |
-| `GITHUB_API_TOKEN`                          | Alternative to `GITHUB_USER_TOKEN`.                                                                                                           |
-| `GITHUB_TOKEN`                              | Alternative to `GITHUB_USER_TOKEN`.                                                                                                           |
+| `GITHUB_API_TOKEN`                          | Alternative to `GITHUB_USER_TOKEN`.                                                                                                          |
+| `GITHUB_TOKEN`                              | Alternative to `GITHUB_USER_TOKEN`.                                                                                                          |
 | `GITHUB_API_REPOSITORY`                     | Set the GitHub repository to be used for GitHub pre-compilation adapters. Alternative to `pre-compiled.config.repository` setting.           |
 | `GITHUB_REPOSITORY`                         | Alternative to `GITHUB_API_REPOSITORY`.                                                                                                      |
 

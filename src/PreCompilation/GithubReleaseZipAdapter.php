@@ -21,49 +21,30 @@ use Inpsyde\AssetsCompiler\Util\Io;
 class GithubReleaseZipAdapter implements Adapter
 {
     /**
-     * @var Io
-     */
-    private $io;
-
-    /**
-     * @var HttpClient
-     */
-    private $client;
-
-    /**
-     * @var ArchiveDownloaderFactory
-     */
-    private $downloaderFactory;
-
-    /**
      * @param Io $io
      * @param HttpClient $client
-     * @param ArchiveDownloaderFactory $archiveDownloaderFactory
+     * @param ArchiveDownloaderFactory $downloaderFactory
      * @return GithubReleaseZipAdapter
      */
     public static function new(
         Io $io,
         HttpClient $client,
-        ArchiveDownloaderFactory $archiveDownloaderFactory
+        ArchiveDownloaderFactory $downloaderFactory
     ): GithubReleaseZipAdapter {
 
-        return new self($io, $client, $archiveDownloaderFactory);
+        return new self($io, $client, $downloaderFactory);
     }
 
     /**
      * @param Io $io
      * @param HttpClient $client
-     * @param ArchiveDownloaderFactory $archiveDownloaderFactory
+     * @param ArchiveDownloaderFactory $downloaderFactory
      */
     private function __construct(
-        Io $io,
-        HttpClient $client,
-        ArchiveDownloaderFactory $archiveDownloaderFactory
+        private Io $io,
+        private HttpClient $client,
+        private ArchiveDownloaderFactory $downloaderFactory
     ) {
-
-        $this->io = $io;
-        $this->client = $client;
-        $this->downloaderFactory = $archiveDownloaderFactory;
     }
 
     /**
@@ -92,10 +73,10 @@ class GithubReleaseZipAdapter implements Adapter
         array $environment
     ): bool {
 
-        $version = $asset->version();
+        $version = $asset->version() ?? '';
 
         try {
-            if (!$version) {
+            if ($version === '') {
                 $this->io->writeError('  Invalid configuration for GitHub release zip.');
 
                 return false;
@@ -104,20 +85,22 @@ class GithubReleaseZipAdapter implements Adapter
             $ghConfig = GitHubConfig::new($config, $environment);
 
             [$endpoint, $owner] = $this->buildReleaseEndpoint($source, $ghConfig, $version);
-            if (!$endpoint || !$owner) {
+            $endpoint ??= '';
+            $owner ??= '';
+            if (($endpoint === '') || ($owner === '')) {
                 $this->io->writeError('  Invalid GitHub release configuration.');
 
                 return false;
             }
 
-            $distUrl = $this->retrieveArchiveUrl($source, $endpoint, $ghConfig, $version);
-            if (!$distUrl) {
+            $distUrl = $this->retrieveArchiveUrl($source, $endpoint, $ghConfig, $version) ?? '';
+            if ($distUrl === '') {
                 return false;
             }
 
             $headers = ['Accept: application/octet-stream'];
-            $auth = $ghConfig->basicAuth();
-            $auth and $headers[] = "Authorization: {$auth}";
+            $auth = $ghConfig->basicAuth() ?? '';
+            ($auth !== '') and $headers[] = "Authorization: {$auth}";
 
             $type = ArchiveDownloader::ZIP;
             $package = new Package($asset->name() . '-assets', 'release-zip', 'release-zip');
@@ -140,15 +123,19 @@ class GithubReleaseZipAdapter implements Adapter
      * @param string $version
      * @return array{string,string}|array{null,null}
      */
-    private function buildReleaseEndpoint(string $source, GitHubConfig $config, string $version): array
-    {
+    private function buildReleaseEndpoint(
+        string $source,
+        GitHubConfig $config,
+        string $version
+    ): array {
+
         if (!$source) {
             return [null, null];
         }
 
         $repo = $config->repo();
-        $userRepo = $repo ? explode('/', $repo) : null;
-        if (!$userRepo || count($userRepo) !== 2) {
+        $userRepo = ($repo !== null) ? explode('/', $repo) : null;
+        if (!is_array($userRepo) || (count($userRepo) !== 2) || ($userRepo[0] === '')) {
             return [null, null];
         }
 
@@ -159,9 +146,9 @@ class GithubReleaseZipAdapter implements Adapter
         }
 
         $safe = filter_var($endpoint, FILTER_SANITIZE_URL);
-        $safe && is_string($safe) or $safe = null;
+        ($safe === '') and $safe = null;
 
-        return $safe ? [$safe, reset($userRepo) ?: ''] : [null, null];
+        return ($safe !== null) ? [$safe, $userRepo[0]] : [null, null];
     }
 
     /**
@@ -180,12 +167,12 @@ class GithubReleaseZipAdapter implements Adapter
 
         $response = $this->client->get($endpoint, [], $config->basicAuth());
         $json = $response ? json_decode($response, true) : null;
-        if (!$json || !is_array($json)) {
+        if (($json === null) || ($json === []) || !is_array($json)) {
             throw new \Exception("Could not obtain a valid API response from {$endpoint}.");
         }
 
-        $assets = $json['assets'] ?? null;
-        if (!$assets || !is_array($assets)) {
+        $assets = $json['assets'] ?? [];
+        if (($assets === []) || !is_array($assets)) {
             $this->io->write("  Release '{$version}' has no binary assets.");
 
             return null;
@@ -195,11 +182,15 @@ class GithubReleaseZipAdapter implements Adapter
             $targetName .= '.zip';
         }
 
-        $id = $this->findBinaryId($assets, $targetName);
-        $repo = $config->repo() ?: '';
-        $id or $this->io->writeError("  Release binary '{$targetName}' not found.");
+        $id = $this->findBinaryId($assets, $targetName) ?? '';
+        $repo = $config->repo() ?? '';
+        if ($id === '') {
+            $this->io->writeError("  Release binary '{$targetName}' not found.");
 
-        return $id ? "https://api.github.com/repos/{$repo}/releases/assets/{$id}" : null;
+            return null;
+        }
+
+        return "https://api.github.com/repos/{$repo}/releases/assets/{$id}";
     }
 
     /**
@@ -212,12 +203,12 @@ class GithubReleaseZipAdapter implements Adapter
         foreach ($items as $item) {
             if (
                 is_array($item)
-                && !empty($item['name'])
+                && array_key_exists('name', $item)
                 && ($item['name'] === $targetName)
-                && !empty($item['id'])
+                && array_key_exists('id', $item)
                 && is_scalar($item['id'])
             ) {
-                return (string)$item['id'];
+                return (string) $item['id'];
             }
         }
 

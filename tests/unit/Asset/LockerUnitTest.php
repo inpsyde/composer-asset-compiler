@@ -17,6 +17,7 @@ use Inpsyde\AssetsCompiler\Asset\Config;
 use Inpsyde\AssetsCompiler\Asset\HashBuilder;
 use Inpsyde\AssetsCompiler\Asset\Locker;
 use Inpsyde\AssetsCompiler\Asset\Asset;
+use Inpsyde\AssetsCompiler\Asset\PathsFinder;
 use Inpsyde\AssetsCompiler\Util\ModeResolver;
 use Inpsyde\AssetsCompiler\Util\Io;
 use Inpsyde\AssetsCompiler\Tests\UnitTestCase;
@@ -41,10 +42,11 @@ class LockerUnitTest extends UnitTestCase
     public function testIsLockedIsFalseForEmptyFileAndErrorWritten(): void
     {
         $io = \Mockery::mock(Io::class);
+        $io->allows('isVerbose')->andReturn(true);
         $io
             ->expects('writeVerboseError')
             ->andReturnUsing(
-                static function (string $arg) {
+                static function (string $arg): void {
                     static::assertStringContainsString('lock file', $arg);
                 }
             );
@@ -88,7 +90,6 @@ class LockerUnitTest extends UnitTestCase
     public function testIsLockedIsFalseBeforeLockAndTrueAfterThat(): void
     {
         $packagesJson = (new vfsStreamFile('package.json', 0777))->withContent('{}');
-
         $dir = vfsStream::setup('exampleDir');
         $dir->addChild($packagesJson);
 
@@ -131,10 +132,11 @@ class LockerUnitTest extends UnitTestCase
         ]);
 
         $io = \Mockery::mock(Io::class);
+        $io->allows('isVerbose')->andReturn(false);
         $io
             ->expects('writeVerboseComment')
             ->andReturnUsing(
-                static function (string $arg) {
+                static function (string $arg): void {
                     static::assertStringContainsString('ignoring', strtolower($arg));
                     static::assertStringContainsString('test/x-y', $arg);
                 }
@@ -162,11 +164,17 @@ class LockerUnitTest extends UnitTestCase
      */
     private function factoryLocker(?Io $io = null, string $ignoreLock = ''): Locker
     {
-        $io = $io ?? Io::new(\Mockery::mock(IOInterface::class));
+        if ($io === null) {
+            $cIo = \Mockery::mock(IOInterface::class);
+            $cIo->allows('isVerbose')->andReturn(false);
+            $io = Io::new($cIo);
+        }
+
+        $finder = PathsFinder::new(new \EmptyIterator(), new Filesystem(), $io, __DIR__);
 
         return new Locker(
             $io,
-            HashBuilder::new(new Filesystem(), $io),
+            HashBuilder::new($finder, $io),
             $ignoreLock
         );
     }

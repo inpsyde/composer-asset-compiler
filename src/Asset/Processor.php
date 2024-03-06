@@ -25,60 +25,15 @@ use Inpsyde\AssetsCompiler\Util\Io;
  */
 class Processor
 {
-    /**
-     * @var Io
-     */
-    private $io;
-
-    /**
-     * @var Config
-     */
-    private $config;
-
-    /**
-     * @var Finder
-     */
-    private $packageManagerFinder;
-
-    /**
-     * @var ProcessExecutor
-     */
-    private $executor;
-
-    /**
-     * @var Locker
-     */
-    private $locker;
-
-    /**
-     * @var ParallelManager
-     */
-    private $parallelManager;
-
-    /**
-     * @var PreCompilation\Handler
-     */
-    private $preCompiler;
-
-    /**
-     * @var callable
-     */
+    /** @var callable */
     private $outputHandler;
 
-    /**
-     * @var Filesystem
-     */
-    private $filesystem;
-
-    /**
-     * @var PackageManager|null
-     */
-    private $defaultPackageManager;
+    private ?PackageManager $defaultPackageManager = null;
 
     /**
      * @var array{bool, string|null}
      */
-    private $tempDir = [false, null];
+    private array $tempDir = [false, null];
 
     /**
      * @param Io $io
@@ -112,8 +67,8 @@ class Processor
             $parallelManager,
             $locker,
             $preCompiler,
-            $outputHandler,
-            $filesystem
+            $filesystem,
+            $outputHandler
         );
     }
 
@@ -125,30 +80,22 @@ class Processor
      * @param ParallelManager $parallelManager
      * @param Locker $locker
      * @param PreCompilation\Handler $preCompiler
-     * @param callable $outputHandler
      * @param Filesystem $filesystem
+     * @param callable $outputHandler
      */
     private function __construct(
-        Io $io,
-        Config $config,
-        Finder $packageManagerFinder,
-        ProcessExecutor $executor,
-        ParallelManager $parallelManager,
-        Locker $locker,
-        PreCompilation\Handler $preCompiler,
-        callable $outputHandler,
-        Filesystem $filesystem
+        private Io $io,
+        private Config $config,
+        private Finder $packageManagerFinder,
+        private ProcessExecutor $executor,
+        private ParallelManager $parallelManager,
+        private Locker $locker,
+        private PreCompilation\Handler $preCompiler,
+        private Filesystem $filesystem,
+        callable $outputHandler
     ) {
 
-        $this->io = $io;
-        $this->config = $config;
-        $this->packageManagerFinder = $packageManagerFinder;
-        $this->executor = $executor;
-        $this->parallelManager = $parallelManager;
-        $this->locker = $locker;
-        $this->preCompiler = $preCompiler;
         $this->outputHandler = $outputHandler;
-        $this->filesystem = $filesystem;
     }
 
     /**
@@ -163,72 +110,91 @@ class Processor
         }
 
         $toWipe = [];
-        $stopOnFailure = $rootConfig->stopOnFailure();
-        $return = true;
-        $processManager = $this->parallelManager;
-
+        $manager = $this->parallelManager;
         foreach ($assets as $asset) {
-            if (!($asset instanceof Asset) && $stopOnFailure) {
-                throw new \Exception('Invalid data to process.');
-            }
-
-            [$name, $path, $shouldWipe] = ($asset instanceof Asset)
-                ? $this->assetProcessInfo($asset, $rootConfig)
-                : [null, null, null];
-            if (!$name || !$path || ($shouldWipe === null)) {
-                continue;
-            }
-
-            /** @var Asset $asset */
-            if ($this->maybeSkipAsset($asset)) {
-                continue;
-            }
-
-            try {
-                $commands = $this->findCommandsForAsset($asset, $rootConfig);
-            } catch (\Throwable $throwable) {
-                $this->io->writeError("Could not find a package manager on the system.");
-
+            [$ok, $manager, $toWipe] = $this->processAsset($asset, $rootConfig, $manager, $toWipe);
+            if ($ok === false) {
                 return false;
             }
-
-            $installedDeps = $this->doDependencies($asset, $commands, $rootConfig);
-
-            if (!$installedDeps && $stopOnFailure) {
-                return false;
-            }
-
-            $return = $installedDeps && $return;
-            $commandStrings = $this->buildScriptCommands($asset, $commands);
-
-            // No script, we can lock already
-            if (!$commandStrings) {
-                $this->locker->lock($asset);
-                $shouldWipe and $this->wipeNodeModules($path);
-
-                continue;
-            }
-
-            $processManager = $processManager->pushAssetToProcess($asset, ...$commandStrings);
-            $shouldWipe and $toWipe[$name] = $shouldWipe;
         }
 
-        $results = $processManager->execute($this->io, $stopOnFailure);
+        $results = $manager->execute($this->io, $rootConfig->stopOnFailure());
 
-        return $this->handleResults($results, $toWipe) && $return;
+        return $this->handleResults($results, $toWipe);
+    }
+
+    /**
+     * @param mixed $asset
+     * @param RootConfig $rootConfig
+     * @param ParallelManager $manager
+     * @param array<string, bool> $toWipe
+     * @param bool $stopOnFailure
+     * @return list{bool, ParallelManager, array<string, bool>}
+     */
+    private function processAsset(
+        mixed $asset,
+        RootConfig $rootConfig,
+        ParallelManager $manager,
+        array $toWipe
+    ): array {
+
+        if (!($asset instanceof Asset) && $rootConfig->stopOnFailure()) {
+            throw new \Exception('Invalid data to process.');
+        }
+
+        [$name, $path, $shouldWipe] = ($asset instanceof Asset)
+            ? $this->assetProcessInfo($asset, $rootConfig)
+            : [null, null, null];
+        if (($name === null) || ($path === null) || ($shouldWipe === null)) {
+            return [true, $manager, $toWipe];
+        }
+
+        /** @var Asset $asset */
+        if ($this->maybeSkipAsset($asset)) {
+            return [true, $manager, $toWipe];
+        }
+
+        try {
+            $commands = $this->findCommandsForAsset($asset, $rootConfig);
+        } catch (\Throwable) {
+            $this->io->writeError("Could not find a package manager on the system.");
+
+            return [false, $manager, $toWipe];
+        }
+
+        $installedDeps = $this->doDependencies($asset, $commands, $rootConfig);
+
+        if (!$installedDeps) {
+            return [!$rootConfig->stopOnFailure(), $manager, $toWipe];
+        }
+
+        $commandStrings = $this->buildScriptCommands($asset, $commands) ?? [];
+
+        // No script, we can lock already
+        if ($commandStrings === []) {
+            $this->locker->lock($asset);
+            $shouldWipe and $this->wipeNodeModules($path);
+
+            return [true, $manager, $toWipe];
+        }
+
+        $manager = $manager->pushAssetToProcess($asset, ...$commandStrings);
+        $shouldWipe and $toWipe[$name] = $shouldWipe;
+
+        return [true, $manager, $toWipe];
     }
 
     /**
      * @param Asset $asset
      * @param RootConfig $root
-     * @return array{string|null, string|null, bool|null}
+     * @return list{non-empty-string,non-empty-string,bool}|list{null,null,null}
      */
     private function assetProcessInfo(Asset $asset, RootConfig $root): array
     {
         $name = $asset->name();
-        $path = $asset->path();
+        $path = $asset->path() ?? '';
 
-        if (!$name || !$path) {
+        if (($name === '') || ($path === '')) {
             return [null, null, null];
         }
 
@@ -319,8 +285,8 @@ class Processor
             return true;
         }
 
-        $cwd = $asset->path();
-        if (!$cwd || !is_dir($cwd)) {
+        $cwd = $asset->path() ?? '';
+        if (($cwd === '') || !is_dir($cwd)) {
             return false;
         }
 
@@ -328,7 +294,7 @@ class Processor
             ? $packageManager->updateCmd($this->io)
             : $packageManager->installCmd($this->io);
 
-        if (!$command) {
+        if (($command === null) || ($command === '')) {
             return false;
         }
 
@@ -377,7 +343,7 @@ class Processor
         $isYarn = $packageManager->isYarn();
         $cmdName = $packageManager->name();
         $cacheParam = $isYarn ? 'cache-folder' : 'cache';
-        if (strpos($command, " --{$cacheParam}") !== false) {
+        if (str_contains($command, " --{$cacheParam}")) {
             return $command;
         }
 
@@ -387,7 +353,7 @@ class Processor
 
         try {
             $fullPath and $this->filesystem->ensureDirectoryExists($fullPath);
-        } catch (\Throwable $throwable) {
+        } catch (\Throwable) {
             $flushCache = true;
         }
 
@@ -460,8 +426,8 @@ class Processor
             [, $asset] = $success;
             $this->locker->lock($asset);
             if (!empty($toWipe[$asset->name()])) {
-                $path = $asset->path();
-                $path and $this->wipeNodeModules($path);
+                $path = $asset->path() ?? '';
+                ($path !== '') and $this->wipeNodeModules($path);
             }
         }
 
@@ -482,8 +448,8 @@ class Processor
 
         $assetCommands = [];
         foreach ($scripts as $script) {
-            $command = $packageManager->scriptCmd($script, $asset->env());
-            $command and $assetCommands[] = $command;
+            $command = $packageManager->scriptCmd($script, $asset->env()) ?? '';
+            ($command !== '') and $assetCommands[] = $command;
         }
 
         $commandsStr = implode(' && ', $assetCommands);

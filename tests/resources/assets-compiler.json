@@ -1,5 +1,5 @@
 {
-    "commands": "npm",
+    "package-manager": "npm",
     "wipe-node-modules": false,
     "auto-discover": false,
     "script": "gulp",

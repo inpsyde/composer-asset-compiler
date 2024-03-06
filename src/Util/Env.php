@@ -14,11 +14,6 @@ namespace Inpsyde\AssetsCompiler\Util;
 class Env
 {
     /**
-     * @var \ArrayAccess|null
-     */
-    private static $getenvWrap = null;
-
-    /**
      * @return string|null
      */
     public static function assetsCompilerMode(): ?string
@@ -33,7 +28,13 @@ class Env
      */
     public static function readEnv(string $name, array $defaults = []): ?string
     {
-        $env = $_SERVER[$name] ?? $_ENV[$name] ?? getenv($name) ?: ($defaults[$name] ?? null);
+        $env = $_SERVER[$name] ?? $_ENV[$name] ?? null;
+        if ($env === null) {
+            $env = getenv($name);
+            ($env === false) and $env = null;
+        }
+
+        $env ??= ($defaults[$name] ?? null);
 
         return is_string($env) ? $env : null;
     }
@@ -45,14 +46,14 @@ class Env
      */
     public static function replaceEnvVariables(string $string, array $defaultEnv): string
     {
-        if (!$string || (strpos($string, '${') === false)) {
+        if (!$string || !str_contains($string, '${')) {
             return $string;
         }
 
-        return (string)preg_replace_callback(
+        return (string) preg_replace_callback(
             '~\$\{([a-z0-9_]+)\}~i',
             static function (array $var) use ($defaultEnv): string {
-                return (string)static::readEnv($var[1], $defaultEnv);
+                return (string) static::readEnv($var[1], $defaultEnv);
             },
             $string
         );

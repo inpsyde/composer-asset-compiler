@@ -38,36 +38,6 @@ final class RootConfig
     ];
 
     /**
-     * @var string
-     */
-    private $name;
-
-    /**
-     * @var string
-     */
-    private $path;
-
-    /**
-     * @var array
-     */
-    private $raw;
-
-    /**
-     * @var ModeResolver
-     */
-    private $modeResolver;
-
-    /**
-     * @var Filesystem
-     */
-    private $filesystem;
-
-    /**
-     * @var array<string, string>
-     */
-    private $defaultEnv;
-
-    /**
      * @param string $name
      * @param string $path
      * @param array $data
@@ -85,32 +55,25 @@ final class RootConfig
         array $defaultEnv = []
     ): RootConfig {
 
-        return new static($name, $path, $data, $modeResolver, $filesystem, $defaultEnv);
+        return new static($name, rtrim($path, '/'), $data, $modeResolver, $filesystem, $defaultEnv);
     }
 
     /**
      * @param string $name
      * @param string $path
-     * @param array $data
+     * @param array $raw
      * @param ModeResolver $modeResolver
      * @param Filesystem $filesystem
      * @param array<string, string> $defaultEnv
      */
     private function __construct(
-        string $name,
-        string $path,
-        array $data,
-        ModeResolver $modeResolver,
-        Filesystem $filesystem,
-        array $defaultEnv
+        private string $name,
+        private string $path,
+        private array $raw,
+        private ModeResolver $modeResolver,
+        private Filesystem $filesystem,
+        private array $defaultEnv
     ) {
-
-        $this->name = $name;
-        $this->path = rtrim($path, '/');
-        $this->raw = $data;
-        $this->modeResolver = $modeResolver;
-        $this->filesystem = $filesystem;
-        $this->defaultEnv = $defaultEnv;
     }
 
     /**
@@ -154,7 +117,7 @@ final class RootConfig
     {
         $config = $this->resolveByMode(self::AUTO_DISCOVER, false, true);
 
-        return (bool)filter_var($config, FILTER_VALIDATE_BOOLEAN);
+        return filter_var($config, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
@@ -164,7 +127,7 @@ final class RootConfig
     {
         $config = $this->resolveByMode(self::AUTO_RUN, false, false);
 
-        return (bool)filter_var($config, FILTER_VALIDATE_BOOLEAN);
+        return filter_var($config, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
@@ -185,7 +148,7 @@ final class RootConfig
     {
         $config = $this->resolveByMode(self::STOP_ON_FAILURE, false, true);
 
-        return (bool)filter_var($config, FILTER_VALIDATE_BOOLEAN);
+        return filter_var($config, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
@@ -194,7 +157,7 @@ final class RootConfig
     public function maxProcesses(): int
     {
         $config = $this->resolveByMode(self::MAX_PROCESSES, false, 4);
-        $maxProcesses = is_numeric($config) ? (int)$config : 4;
+        $maxProcesses = is_numeric($config) ? (int) $config : 4;
         ($maxProcesses < 1) and $maxProcesses = 1;
 
         return $maxProcesses;
@@ -206,7 +169,7 @@ final class RootConfig
     public function processesPoll(): int
     {
         $config = $this->resolveByMode(self::PROCESSES_POLL, false, 100000);
-        $poll = is_numeric($config) ? (int)$config : 100000;
+        $poll = is_numeric($config) ? (int) $config : 100000;
         ($poll <= 10000) and $poll = 100000;
 
         return $poll;
@@ -219,7 +182,7 @@ final class RootConfig
     {
         $config = $this->resolveByMode(self::TIMEOUT_INCR, false, null);
 
-        $incr = is_numeric($config) ? (int)$config : 300;
+        $incr = is_numeric($config) ? (int) $config : 300;
 
         return min(max(30, $incr), 3600);
     }
@@ -259,7 +222,7 @@ final class RootConfig
      * @param mixed $default
      * @return mixed
      */
-    private function resolveByMode(string $key, bool $allowedArray, $default)
+    private function resolveByMode(string $key, bool $allowedArray, mixed $default): mixed
     {
         $config = $this->raw[$key] ?? null;
         if (($config === null) && (self::BY_ENV[$key] ?? null)) {

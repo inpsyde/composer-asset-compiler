@@ -16,35 +16,12 @@ use Inpsyde\AssetsCompiler\Util\Env;
 
 final class Asset
 {
-    /**
-     * @var string
-     */
-    private $name;
-
-    /**
-     * @var Config|null
-     */
-    private $config = null;
-
-    /**
-     * @var string|null
-     */
-    private $folder = null;
-
-    /**
-     * @var bool|null
-     */
-    private $valid;
-
-    /**
-     * @var string|null
-     */
-    private $version;
-
-    /**
-     * @var string|null
-     */
-    private $reference;
+    private Config|null $config = null;
+    private string|null $folder = null;
+    private bool|null $valid = null;
+    private string|null $version = null;
+    private string|null $reference = null;
+    private bool $isRoot = false;
 
     /**
      * @param string $name
@@ -52,6 +29,7 @@ final class Asset
      * @param string|null $folder
      * @param string|null $version
      * @param string|null $reference
+     * @param bool $isRoot
      * @return Asset
      */
     public static function new(
@@ -59,14 +37,16 @@ final class Asset
         Config $config,
         ?string $folder = null,
         ?string $version = null,
-        ?string $reference = null
+        ?string $reference = null,
+        bool $isRoot = false
     ): Asset {
 
         $asset = new static($name);
-        $asset->folder = $folder ? rtrim($folder, '/') : null;
+        $asset->folder = (($folder !== null) && ($folder !== '')) ? rtrim($folder, '/') : null;
         $asset->config = $config;
         $asset->version = $version;
         $asset->reference = $reference;
+        $asset->isRoot = $isRoot;
 
         return $asset;
     }
@@ -74,16 +54,15 @@ final class Asset
     /**
      * @param string $name
      */
-    private function __construct(string $name)
+    private function __construct(private string $name)
     {
-        $this->name = $name;
     }
 
     /**
      * @return bool
      *
-     * @psalm-assert-if-true string $this->name
-     * @psalm-assert-if-true string $this->folder
+     * @psalm-assert-if-true non-empty-string $this->name
+     * @psalm-assert-if-true non-empty-string $this->folder
      */
     public function isValid(): bool
     {
@@ -91,13 +70,13 @@ final class Asset
             return $this->valid;
         }
 
-        if (!$this->name || !$this->folder) {
+        if (($this->name === '') || ($this->folder === null) || ($this->folder === '')) {
             $this->valid = false;
 
             return false;
         }
 
-        if (!$this->config || !$this->config->isRunnable()) {
+        if (($this->config === null) || !$this->config->isRunnable()) {
             $this->valid = false;
 
             return false;
@@ -191,11 +170,13 @@ final class Asset
      */
     public function preCompilationConfig(): PreCompilation\Config
     {
-        if (!$this->config || Env::readEnv('COMPOSER_ASSET_COMPILER_PRECOMPILING', $this->env())) {
-            return PreCompilation\Config::invalid();
+        $env = Env::readEnv('COMPOSER_ASSET_COMPILER_PRECOMPILING', $this->env()) ?? '';
+
+        if (($this->config === null) || ($env !== '')) {
+            return PreCompilation\Config::newInvalid();
         }
 
-        return $this->config->preCompilationConfig() ?? PreCompilation\Config::invalid();
+        return $this->config->preCompilationConfig() ?? PreCompilation\Config::newInvalid();
     }
 
     /**
@@ -203,7 +184,7 @@ final class Asset
      */
     public function isolatedCache(): ?bool
     {
-        return $this->config ? $this->config->isolatedCache() : null;
+        return $this->config?->isolatedCache();
     }
 
     /**
@@ -212,6 +193,14 @@ final class Asset
     public function srcPaths(): array
     {
         return $this->config ? $this->config->srcPaths() : [];
+    }
+
+    /**
+     * @return bool
+     */
+    public function isRoot(): bool
+    {
+        return $this->isRoot;
     }
 
     /**

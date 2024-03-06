@@ -21,27 +21,7 @@ class Finder
     /**
      * @var array
      */
-    private $packagesData;
-
-    /**
-     * @var ModeResolver
-     */
-    private $modeResolver;
-
-    /**
-     * @var Defaults<Config|null|>
-     */
-    private $defaults;
-
-    /**
-     * @var Config
-     */
-    private $rootPackageConfig;
-
-    /**
-     * @var bool
-     */
-    private $stopOnFailure;
+    private array $packagesData;
 
     /**
      * @param array $packageData
@@ -79,17 +59,13 @@ class Finder
      */
     private function __construct(
         array $packageData,
-        ModeResolver $modeResolver,
-        Defaults $defaults,
-        Config $rootPackageConfig,
-        bool $stopOnFailure
+        private ModeResolver $modeResolver,
+        private Defaults $defaults,
+        private Config $rootPackageConfig,
+        private bool $stopOnFailure
     ) {
 
         $this->packagesData = $modeResolver->removeModeConfig($packageData);
-        $this->modeResolver = $modeResolver;
-        $this->defaults = $defaults;
-        $this->rootPackageConfig = $rootPackageConfig;
-        $this->stopOnFailure = $stopOnFailure;
     }
 
     /**
@@ -125,14 +101,14 @@ class Finder
             if (
                 ($package === $root)
                 || isset($found[$name])
-                || $this->nameMatches($name, ...$excludeNames)[0]
+                || ($this->nameMatches($name, ...$excludeNames)[0] !== null)
             ) {
                 continue;
             }
 
             [, $rootLevelPackagePattern] = $this->nameMatches($name, ...$rootLevelIncludePatterns);
 
-            $rootLevelPackageConfig = $rootLevelPackagePattern
+            $rootLevelPackageConfig = ($rootLevelPackagePattern !== null)
                 ? ($rootLevelPackagesConfig[$rootLevelPackagePattern] ?? null)
                 : null;
 
@@ -184,7 +160,7 @@ class Finder
         $rootPackage = $assetFactory->attemptFactory(
             $root,
             $this->rootPackageConfig,
-            Defaults::empty()
+            Defaults::newEmpty()
         );
         if ($rootPackage && $rootPackage->isValid()) {
             return $rootPackage;
@@ -194,8 +170,7 @@ class Finder
     }
 
     /**
-     * @return array{array<string, Config>, array<string>}
-     * @throws \Exception
+     * @return list{array<string, Config>, array<string>}
      */
     private function extractRootLevelPackagesData(): array
     {
@@ -203,7 +178,7 @@ class Finder
         $exclude = [];
 
         foreach ($this->packagesData as $pattern => $packageData) {
-            $config = $this->factoryRootLevelPackageConfig((string)$pattern, $packageData);
+            $config = $this->factoryRootLevelPackageConfig((string) $pattern, $packageData);
             if (!$config) {
                 continue;
             }
@@ -226,7 +201,7 @@ class Finder
      * @param mixed $packageData
      * @return Config|null
      */
-    private function factoryRootLevelPackageConfig(string $pattern, $packageData): ?Config
+    private function factoryRootLevelPackageConfig(string $pattern, mixed $packageData): ?Config
     {
         if (!$pattern) {
             if ($this->stopOnFailure) {
@@ -252,13 +227,13 @@ class Finder
     /**
      * @param string $name
      * @param string[] $patterns
-     * @return array{0:null, 1:null}|array{0:string, 1:string}
+     * @return list{null,null}|list{string,string}
      */
     private function nameMatches(string $name, string ...$patterns): array
     {
         foreach ($patterns as $pattern) {
             if (
-                $pattern === $name
+                ($pattern === $name)
                 || fnmatch($pattern, $name, FNM_PATHNAME | FNM_PERIOD | FNM_CASEFOLD)
             ) {
                 return [$name, $pattern];

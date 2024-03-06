@@ -19,35 +19,9 @@ use Inpsyde\AssetsCompiler\Util\Io;
 
 class Handler
 {
-    /**
-     * @var HashBuilder
-     */
-    private $hashBuilder;
-
-    /**
-     * @var array<string, Adapter>
-     */
-    private $adapters = [];
-
-    /**
-     * @var string|null
-     */
-    private $defaultAdapterId;
-
-    /**
-     * @var Io
-     */
-    private $io;
-
-    /**
-     * @var Filesystem
-     */
-    private $filesystem;
-
-    /**
-     * @var ModeResolver
-     */
-    private $modeResolver;
+    /** @var array<string, Adapter> */
+    private array $adapters = [];
+    private string|null $defaultAdapterId = null;
 
     /**
      * @param HashBuilder $hashBuilder
@@ -73,16 +47,11 @@ class Handler
      * @param ModeResolver $modeResolver
      */
     final private function __construct(
-        HashBuilder $hashBuilder,
-        Io $io,
-        Filesystem $filesystem,
-        ModeResolver $modeResolver
+        private HashBuilder $hashBuilder,
+        private Io $io,
+        private Filesystem $filesystem,
+        private ModeResolver $modeResolver
     ) {
-
-        $this->hashBuilder = $hashBuilder;
-        $this->io = $io;
-        $this->filesystem = $filesystem;
-        $this->modeResolver = $modeResolver;
     }
 
     /**
@@ -115,12 +84,12 @@ class Handler
         }
 
         $environment = $asset->env();
-        $source = $config->source($placeholders, $environment);
-        $path = $asset->path();
-        $target = $config->target($placeholders);
+        $source = $config->source($placeholders, $environment) ?? '';
+        $path = $asset->path() ?? '';
+        $target = $config->target($placeholders) ?? '';
         $name = $asset->name();
 
-        if (!$source || !$path || !$target) {
+        if (($source === '') || ($path === '') || ($target === '')) {
             $this->io->writeVerboseComment("Found no pre-processed configuration for '{$name}'.");
             return false;
         }
@@ -164,6 +133,8 @@ class Handler
 
         $adapterId = $config->adapter($placeholders) ?? $this->defaultAdapterId;
 
-        return $adapterId ? ($this->adapters[$adapterId] ?? null) : null;
+        return (($adapterId !== null) && ($adapterId !== ''))
+            ? ($this->adapters[$adapterId] ?? null)
+            : null;
     }
 }

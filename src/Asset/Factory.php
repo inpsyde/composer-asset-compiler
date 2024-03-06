@@ -13,37 +13,13 @@ namespace Inpsyde\AssetsCompiler\Asset;
 
 use Composer\Installer\InstallationManager;
 use Composer\Package\PackageInterface;
+use Composer\Package\RootPackage;
 use Composer\Package\RootPackageInterface;
 use Composer\Util\Filesystem;
 use Inpsyde\AssetsCompiler\Util\ModeResolver;
 
 class Factory
 {
-    /**
-     * @var ModeResolver
-     */
-    private $modeResolver;
-
-    /**
-     * @var Filesystem
-     */
-    private $filesystem;
-
-    /**
-     * @var InstallationManager
-     */
-    private $installationManager;
-
-    /**
-     * @var string
-     */
-    private $rootDir;
-
-    /**
-     * @var array<string, string>
-     */
-    private $rootEnv;
-
     /**
      * @param ModeResolver $modeResolver
      * @param Filesystem $filesystem
@@ -71,18 +47,12 @@ class Factory
      * @param array<string, string> $rootEnv
      */
     final private function __construct(
-        ModeResolver $modeResolver,
-        Filesystem $filesystem,
-        InstallationManager $installationManager,
-        string $rootDir,
-        array $rootEnv
+        private ModeResolver $modeResolver,
+        private Filesystem $filesystem,
+        private InstallationManager $installationManager,
+        private string $rootDir,
+        private array $rootEnv
     ) {
-
-        $this->modeResolver = $modeResolver;
-        $this->filesystem = $filesystem;
-        $this->installationManager = $installationManager;
-        $this->rootDir = $rootDir;
-        $this->rootEnv = $rootEnv;
     }
 
     /**
@@ -108,7 +78,7 @@ class Factory
         $isRoot = ($package instanceof RootPackageInterface);
         $path = $isRoot
             ? $this->rootDir
-            : ($this->installationManager->getInstallPath($package) ?? '');
+            : (string) $this->installationManager->getInstallPath($package);
 
         if (!$config && (!$rootLevelPackageConfig || $packageOrDefaultAllowed)) {
             $packageLevelConfig = Config::forComposerPackage(
@@ -125,16 +95,35 @@ class Factory
             $config = $defaultConfig;
         }
 
-        if (!$config || !$config->isRunnable()) {
+        return $this->createAssetForConfig($config, $package, $path);
+    }
+
+    /**
+     * @param Config|null $config
+     * @param PackageInterface $package
+     * @param string $path
+     * @return Asset|null
+     */
+    private function createAssetForConfig(
+        ?Config $config,
+        PackageInterface $package,
+        string $path
+    ): ?Asset {
+
+        if (($config === null) || !$config->isRunnable()) {
             return null;
         }
+
+        $sourceRef = $package->getSourceReference() ?? '';
+        $distRef = $package->getDistReference() ?? '';
 
         return Asset::new(
             $package->getName(),
             $config,
             $this->filesystem->normalizePath($path),
             $package->getPrettyVersion(),
-            $package->getSourceReference() ?: $package->getDistReference()
+            ($sourceRef !== '') ? $sourceRef : ($distRef !== '' ? $distRef : null),
+            $package instanceof RootPackage
         );
     }
 

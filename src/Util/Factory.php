@@ -16,6 +16,7 @@ use Composer\IO\IOInterface;
 use Composer\Package\RootPackageInterface;
 use Composer\Repository\RepositoryInterface;
 use Composer\Util\Filesystem;
+use Composer\Util\HttpDownloader;
 use Composer\Util\ProcessExecutor;
 use Inpsyde\AssetsCompiler\Asset\Config;
 use Inpsyde\AssetsCompiler\Asset\Defaults;
@@ -24,6 +25,8 @@ use Inpsyde\AssetsCompiler\Asset\Finder as AssetFinder;
 use Inpsyde\AssetsCompiler\Asset\HashBuilder;
 use Inpsyde\AssetsCompiler\Asset\Locker;
 use Inpsyde\AssetsCompiler\Asset\Asset;
+use Inpsyde\AssetsCompiler\Asset\Info;
+use Inpsyde\AssetsCompiler\Asset\PathsFinder;
 use Inpsyde\AssetsCompiler\Asset\Processor;
 use Inpsyde\AssetsCompiler\Asset\RootConfig;
 use Inpsyde\AssetsCompiler\PackageManager;
@@ -37,35 +40,8 @@ use Symfony\Component\Process\Process;
 
 final class Factory
 {
-    /**
-     * @var Composer
-     */
-    private $composer;
-
-    /**
-     * @var IOInterface
-     */
-    private $io;
-
-    /**
-     * @var string|null
-     */
-    private $mode;
-
-    /**
-     * @var bool
-     */
-    private $isDev;
-
-    /**
-     * @var string
-     */
-    private $ignoreLock;
-
-    /**
-     * @var array<string, object>
-     */
-    private $objects = [];
+    /** var array<string, object> */
+    private array $objects = [];
 
     /**
      * @param Composer $composer
@@ -83,7 +59,7 @@ final class Factory
         string $ignoreLock = ''
     ): Factory {
 
-        return new self($composer, $io, $mode, $isDev, $ignoreLock);
+        return new self($composer, $io, $mode ?? Env::assetsCompilerMode(), $isDev, $ignoreLock);
     }
 
     /**
@@ -94,18 +70,12 @@ final class Factory
      * @param string $ignoreLock
      */
     private function __construct(
-        Composer $composer,
-        IOInterface $io,
-        ?string $mode,
-        bool $isDev,
-        string $ignoreLock = ''
+        private Composer $composer,
+        private IOInterface $io,
+        private ?string $mode,
+        private bool $isDev,
+        private string $ignoreLock
     ) {
-
-        $this->composer = $composer;
-        $this->io = $io;
-        $this->mode = $mode ?? Env::assetsCompilerMode();
-        $this->isDev = $isDev;
-        $this->ignoreLock = $ignoreLock;
     }
 
     /**
@@ -129,7 +99,7 @@ final class Factory
      */
     public function composerConfig(): \Composer\Config
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = $this->composer->getConfig();
         }
 
@@ -144,7 +114,7 @@ final class Factory
      */
     public function composerRootPackage(): RootPackageInterface
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = $this->composer->getPackage();
         }
 
@@ -159,7 +129,7 @@ final class Factory
      */
     public function composerRepository(): RepositoryInterface
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $manager = $this->composer->getRepositoryManager();
             $this->objects[__FUNCTION__] = $manager->getLocalRepository();
         }
@@ -171,11 +141,26 @@ final class Factory
     }
 
     /**
+     * @return HttpDownloader
+     */
+    public function composerHttpDownloader(): HttpDownloader
+    {
+        if (!isset($this->objects[__FUNCTION__])) {
+            $this->objects[__FUNCTION__] = \Composer\Factory::createHttpDownloader(
+                $this->composerIo(),
+                $this->composerConfig()
+            );
+        }
+        /** @var HttpDownloader */
+        return $this->objects[__FUNCTION__];
+    }
+
+    /**
      * @return Filesystem
      */
     public function filesystem(): Filesystem
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = new Filesystem();
         }
 
@@ -190,7 +175,7 @@ final class Factory
      */
     public function io(): Io
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = Io::new($this->io);
         }
 
@@ -205,7 +190,7 @@ final class Factory
      */
     public function modeResolver(): ModeResolver
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = ModeResolver::new($this->mode, $this->isDev);
         }
 
@@ -220,7 +205,7 @@ final class Factory
      */
     public function config(): Config
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = Config::forComposerPackage(
                 $this->composerRootPackage(),
                 $this->rootFolder(),
@@ -240,7 +225,7 @@ final class Factory
      */
     public function rootConfig(): RootConfig
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             /** @var RootConfig $root */
             $root = $this->config()->rootConfig();
             $this->objects[__FUNCTION__] = $root;
@@ -257,9 +242,11 @@ final class Factory
      */
     public function defaults(): Defaults
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $defaults = $this->rootConfig()->defaults();
-            $this->objects[__FUNCTION__] = $defaults ? Defaults::new($defaults) : Defaults::empty();
+            $this->objects[__FUNCTION__] = $defaults
+                ? Defaults::new($defaults)
+                : Defaults::newEmpty();
         }
 
         /** @var Defaults $defaults */
@@ -273,7 +260,7 @@ final class Factory
      */
     public function processExecutor(): ProcessExecutor
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = new ProcessExecutor($this->io);
         }
 
@@ -288,7 +275,7 @@ final class Factory
      */
     public function assets(): \Iterator
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $assets = $this->assetsFinder()->find(
                 $this->composerRepository(),
                 $this->composerRootPackage(),
@@ -311,7 +298,7 @@ final class Factory
      */
     public function commandsFinder(): PackageManager\Finder
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = PackageManager\Finder::new(
                 $this->processExecutor(),
                 $this->filesystem(),
@@ -331,7 +318,7 @@ final class Factory
      */
     public function assetsFinder(): AssetFinder
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $config = $this->rootConfig();
             $this->objects[__FUNCTION__] = AssetFinder::new(
                 $config->packagesData(),
@@ -363,7 +350,7 @@ final class Factory
      */
     public function assetFactory(): AssetFactory
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = AssetFactory::new(
                 $this->modeResolver(),
                 $this->filesystem(),
@@ -384,9 +371,9 @@ final class Factory
      */
     public function hashBuilder(): HashBuilder
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = HashBuilder::new(
-                $this->filesystem(),
+                $this->assetsPathsFinder(),
                 $this->io()
             );
         }
@@ -402,8 +389,11 @@ final class Factory
      */
     public function httpClient(): HttpClient
     {
-        if (empty($this->objects[__FUNCTION__])) {
-            $this->objects[__FUNCTION__] = HttpClient::new($this->io(), $this->composer());
+        if (!isset($this->objects[__FUNCTION__])) {
+            $this->objects[__FUNCTION__] = HttpClient::new(
+                $this->composerHttpDownloader(),
+                $this->io()
+            );
         }
 
         /** @var HttpClient $client */
@@ -417,11 +407,12 @@ final class Factory
      */
     public function archiveDownloaderFactory(): ArchiveDownloaderFactory
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = ArchiveDownloaderFactory::new(
-                $this->io(),
-                $this->composer(),
-                $this->filesystem()
+                $this->composer()->getLoop(),
+                $this->composer()->getDownloadManager(),
+                $this->filesystem(),
+                $this->io()
             );
         }
 
@@ -436,7 +427,7 @@ final class Factory
      */
     public function archiveDownloaderAdapter(): ArchiveDownloaderAdapter
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = ArchiveDownloaderAdapter::new(
                 $this->io(),
                 $this->archiveDownloaderFactory()
@@ -454,7 +445,7 @@ final class Factory
      */
     public function githubArtifactAdapter(): GithubActionArtifactAdapter
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = GithubActionArtifactAdapter::new(
                 $this->io(),
                 $this->httpClient(),
@@ -473,7 +464,7 @@ final class Factory
      */
     public function githubReleaseZipAdapter(): GithubReleaseZipAdapter
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = GithubReleaseZipAdapter::new(
                 $this->io(),
                 $this->httpClient(),
@@ -492,7 +483,7 @@ final class Factory
      */
     public function preCompilationHandler(): Handler
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $handler = Handler::new(
                 $this->hashBuilder(),
                 $this->io(),
@@ -517,7 +508,7 @@ final class Factory
      */
     public function locker(): Locker
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = new Locker(
                 $this->io(),
                 $this->hashBuilder(),
@@ -536,7 +527,7 @@ final class Factory
      */
     public function processOutputHandler(): callable
     {
-        if (!empty($this->objects[__FUNCTION__])) {
+        if (!!isset($this->objects[__FUNCTION__])) {
             /** @var callable(string,string):void $handler */
             $handler = $this->objects[__FUNCTION__];
 
@@ -563,7 +554,7 @@ final class Factory
      */
     public function processFactory(): ProcessFactory
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = ProcessFactory::new();
         }
 
@@ -578,7 +569,7 @@ final class Factory
      */
     public function processManager(): ParallelManager
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $config = $this->rootConfig();
             $this->objects[__FUNCTION__] = ParallelManager::new(
                 $this->processOutputHandler(),
@@ -600,7 +591,7 @@ final class Factory
      */
     public function assetsProcessor(): Processor
     {
-        if (empty($this->objects[__FUNCTION__])) {
+        if (!isset($this->objects[__FUNCTION__])) {
             $this->objects[__FUNCTION__] = Processor::new(
                 $this->io(),
                 $this->config(),
@@ -618,5 +609,48 @@ final class Factory
         $processor = $this->objects[__FUNCTION__];
 
         return $processor;
+    }
+
+    /**
+     * @return PathsFinder
+     */
+    public function assetsPathsFinder(): PathsFinder
+    {
+        if (!isset($this->objects[__FUNCTION__])) {
+            $this->objects[__FUNCTION__] = PathsFinder::new(
+                $this->assets(),
+                $this->filesystem(),
+                $this->io(),
+                $this->rootConfig()->path()
+            );
+        }
+
+        /** @var PathsFinder $finder */
+        $finder = $this->objects[__FUNCTION__];
+
+        return $finder;
+    }
+
+    /**
+     * @return Info
+     */
+    public function assetsInfo(): Info
+    {
+        if (!isset($this->objects[__FUNCTION__])) {
+            $this->objects[__FUNCTION__] = Info::new(
+                $this->assets(),
+                $this->hashBuilder(),
+                $this->preCompilationHandler(),
+                $this->assetsPathsFinder(),
+                $this->modeResolver(),
+                $this->rootConfig(),
+                $this->io()
+            );
+        }
+
+        /** @var Info $info */
+        $info = $this->objects[__FUNCTION__];
+
+        return $info;
     }
 }

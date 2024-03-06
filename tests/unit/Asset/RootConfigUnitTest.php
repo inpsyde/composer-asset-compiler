@@ -28,18 +28,18 @@ class RootConfigUnitTest extends UnitTestCase
     public function testBoolSettingsTrue(): void
     {
         $json = <<<'JSON'
-{
-    "composer-asset-compiler": {
-        "auto-discover": true,
-        "auto-run": "true",
-        "wipe-node-modules": true,
-        "stop-on-failure": "yes",
-        "packages": [],
-        "defaults": [],
-        "commands": null
-    }
-}
-JSON;
+        {
+            "composer-asset-compiler": {
+                "auto-discover": true,
+                "auto-run": "true",
+                "wipe-node-modules": true,
+                "stop-on-failure": "yes",
+                "packages": [],
+                "defaults": [],
+                "commands": null
+            }
+        }
+        JSON;
 
         $config = $this->factoryConfig($json);
 
@@ -54,18 +54,18 @@ JSON;
     public function testBoolSettingsFalse(): void
     {
         $json = <<<'JSON'
-{
-    "composer-asset-compiler": {
-        "auto-discover": false,
-        "auto-run": "false",
-        "wipe-node-modules": true,
-        "stop-on-failure": "no",
-        "packages": [],
-        "defaults": [],
-        "commands": null
-    }
-}
-JSON;
+        {
+            "composer-asset-compiler": {
+                "auto-discover": false,
+                "auto-run": "false",
+                "wipe-node-modules": true,
+                "stop-on-failure": "no",
+                "packages": [],
+                "defaults": [],
+                "commands": null
+            }
+        }
+        JSON;
 
         $config = $this->factoryConfig($json);
 
@@ -80,18 +80,18 @@ JSON;
     public function testStopOnFailureAdvanced(): void
     {
         $json = <<<'JSON'
-{
-    "composer-asset-compiler": {
-        "packages": [],
-        "stop-on-failure": {
-            "env": {
-                "$default": true,
-                "test": "false"
+        {
+            "composer-asset-compiler": {
+                "packages": [],
+                "stop-on-failure": {
+                    "env": {
+                        "$default": true,
+                        "test": "false"
+                    }
+                }
             }
         }
-    }
-}
-JSON;
+        JSON;
         $stopForTest = $this->factoryConfig($json, 'test')->stopOnFailure();
         $stopForProd = $this->factoryConfig($json, 'production')->stopOnFailure();
 
@@ -105,18 +105,18 @@ JSON;
     public function testMaxProcesses(): void
     {
         $json = <<<'JSON'
-{
-    "composer-asset-compiler": {
-        "packages": [],
-        "max-processes": {
-            "env": {
-                "$default": 4,
-                "test": "10"
+        {
+            "composer-asset-compiler": {
+                "packages": [],
+                "max-processes": {
+                    "env": {
+                        "$default": 4,
+                        "test": "10"
+                    }
+                }
             }
         }
-    }
-}
-JSON;
+        JSON;
         $forTest = $this->factoryConfig($json, 'test')->maxProcesses();
         $forProd = $this->factoryConfig($json, 'production')->maxProcesses();
 
@@ -130,19 +130,19 @@ JSON;
     public function testProcessesPoll(): void
     {
         $json = <<<'JSON'
-{
-    "composer-asset-compiler": {
-        "packages": [],
-        "processes-poll": {
-            "env": {
-                "$default": 100000,
-                "test": 500000,
-                "low": 500
+        {
+            "composer-asset-compiler": {
+                "packages": [],
+                "processes-poll": {
+                    "env": {
+                        "$default": 100000,
+                        "test": 500000,
+                        "low": 500
+                    }
+                }
             }
         }
-    }
-}
-JSON;
+        JSON;
 
         $forTest = $this->factoryConfig($json, 'test')->processesPoll();
         $forProd = $this->factoryConfig($json, 'production')->processesPoll();
@@ -159,13 +159,13 @@ JSON;
     public function testWipeNotAllowedForSymlinkedPackages(): void
     {
         $json = <<<'JSON'
-{
-    "composer-asset-compiler": {
-        "packages": [],
-        "wipe-node-modules": "force"
-    }
-}
-JSON;
+        {
+            "composer-asset-compiler": {
+                "packages": [],
+                "wipe-node-modules": "force"
+            }
+        }
+        JSON;
         $filesystem = \Mockery::mock(Filesystem::class)->makePartial();
         $filesystem
             ->expects('isSymlinkedDirectory')
@@ -185,13 +185,13 @@ JSON;
     public function testWipeNotAllowedIfNodeModulesExistsAndConfigIsTrue(): void
     {
         $json = <<<'JSON'
-{
-    "composer-asset-compiler": {
-        "packages": [],
-        "wipe-node-modules": true
-    }
-}
-JSON;
+        {
+            "composer-asset-compiler": {
+                "packages": [],
+                "wipe-node-modules": true
+            }
+        }
+        JSON;
         $config = $this->factoryConfig($json);
 
         $dir = vfsStream::setup('exampleDir');
@@ -207,19 +207,19 @@ JSON;
     public function testWipeAllowedAdvanced(): void
     {
         $json = <<<'JSON'
-{
-    "composer-asset-compiler": {
-        "packages": [],
-        "wipe-node-modules": {
-            "env": {
-                "test": true,
-                "prod": "force",
-                "$default": false
+        {
+            "composer-asset-compiler": {
+                "packages": [],
+                "wipe-node-modules": {
+                    "env": {
+                        "test": true,
+                        "prod": "force",
+                        "$default": false
+                    }
+                }
             }
         }
-    }
-}
-JSON;
+        JSON;
         $configTest = $this->factoryConfig($json, 'test');
         $configProd = $this->factoryConfig($json, 'prod');
         $configStaging = $this->factoryConfig($json, 'staging');
@@ -276,7 +276,7 @@ JSON;
     ): RootConfig {
 
         $package = new RootPackage('company/my-root-package', '1.0.0.0', '1.0');
-        $package->setExtra($json ? (array)json_decode($json, true) : []);
+        $package->setExtra($json ? (array) json_decode($json, true) : []);
 
         $config = Config::forComposerPackage(
             $package,

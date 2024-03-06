@@ -20,6 +20,7 @@
     <issueHandlers>
         <MixedAssignment errorLevel="suppress"/>
         <RedundantCastGivenDocblockType errorLevel="suppress"/>
+        <RedundantCast errorLevel="suppress"/>
 
         <PropertyNotSetInConstructor>
             <errorLevel type="suppress">

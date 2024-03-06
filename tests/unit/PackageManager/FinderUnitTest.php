@@ -338,7 +338,7 @@ class FinderUnitTest extends UnitTestCase
             $config->defaultEnv()
         );
 
-        return $assetFactory->attemptFactory($package, null, Defaults::empty());
+        return $assetFactory->attemptFactory($package, null, Defaults::newEmpty());
     }
 
     /**

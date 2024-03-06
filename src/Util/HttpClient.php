@@ -13,51 +13,27 @@ namespace Inpsyde\AssetsCompiler\Util;
 
 use Composer\Composer;
 use Composer\Util\HttpDownloader;
-use Composer\Util\RemoteFilesystem;
 
 class HttpClient
 {
-    /**
-     * @var Io
-     */
-    private $io;
-
-    /**
-     * @var HttpDownloader|RemoteFilesystem|mixed
-     */
-    private $client;
-
     /**
      * @param Io $io
      * @param Composer $composer
      * @return HttpClient
      */
-    public static function new(Io $io, Composer $composer): HttpClient
+    public static function new(HttpDownloader $httpDownloader, Io $io): HttpClient
     {
-        return new self($io, $composer);
+        return new self($httpDownloader, $io);
     }
 
     /**
      * @param Io $io
      * @param Composer $composer
      */
-    private function __construct(Io $io, Composer $composer)
-    {
-        $this->io = $io;
-        if (is_callable([\Composer\Factory::class, 'createHttpDownloader'])) {
-            $this->client = \Composer\Factory::createHttpDownloader(
-                $io->composerIo(),
-                $composer->getConfig()
-            );
-
-            return;
-        }
-
-        /** @noinspection PhpUndefinedMethodInspection */
-        $this->client = \Composer\Factory::createRemoteFilesystem(
-            $io->composerIo(),
-            $composer->getConfig()
-        );
+    private function __construct(
+        private HttpDownloader $httpDownloader,
+        private Io $io
+    ) {
     }
 
     /**
@@ -69,7 +45,7 @@ class HttpClient
     public function get(string $url, array $options = [], ?string $authorization = null): string
     {
         try {
-            if ($authorization) {
+            if (($authorization !== null) && ($authorization !== '')) {
                 isset($options['http']) or $options['http'] = [];
                 /** @psalm-suppress MixedArrayAssignment */
                 isset($options['http']['header']) or $options['http']['header'] = [];
@@ -78,20 +54,13 @@ class HttpClient
             }
 
             $result = null;
-            if ($this->client instanceof HttpDownloader) {
-                $response = $this->client->get($url, $options);
-                $statusCode = $response->getStatusCode();
-                if ($statusCode > 199 && $statusCode < 300) {
-                    $result = $response->getBody();
-                }
-            } elseif ($this->client instanceof RemoteFilesystem) {
-                /** @psalm-suppress UndefinedMethod */
-                $origin = (string)RemoteFilesystem::getOrigin($url);
-                /** @psalm-suppress InternalMethod */
-                $result = $this->client->getContents($origin, $url, false, $options);
+            $response = $this->httpDownloader->get($url, $options);
+            $statusCode = $response->getStatusCode();
+            if (($statusCode > 199) && ($statusCode < 300)) {
+                $result = $response->getBody();
             }
 
-            if (!$result || !is_string($result)) {
+            if (($result === '') || !is_string($result)) {
                 throw new \Exception("Could not obtain a response from '{$url}'.");
             }
 

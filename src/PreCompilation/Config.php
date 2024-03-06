@@ -24,35 +24,18 @@ final class Config
     private const STABILITY_DEV = 'dev';
     private const STABILITY_ALL = '*';
 
-    /**
-     * @var array
-     */
-    private $raw;
+    /** @var list<array<string, string|null|array>> */
+    private array $parsed = [];
 
-    /**
-     * @var list<array<string, string|null|array>>
-     */
-    private $parsed = [];
+    /** @var array<string, array<string, string|null|array>> */
+    private array $selected = [];
 
-    /**
-     * @var array<string, array<string, string|null|array>>
-     */
-    private $selected = [];
-
-    /**
-     * @var bool|null
-     */
-    private $valid = null;
-
-    /**
-     * @var ModeResolver|null
-     */
-    private $modeResolver;
+    private bool|null $valid = null;
 
     /**
      * @return Config
      */
-    public static function invalid(): Config
+    public static function newInvalid(): Config
     {
         return new static([]);
     }
@@ -71,10 +54,10 @@ final class Config
      * @param array $raw
      * @param ModeResolver|null $modeResolver
      */
-    private function __construct(array $raw, ?ModeResolver $modeResolver = null)
-    {
-        $this->raw = $raw;
-        $this->modeResolver = $modeResolver;
+    private function __construct(
+        private array $raw,
+        private ?ModeResolver $modeResolver = null
+    ) {
     }
 
     /**
@@ -90,7 +73,7 @@ final class Config
     /**
      * @param Placeholders $placeholders
      * @param array $environment
-     * @return string|null
+     * @return non-empty-string|null
      */
     public function source(Placeholders $placeholders, array $environment): ?string
     {
@@ -102,13 +85,18 @@ final class Config
 
         /** @var string|null $rawSource */
         $rawSource = $this->selected[$placeholders->uuid()][self::SOURCE] ?? null;
+        if (($rawSource === null) || ($rawSource === '')) {
+            return null;
+        }
 
-        return $rawSource ? ($placeholders->replace($rawSource, $environment) ?: null) : null;
+        $replaced = $placeholders->replace($rawSource, $environment);
+
+        return ($replaced === '') ? null : $replaced;
     }
 
     /**
      * @param Placeholders $placeholders
-     * @return string|null
+     * @return non-empty-string|null
      */
     public function target(Placeholders $placeholders): ?string
     {
@@ -121,12 +109,12 @@ final class Config
         /** @var string|null $target */
         $target = $this->selected[$placeholders->uuid()][self::TARGET] ?? null;
 
-        return $target;
+        return ($target === '') ? null : $target;
     }
 
     /**
      * @param Placeholders $placeholders
-     * @return string|null
+     * @return non-empty-string|null
      */
     public function adapter(Placeholders $placeholders): ?string
     {
@@ -139,7 +127,7 @@ final class Config
         /** @var string|null $adapter */
         $adapter = $this->selected[$placeholders->uuid()][self::ADAPTER] ?? null;
 
-        return $adapter;
+        return ($adapter === '') ? null : $adapter;
     }
 
     /**
@@ -187,7 +175,7 @@ final class Config
             /** @psalm-suppress MixedArgument */
             $stdClass and $value = get_object_vars($value);
             $replaced = $this->deepReplace($value, $placeholders, $env);
-            $stdClass and $replaced = (object)$replaced;
+            $stdClass and $replaced = (object) $replaced;
             /** @psalm-suppress MixedArrayOffset */
             $config[$key] = $replaced;
         }
@@ -216,7 +204,7 @@ final class Config
         }
 
         $byMode = $this->modeResolver->resolveConfig($config);
-        if ($byMode && is_array($byMode)) {
+        if (($byMode !== []) && is_array($byMode)) {
             $config = $byMode;
         }
         if ($byMode === null) {
@@ -224,9 +212,9 @@ final class Config
         }
 
         $settings = [];
-        $isNumeric = strpos(@json_encode($config) ?: '', '[') === 0;
+        $arrayIsList = str_starts_with((string) @json_encode($config), '[');
         $hasSource = array_key_exists(self::SOURCE, $config);
-        if ($isNumeric && !$hasSource) {
+        if ($arrayIsList && !$hasSource) {
             $settings = $config;
         } elseif ($hasSource) {
             $settings = [$config];
@@ -253,11 +241,11 @@ final class Config
         $stability = $setting[self::STABILITY] ?? null;
         $config = $setting[self::CONFIG] ?? [];
 
-        $valid = $source
-            && $target
+        $valid = ($source !== '')
+            && ($target !== '')
             && is_string($source)
             && is_string($target)
-            && (($adapter === null) || ($adapter && is_string($adapter)))
+            && (($adapter === null) || (($adapter !== '') && is_string($adapter)))
             && is_array($config);
 
         if (!$valid) {
@@ -272,7 +260,7 @@ final class Config
         $this->parsed[] = [
             self::SOURCE => $source,
             self::TARGET => $target,
-            self::ADAPTER => $adapter ? strtolower($adapter) : null,
+            self::ADAPTER => ($adapter !== null) ? strtolower($adapter) : null,
             self::STABILITY => $stability,
             self::CONFIG => $config,
         ];
@@ -311,13 +299,16 @@ final class Config
                 continue;
             }
 
-            if (!$exactStability && ($settings[self::STABILITY] === $acceptedStability)) {
+            if (($exactStability === null) && ($settings[self::STABILITY] === $acceptedStability)) {
                 $exactStability = $settings;
-            } elseif (!$fallbackStability && ($settings[self::STABILITY] === self::STABILITY_ALL)) {
+            } elseif (
+                ($fallbackStability === null)
+                && ($settings[self::STABILITY] === self::STABILITY_ALL)
+            ) {
                 $fallbackStability = $settings;
             }
 
-            if ($exactStability && $fallbackStability) {
+            if (($exactStability !== null) && ($fallbackStability !== null)) {
                 break;
             }
         }

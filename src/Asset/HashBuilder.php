@@ -11,143 +11,70 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\Asset;
 
-use Composer\Util\Filesystem;
 use Inpsyde\AssetsCompiler\Util\Env;
 use Inpsyde\AssetsCompiler\Util\Io;
-use Symfony\Component\Finder\Finder as FileFinder;
 
 final class HashBuilder
 {
-    private const PATTERN_REGEX = '~^(.+?)/([^/]+)$~';
-    /**
-     * @var array<string, string>
-     */
-    private $hashes = [];
+    /** @var array<string, non-falsy-string|null> */
+    private array $hashes = [];
 
     /**
-     * @var Filesystem
-     */
-    private $filesystem;
-
-    /**
-     * @var Io
-     */
-    private $io;
-
-    /**
-     * @param Filesystem $filesystem
+     * @param PathsFinder $pathsFinder
      * @param Io $io
      * @return HashBuilder
      */
-    public static function new(Filesystem $filesystem, Io $io): HashBuilder
+    public static function new(PathsFinder $pathsFinder, Io $io): HashBuilder
     {
-        return new static($filesystem, $io);
+        return new static($pathsFinder, $io);
     }
 
     /**
-     * @param Filesystem $filesystem
+     * @param PathsFinder $pathsFinder
      * @param Io $io
      */
-    private function __construct(Filesystem $filesystem, Io $io)
-    {
-        $this->filesystem = $filesystem;
-        $this->io = $io;
+    private function __construct(
+        private PathsFinder $pathsFinder,
+        private Io $io
+    ) {
     }
 
     /**
      * @param Asset $asset
-     * @return string|null
+     * @return non-falsy-string|null
      */
     public function forAsset(Asset $asset): ?string
     {
-        $basePath = $asset->isValid() ? $asset->path() : null;
-        if (!$basePath) {
-            return null;
-        }
-
         $key = $asset->name();
-        if ($this->hashes[$key] ?? null) {
+        if (array_key_exists($key, $this->hashes)) {
             return $this->hashes[$key];
         }
 
-        $files = $this->mergeFilesInPatterns(
-            $asset,
-            $basePath,
-            [
-                $basePath . '/package.json',
-                $basePath . '/package-lock.json',
-                $basePath . '/npm-shrinkwrap.json',
-                $basePath . '/yarn.lock',
-            ]
-        );
+        $files = $this->pathsFinder->findAssetPaths($asset);
 
-        $hashes = '';
+        if ($this->io->isVerbose()) {
+            foreach ($files as $file) {
+                $this->io->write("Will use '{$file}' file to calculate package hash");
+            }
+        }
+
+        $script = Env::replaceEnvVariables(implode(' ', $asset->script()), $asset->env());
+        $hashes = $asset->isInstall() ? "|install|{$script}" : "|update|{$script}";
         $done = [];
         foreach ($files as $file) {
             if (isset($done[$file])) {
                 continue;
             }
-            $done[$file] = 1;
+            $done[$file] = true;
             if (file_exists($file) && is_readable($file)) {
-                $hashes .= @(md5_file($file) ?: '');
+                $hashes .= (string) md5_file($file);
             }
         }
 
-        $hashes .= $asset->isInstall() ? '|install|' : '|update|';
-        $hashes .= Env::replaceEnvVariables(implode(' ', $asset->script()), $asset->env());
+        /** @var non-falsy-string $hash */
+        $hash = sha1($hashes);
+        $this->hashes[$key] = $hash;
 
-        $this->hashes[$key] = sha1($hashes);
-
-        return $this->hashes[$key];
-    }
-
-    /**
-     * @param Asset $asset
-     * @param string $basePath
-     * @param list<string> $files
-     * @return list<string>
-     */
-    private function mergeFilesInPatterns(Asset $asset, string $basePath, array $files): array
-    {
-        $patterns = $asset->srcPaths();
-        if (!$patterns) {
-            return $files;
-        }
-
-        /** @var FileFinder|null $finder */
-        $finder = null;
-        foreach ($patterns as $pattern) {
-            try {
-                $pathfinder = FileFinder::create()->ignoreUnreadableDirs(true)->ignoreVCS(true)->sortByName();
-                $hasFile = preg_match(self::PATTERN_REGEX, $pattern, $matches);
-                $dir = "{$basePath}/" . ltrim($hasFile ? $matches[1] : $pattern, './');
-                $hasFile
-                    ? $pathfinder->in("{$dir}/")->name($matches[2])
-                    : $pathfinder->in($dir);
-                $finder = $finder ? $finder->append($pathfinder) : $pathfinder;
-            } catch (\Throwable $throwable) {
-                $this->io->writeError($throwable->getMessage());
-                continue;
-            }
-        }
-
-        if (!$finder) {
-            $patternsStr = implode("', '", $patterns);
-            $this->io->writeError("Error building Symfony Finder for '{$patternsStr}'.");
-
-            return $files;
-        }
-
-        foreach ($finder->files() as $fileInfo) {
-            $path = $fileInfo->getRealPath();
-            if ($path) {
-                $rel = $fileInfo->getRelativePath()  . '/' . $fileInfo->getBasename();
-                $normalized = $this->filesystem->normalizePath($rel);
-                $this->io->writeVerbose("Will use '{$normalized}' file to calculate package hash");
-                $files[] = $this->filesystem->normalizePath($path);
-            }
-        }
-
-        return $files;
+        return $hash;
     }
 }

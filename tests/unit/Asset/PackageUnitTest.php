@@ -26,11 +26,11 @@ class PackageUnitTest extends UnitTestCase
     public function testCreatePackageFromJson(): void
     {
         $json = <<<JSON
-{
-	"dependencies": "install",
-	"script": "setup"
-}
-JSON;
+        {
+            "dependencies": "install",
+            "script": "setup"
+        }
+        JSON;
         $package = $this->factoryPackage($json);
 
         static::assertTrue($package->isValid());
@@ -46,10 +46,10 @@ JSON;
     public function testCreatePackageFromJsonDependenciesOnly(): void
     {
         $json = <<<JSON
-{
-	"dependencies": "update"
-}
-JSON;
+        {
+            "dependencies": "update"
+        }
+        JSON;
         $package = $this->factoryPackage($json);
 
         static::assertTrue($package->isValid());
@@ -64,10 +64,10 @@ JSON;
     public function testCreatePackageFromScriptOnly(): void
     {
         $json = <<<JSON
-{
-	"script": ["foo", "bar"]
-}
-JSON;
+        {
+            "script": ["foo", "bar"]
+        }
+        JSON;
         $package = $this->factoryPackage($json);
 
         static::assertTrue($package->isValid());
@@ -82,10 +82,10 @@ JSON;
     public function testInvalidScriptsAreStrippedOut(): void
     {
         $json = <<<JSON
-{
-	"script": ["foo", 103, "bar", true, {}, "baz"]
-}
-JSON;
+        {
+            "script": ["foo", 103, "bar", true, {}, "baz"]
+        }
+        JSON;
         $package = $this->factoryPackage($json);
 
         static::assertTrue($package->isValid());

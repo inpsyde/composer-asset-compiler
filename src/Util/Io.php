@@ -19,15 +19,7 @@ class Io
 {
     private const SPACER = '    ';
 
-    /**
-     * @var IOInterface
-     */
-    private $io;
-
-    /**
-     * @var bool|null
-     */
-    private $quiet;
+    private bool|null $quiet = null;
 
     /**
      * @param IOInterface $io
@@ -41,17 +33,8 @@ class Io
     /**
      * @param IOInterface $io
      */
-    private function __construct(IOInterface $io)
+    private function __construct(private IOInterface $io)
     {
-        $this->io = $io;
-    }
-
-    /**
-     * @return IOInterface
-     */
-    public function composerIo(): IOInterface
-    {
-        return $this->io;
     }
 
     /**
@@ -128,6 +111,16 @@ class Io
     {
         foreach ($messages as $message) {
             $this->io->write(self::SPACER . $message);
+        }
+    }
+
+    /**
+     * @param string ...$messages
+     */
+    public function writeRaw(string ...$messages): void
+    {
+        foreach ($messages as $message) {
+            $this->io->write($message);
         }
     }
 

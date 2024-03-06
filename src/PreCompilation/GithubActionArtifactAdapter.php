@@ -21,49 +21,30 @@ use Inpsyde\AssetsCompiler\Util\Io;
 class GithubActionArtifactAdapter implements Adapter
 {
     /**
-     * @var Io
-     */
-    private $io;
-
-    /**
-     * @var HttpClient
-     */
-    private $client;
-
-    /**
-     * @var ArchiveDownloaderFactory
-     */
-    private $downloaderFactory;
-
-    /**
      * @param Io $io
      * @param HttpClient $client
-     * @param ArchiveDownloaderFactory $archiveDownloaderFactory
+     * @param ArchiveDownloaderFactory $downloaderFactory
      * @return GithubActionArtifactAdapter
      */
     public static function new(
         Io $io,
         HttpClient $client,
-        ArchiveDownloaderFactory $archiveDownloaderFactory
+        ArchiveDownloaderFactory $downloaderFactory
     ): GithubActionArtifactAdapter {
 
-        return new self($io, $client, $archiveDownloaderFactory);
+        return new self($io, $client, $downloaderFactory);
     }
 
     /**
      * @param Io $io
      * @param HttpClient $client
-     * @param ArchiveDownloaderFactory $archiveDownloaderFactory
+     * @param ArchiveDownloaderFactory $downloaderFactory
      */
     private function __construct(
-        Io $io,
-        HttpClient $client,
-        ArchiveDownloaderFactory $archiveDownloaderFactory
+        private Io $io,
+        private HttpClient $client,
+        private ArchiveDownloaderFactory $downloaderFactory
     ) {
-
-        $this->io = $io;
-        $this->client = $client;
-        $this->downloaderFactory = $archiveDownloaderFactory;
     }
 
     /**
@@ -95,19 +76,21 @@ class GithubActionArtifactAdapter implements Adapter
         try {
             $ghConfig = GitHubConfig::new($config, $environment);
             [$endpoint, $owner] = $this->buildArtifactsEndpoint($source, $ghConfig);
-            if (!$endpoint || !$owner) {
+            $endpoint ??= '';
+            $owner ??= '';
+            if (($endpoint === '') || ($owner === '')) {
                 $this->io->writeError('  Invalid configuration for GitHub artifact.');
 
                 return false;
             }
 
             $distUrl = $this->retrieveArtifactUrl($source, $endpoint, $ghConfig);
-            if (!$distUrl) {
+            if ($distUrl === null) {
                 return false;
             }
 
-            $auth = $ghConfig->basicAuth();
-            $headers = $auth ? ["Authorization: {$auth}"] : [];
+            $auth = $ghConfig->basicAuth() ?? '';
+            $headers = ($auth !== '') ? ["Authorization: {$auth}"] : [];
 
             $type = ArchiveDownloader::ZIP;
             $package = new Package($asset->name() . '-assets', 'artifact', 'artifact');
@@ -131,13 +114,13 @@ class GithubActionArtifactAdapter implements Adapter
      */
     private function buildArtifactsEndpoint(string $source, GitHubConfig $config): array
     {
-        if (!$source) {
+        if ($source === '') {
             return [null, null];
         }
 
         $repo = $config->repo();
-        $userRepo = $repo ? explode('/', $repo) : null;
-        if (!$userRepo || count($userRepo) !== 2) {
+        $userRepo = ($repo !== null) ? explode('/', $repo) : null;
+        if (!is_array($userRepo) || (count($userRepo) !== 2) || ($userRepo[0] === '')) {
             return [null, null];
         }
 
@@ -148,16 +131,16 @@ class GithubActionArtifactAdapter implements Adapter
         }
 
         $safe = filter_var($endpoint, FILTER_SANITIZE_URL);
-        $safe && is_string($safe) or $safe = null;
+        ($safe === '') and $safe = null;
 
-        return $safe ? [$safe, reset($userRepo) ?: ''] : [null, null];
+        return ($safe === null) ? [$safe, $userRepo[0]] : [null, null];
     }
 
     /**
      * @param string $name
      * @param non-empty-string $endpoint
      * @param GitHubConfig $config
-     * @return string|null
+     * @return non-empty-string|null
      */
     private function retrieveArtifactUrl(
         string $name,
@@ -166,22 +149,24 @@ class GithubActionArtifactAdapter implements Adapter
     ): ?string {
 
         $response = $this->client->get($endpoint, [], $config->basicAuth());
-        $json = $response ? json_decode($response, true) : null;
-        if (!$json || !is_array($json) || empty($json['artifacts'])) {
+        $json = ($response !== '') ? json_decode($response, true) : null;
+        if (!is_array($json) || !isset($json['artifacts']) || !is_array($json['artifacts'])) {
             throw new \Exception("Could not obtain a valid API response from {$endpoint}.");
         }
 
-        /** @var string|null $artifactUrl */
+        /** @var non-empty-string|null $artifactUrl */
         $artifactUrl = null;
-        foreach ((array)$json['artifacts'] as $item) {
+        foreach ($json['artifacts'] as $item) {
             $artifactUrl = is_array($item) ? $this->artifactUrl($item, $name) : null;
-            if ($artifactUrl) {
+            if ($artifactUrl !== null) {
                 break;
             }
         }
 
         $repo = $config->repo() ?? '';
-        $artifactUrl or $this->io->writeError("  Artifact '{$name}' not found in '{$repo}'.");
+        if ($artifactUrl === null) {
+            $this->io->writeError("  Artifact '{$name}' not found in '{$repo}'.");
+        }
 
         return $artifactUrl;
     }
@@ -189,7 +174,7 @@ class GithubActionArtifactAdapter implements Adapter
     /**
      * @param array $data
      * @param string $targetName
-     * @return string|null
+     * @return non-empty-string|null
      */
     private function artifactUrl(array $data, string $targetName): ?string
     {
@@ -198,9 +183,9 @@ class GithubActionArtifactAdapter implements Adapter
             return null;
         }
 
-        /** @var string|null $url */
-        $url = $data['archive_download_url'] ?? null;
-        if ($url && filter_var($url, FILTER_VALIDATE_URL)) {
+        /** @var string $url */
+        $url = $data['archive_download_url'] ?? '';
+        if (($url !== '') && filter_var($url, FILTER_VALIDATE_URL)) {
             return $url;
         }
 
