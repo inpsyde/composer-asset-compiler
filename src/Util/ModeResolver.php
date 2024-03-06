@@ -54,7 +54,7 @@ class ModeResolver
 
     /**
      * @param array $config
-     * @return mixed|null
+     * @return mixed
      */
     public function resolveConfig(array $config): mixed
     {

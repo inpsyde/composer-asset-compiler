@@ -52,12 +52,6 @@ final class HashBuilder
 
         $files = $this->pathsFinder->findAssetPaths($asset);
 
-        if ($files === []) {
-            $this->hashes[$key] = null;
-
-            return null;
-        }
-
         if ($this->io->isVerbose()) {
             foreach ($files as $file) {
                 $this->io->write("Will use '{$file}' file to calculate package hash");

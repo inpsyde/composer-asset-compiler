@@ -75,7 +75,9 @@ class PathsFinder
         /** @var list<non-empty-string> $files */
         $files = [];
         foreach (self::DEFAULT_FILES as $defaultFilePath) {
-            $files[] = $this->relativePath($basePath . $defaultFilePath);
+            if (file_exists($basePath . $defaultFilePath)) {
+                $files[] = $this->relativePath($basePath . $defaultFilePath);
+            }
         }
 
         $finder = $this->createFinder($asset);

@@ -13,7 +13,6 @@ namespace Inpsyde\AssetsCompiler\Composer\Command;
 
 use Inpsyde\AssetsCompiler\Util\Factory;
 use Inpsyde\AssetsCompiler\Util\Io;
-use phpDocumentor\Reflection\Types\Scalar;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
