@@ -177,7 +177,7 @@ class GithubActionArtifactAdapter implements Adapter
 
         $archiveUrl = null;
         foreach ((array)$json['artifacts'] as $artifactData) {
-            if (!is_array($artifactData) || empty($artifactData['expired'])) {
+            if (!is_array($artifactData) || !empty($artifactData['expired'])) {
                 continue;
             }
 
