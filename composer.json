@@ -5,14 +5,10 @@
     "license": "MIT",
     "authors": [
         {
-            "name": "Inpsyde GmbH",
-            "homepage": "https://inpsyde.com/",
-            "email": "hello@inpsyde.com",
+            "name": "Syde GmbH",
+            "homepage": "https://syde.com/",
+            "email": "hello@syde.com",
             "role": "Company"
-        },
-        {
-            "name": "Giuseppe Mazzapica",
-            "email": "g.mazzapica@inpsyde.com"
         }
     ],
     "minimum-stability": "dev",
