@@ -230,6 +230,10 @@ final class RootConfig
      */
     public function isWipeAllowedFor(string $packageFolder): bool
     {
+        /**
+         * I will not recommend to do this check here, this function is whether resolving if the
+         * configuration and mode should mark it to be deleted and also doing a check in the system.
+         */
         if (
             $this->filesystem->isSymlinkedDirectory($packageFolder)
             || $this->filesystem->isJunction($packageFolder)

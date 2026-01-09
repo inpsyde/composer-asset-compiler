@@ -26,6 +26,7 @@ use Inpsyde\AssetsCompiler\Asset\Locker;
 use Inpsyde\AssetsCompiler\Asset\Asset;
 use Inpsyde\AssetsCompiler\Asset\Processor;
 use Inpsyde\AssetsCompiler\Asset\RootConfig;
+use Inpsyde\AssetsCompiler\Composer\Command\CompileAssetsPassedArguments;
 use Inpsyde\AssetsCompiler\PackageManager;
 use Inpsyde\AssetsCompiler\PreCompilation\ArchiveDownloaderAdapter;
 use Inpsyde\AssetsCompiler\PreCompilation\GithubActionArtifactAdapter;
@@ -33,6 +34,7 @@ use Inpsyde\AssetsCompiler\PreCompilation\GithubReleaseZipAdapter;
 use Inpsyde\AssetsCompiler\PreCompilation\Handler;
 use Inpsyde\AssetsCompiler\Process\Factory as ProcessFactory;
 use Inpsyde\AssetsCompiler\Process\ParallelManager;
+use Inpsyde\AssetsCompiler\Process\ParallelProcessManager;
 use Symfony\Component\Process\Process;
 
 final class Factory
@@ -63,6 +65,11 @@ final class Factory
     private $ignoreLock;
 
     /**
+     * @var CompileAssetsPassedArguments
+     */
+    private $passedArguments;
+
+    /**
      * @var array<string, object>
      */
     private $objects = [];
@@ -78,12 +85,10 @@ final class Factory
     public static function new(
         Composer $composer,
         IOInterface $io,
-        ?string $mode,
-        bool $isDev,
-        string $ignoreLock = ''
+        CompileAssetsPassedArguments $arguments
     ): Factory {
 
-        return new self($composer, $io, $mode, $isDev, $ignoreLock);
+        return new self($composer, $io, $arguments);
     }
 
     /**
@@ -96,16 +101,15 @@ final class Factory
     private function __construct(
         Composer $composer,
         IOInterface $io,
-        ?string $mode,
-        bool $isDev,
-        string $ignoreLock = ''
+        CompileAssetsPassedArguments $arguments
     ) {
 
         $this->composer = $composer;
         $this->io = $io;
-        $this->mode = $mode ?? Env::assetsCompilerMode();
-        $this->isDev = $isDev;
-        $this->ignoreLock = $ignoreLock;
+        $this->mode = $arguments->mode() ?? Env::assetsCompilerMode();
+        $this->isDev = $arguments->isDev();
+        $this->ignoreLock = $arguments->ignoreLock() ?? '';
+        $this->passedArguments = $arguments;
     }
 
     /**
@@ -576,16 +580,16 @@ final class Factory
     /**
      * @return ParallelManager
      */
-    public function processManager(): ParallelManager
+    public function processManager(): ParallelProcessManager
     {
         if (empty($this->objects[__FUNCTION__])) {
             $config = $this->rootConfig();
-            $this->objects[__FUNCTION__] = ParallelManager::new(
-                $this->processOutputHandler(),
+            $maxProcesses = $this->passedArguments->maxParallelProcesses() !== null
+                ? $this->passedArguments->maxParallelProcesses()
+                : $config->maxProcesses();
+            $this->objects[__FUNCTION__] = new ParallelProcessManager(
                 $this->processFactory(),
-                $config->maxProcesses(),
-                $config->processesPoll(),
-                $config->timeoutIncrement()
+                $maxProcesses
             );
         }
 
@@ -610,7 +614,8 @@ final class Factory
                 $this->locker(),
                 $this->preCompilationHandler(),
                 $this->processOutputHandler(),
-                $this->filesystem()
+                $this->filesystem(),
+                $this->passedArguments
             );
         }
 

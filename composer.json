@@ -38,7 +38,7 @@
     },
     "scripts": {
         "cs": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs",
-        "cs:fix": "@php ./vendor/bin/phpcbf",
+        "cs:fix": "@php ./vendor/bin/phpcbf --runtime-set testVersion 7.2",
         "psalm": "@php ./vendor/vimeo/psalm/psalm --no-cache --output-format=compact --find-unused-psalm-suppress",
         "tests": "@php ./vendor/phpunit/phpunit/phpunit",
         "qa": [

@@ -9,6 +9,7 @@ use Composer\Util\ProcessExecutor;
 use Inpsyde\AssetsCompiler\Asset\Config;
 use Inpsyde\AssetsCompiler\Asset\Locker;
 use Inpsyde\AssetsCompiler\Asset\Processor;
+use Inpsyde\AssetsCompiler\Composer\Command\CompileAssetsPassedArguments;
 use Inpsyde\AssetsCompiler\PackageManager\Finder;
 use Inpsyde\AssetsCompiler\PreCompilation\Handler;
 use Inpsyde\AssetsCompiler\Process\ParallelManager;
@@ -27,8 +28,11 @@ class ProcessorUnitTest extends UnitTestCase
         $parallelManager = Mockery::mock(ParallelManager::class);
         $locker = Mockery::mock(Locker::class);
         $preCompiler = Mockery::mock(Handler::class);
-        $outputHanlder = static fn () => null;
+        $outputHanlder = static function () {
+            return null;
+        };
         $filesystem = Mockery::mock(Filesystem::class);
+        $arguments = Mockery::mock(CompileAssetsPassedArguments::class);
 
         $processor = Processor::new(
             $io,
@@ -40,6 +44,7 @@ class ProcessorUnitTest extends UnitTestCase
             $preCompiler,
             $outputHanlder,
             $filesystem,
+            $arguments
         );
 
         $this->assertInstanceOf(Processor::class, $processor);

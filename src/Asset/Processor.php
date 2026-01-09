@@ -13,12 +13,17 @@ namespace Inpsyde\AssetsCompiler\Asset;
 
 use Composer\Util\Filesystem;
 use Composer\Util\ProcessExecutor;
+use Inpsyde\AssetsCompiler\Composer\Command\CompileAssetsPassedArguments;
 use Inpsyde\AssetsCompiler\PackageManager\PackageManager;
 use Inpsyde\AssetsCompiler\PackageManager\Finder;
 use Inpsyde\AssetsCompiler\PreCompilation;
+use Inpsyde\AssetsCompiler\PreCompilation\Handler;
+use Inpsyde\AssetsCompiler\Process\ParallelProcessManager;
+use Inpsyde\AssetsCompiler\Process\ProcessGroup;
 use Inpsyde\AssetsCompiler\Process\Results;
 use Inpsyde\AssetsCompiler\Process\ParallelManager;
 use Inpsyde\AssetsCompiler\Util\Io;
+use Symfony\Component\Process\Process;
 
 /*
  * phpcs:disable Inpsyde.CodeQuality.PropertyPerClassLimit
@@ -51,7 +56,7 @@ class Processor
     private $locker;
 
     /**
-     * @var ParallelManager
+     * @var ParallelProcessManager
      */
     private $parallelManager;
 
@@ -81,15 +86,21 @@ class Processor
     private $tempDir = [false, null];
 
     /**
+     * @var CompileAssetsPassedArguments
+     */
+    private $passedArguments;
+
+    /**
      * @param Io $io
      * @param Config $config
      * @param Finder $packageManagerFinder
      * @param ProcessExecutor $executor
-     * @param ParallelManager $parallelManager
+     * @param ParallelProcessManager $parallelManager
      * @param Locker $locker
-     * @param PreCompilation\Handler $preCompiler
+     * @param Handler $preCompiler
      * @param callable $outputHandler
      * @param Filesystem $filesystem
+     * @param CompileAssetsPassedArguments $arguments
      * @return Processor
      */
     public static function new(
@@ -97,11 +108,12 @@ class Processor
         Config $config,
         Finder $packageManagerFinder,
         ProcessExecutor $executor,
-        ParallelManager $parallelManager,
+        ParallelProcessManager $parallelManager,
         Locker $locker,
         PreCompilation\Handler $preCompiler,
         callable $outputHandler,
-        Filesystem $filesystem
+        Filesystem $filesystem,
+        CompileAssetsPassedArguments $arguments
     ): Processor {
 
         return new self(
@@ -113,7 +125,8 @@ class Processor
             $locker,
             $preCompiler,
             $outputHandler,
-            $filesystem
+            $filesystem,
+            $arguments
         );
     }
 
@@ -133,11 +146,12 @@ class Processor
         Config $config,
         Finder $packageManagerFinder,
         ProcessExecutor $executor,
-        ParallelManager $parallelManager,
+        ParallelProcessManager $parallelManager,
         Locker $locker,
         PreCompilation\Handler $preCompiler,
         callable $outputHandler,
-        Filesystem $filesystem
+        Filesystem $filesystem,
+        CompileAssetsPassedArguments $arguments
     ) {
 
         $this->io = $io;
@@ -149,12 +163,14 @@ class Processor
         $this->preCompiler = $preCompiler;
         $this->outputHandler = $outputHandler;
         $this->filesystem = $filesystem;
+        $this->passedArguments = $arguments;
     }
 
     /**
      * @param \Iterator $assets
      * @return bool
      */
+    // phpcs:ignore Inpsyde.CodeQuality.FunctionLength.TooLong, Generic.Metrics.CyclomaticComplexity.TooHigh
     public function process(\Iterator $assets): bool
     {
         $rootConfig = $this->config->rootConfig();
@@ -179,6 +195,10 @@ class Processor
                 continue;
             }
 
+            if ($this->passedArguments->forceDeleteNodeModules()) {
+                $shouldWipe = true;
+            }
+
             /** @var Asset $asset */
             if ($this->maybeSkipAsset($asset)) {
                 continue;
@@ -192,30 +212,153 @@ class Processor
                 return false;
             }
 
-            $installedDeps = $this->doDependencies($asset, $commands, $rootConfig);
+            $assetCommands = [];
 
-            if (!$installedDeps && $stopOnFailure) {
-                return false;
+            $installCommand = $this->buildDependenciesCommand($asset, $commands);
+
+            if (is_string($installCommand) && $installCommand) {
+                $assetCommands[] = [
+                    'path' => $asset->path(),
+                    'command' => $installCommand,
+                ];
             }
 
-            $return = $installedDeps && $return;
             $commandStrings = $this->buildScriptCommands($asset, $commands);
 
-            // No script, we can lock already
-            if (!$commandStrings) {
-                $this->locker->lock($asset);
-                $shouldWipe and $this->wipeNodeModules($path);
-
-                continue;
+            foreach ($commandStrings as $commandString) {
+                $assetCommands[] = [
+                    'path' => $asset->path(),
+                    'command' => $commandString,
+                ];
             }
 
-            $processManager = $processManager->pushAssetToProcess($asset, ...$commandStrings);
-            $shouldWipe and $toWipe[$name] = $shouldWipe;
+            if ($shouldWipe) {
+                $deleteNodeModulesCommand = $this->wipeNodeModulesCommand($path);
+                $assetCommands[] = [
+                    'path' => $rootConfig->path(),
+                    'command' => $deleteNodeModulesCommand,
+                ];
+            }
+
+            $parentProcessArgs = array_shift($assetCommands);
+            $childrenProcessesArgs = $assetCommands;
+
+            $parentProcess = $processManager->createProcess(
+                $parentProcessArgs['command'],
+                $parentProcessArgs['path']
+            );
+
+            $onGroupCompleted = function () use ($asset) {
+                $this->io->writeComment(sprintf('Locking asset %s', $asset->name()));
+                $this->locker->lock($asset);
+            };
+
+            $onParentErrored = static function (Process $parent) {
+                throw new \RuntimeException(
+                    "Parent process failed: " . $parent->getErrorOutput()
+                );
+            };
+
+            $onChildErrored = static function (Process $parent) {
+                throw new \RuntimeException(
+                    "Child process failed: " . $parent->getErrorOutput()
+                );
+            };
+
+            $onParentProcessStart = function (Process $process) {
+                $this->io->writeComment(
+                    sprintf(
+                        'Starting %s in %s',
+                        $process->getCommandLine(),
+                        $process->getWorkingDirectory()
+                    )
+                );
+            };
+
+            $onChildProcessStart = function (Process $process) {
+                $this->io->writeComment(
+                    sprintf(
+                        'Starting %s in %s',
+                        $process->getCommandLine(),
+                        $process->getWorkingDirectory()
+                    )
+                );
+            };
+
+            $processGroup = new ProcessGroup(
+                $parentProcess,
+                $onParentProcessStart,
+                $onChildProcessStart,
+                $onGroupCompleted,
+                $onParentErrored,
+                $onChildErrored
+            );
+            foreach ($childrenProcessesArgs as $childrenProcessArgs) {
+                $childProcess = $processManager->createProcess(
+                    $childrenProcessArgs['command'],
+                    $childrenProcessArgs['path']
+                );
+                $processGroup->addChild($childProcess);
+            }
+
+            $processManager->addGroup($processGroup);
         }
 
-        $results = $processManager->execute($this->io, $stopOnFailure);
+        /**
+         * @param ProcessGroup[] $groups
+         * @param int $batchNumber
+         * @param int $totalBatches
+         * @param int $groupsCount
+         * @return void
+         */
+        $onBatchStartCallback = function (
+            array $groups,
+            int $batchNumber,
+            int $totalBatches,
+            int $groupsCount
+        ): void {
+            $this->io->write(
+                sprintf(
+                    "Starting batch %d of %d with %d group(s)",
+                    $batchNumber,
+                    $totalBatches,
+                    $groupsCount
+                )
+            );
+        };
 
-        return $this->handleResults($results, $toWipe) && $return;
+        /**
+         * @param ProcessGroup[] $groups
+         * @param int $batchNumber
+         * @return void
+         */
+        $onBatchCompletedCallback = function (
+            array $groups,
+            int $batchNumber
+        ): void {
+            $this->io->write(sprintf("Batch %d completed", $batchNumber));
+            if ($this->passedArguments->clearPackageManagerCache()) {
+                $this->io->writeComment('Clearing package manager cache');
+                $result = $this->executor->execute(
+                    'npm cache clear --force',
+                    $this->outputHandler,
+                    $this->config->rootConfig()->path()
+                );
+                $this->io->writeComment(sprintf('Finish clearing cache with result: %d', $result));
+            }
+        };
+
+        $onAllBatchesCompletedCallback = function () {
+            $this->io->writeInfo('All batches completed');
+        };
+
+        $processManager->run(
+            $onBatchStartCallback,
+            $onBatchCompletedCallback,
+            $onAllBatchesCompletedCallback
+        );
+
+        return true;
     }
 
     /**
@@ -233,6 +376,15 @@ class Processor
         }
 
         return [$name, $path, $root->isWipeAllowedFor($path)];
+    }
+
+    /**
+     * @param string $packageFolder
+     * @return bool
+     */
+    public function isWipePossible(string $packageFolder): bool
+    {
+        return true;
     }
 
     /**
@@ -301,10 +453,48 @@ class Processor
     }
 
     /**
+     * Same as previous doDependencies but without
+     * executing the process and without handling isolated cache
+     *
+     * @param Asset $asset
+     * @param PackageManager $packageManager
+     * @return bool|string
+     */
+    // phpcs:ignore Inpsyde.CodeQuality.ReturnTypeDeclaration.NoReturnType
+    private function buildDependenciesCommand(
+        Asset $asset,
+        PackageManager $packageManager
+    ) {
+
+        $isUpdate = $asset->isUpdate();
+        $isInstall = $asset->isInstall();
+
+        if (!$isUpdate && !$isInstall) {
+            return true;
+        }
+
+        $cwd = $asset->path();
+        if (!$cwd || !is_dir($cwd)) {
+            return false;
+        }
+
+        $command = $isUpdate
+            ? $packageManager->updateCmd($this->io)
+            : $packageManager->installCmd($this->io);
+
+        if (!$command) {
+            return false;
+        }
+
+        return $command;
+    }
+
+    /**
      * @param Asset $asset
      * @param PackageManager $packageManager
      * @param RootConfig $rootConfig
      * @return bool
+     * @deprecated
      */
     private function doDependencies(
         Asset $asset,
@@ -408,23 +598,10 @@ class Processor
      * @param string $baseDir
      * @return bool|null
      */
-    private function wipeNodeModules(string $baseDir): ?bool
+    private function wipeNodeModulesCommand(string $baseDir): string
     {
         $dir = rtrim($this->filesystem->normalizePath($baseDir), '/') . "/node_modules";
-        if (!is_dir($dir)) {
-            $this->io->writeVerbose("  '{$dir}' not found, nothing to wipe.");
-
-            return null;
-        }
-
-        $this->io->writeVerboseComment("Wiping '{$dir}'...");
-
-        $doneWipe = $this->filesystem->removeDirectory($dir);
-        $doneWipe
-            ? $this->io->writeVerboseInfo('  success!')
-            : $this->io->writeVerboseError('  failed!');
-
-        return $doneWipe;
+        return sprintf('composer filesystem-delete-folder --path="%s"', $dir);
     }
 
     /**
@@ -459,10 +636,6 @@ class Processor
             $success = $successes->dequeue();
             [, $asset] = $success;
             $this->locker->lock($asset);
-            if (!empty($toWipe[$asset->name()])) {
-                $path = $asset->path();
-                $path and $this->wipeNodeModules($path);
-            }
         }
 
         return $results->isSuccessful();
