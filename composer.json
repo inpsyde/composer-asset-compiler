@@ -38,6 +38,7 @@
     },
     "scripts": {
         "cs": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs",
+        "cs:fix": "@php ./vendor/bin/phpcbf",
         "psalm": "@php ./vendor/vimeo/psalm/psalm --no-cache --output-format=compact --find-unused-psalm-suppress",
         "tests": "@php ./vendor/phpunit/phpunit/phpunit",
         "qa": [

@@ -132,7 +132,13 @@ final class Plugin implements
     ): void {
 
         $this->mode = self::MODE_COMMAND;
-        $this->run(Factory::new($this->composer, $this->io, $env, $isDev, $ignoreLock));
+        $this->run(Factory::new(
+            $this->composer,
+            $this->io,
+            $env,
+            $isDev,
+            $ignoreLock
+        ));
     }
 
     /**
