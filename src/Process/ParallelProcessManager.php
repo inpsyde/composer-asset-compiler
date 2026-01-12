@@ -67,7 +67,7 @@ class ParallelProcessManager
         }
 
         if ($onAllBatchesCompletedCallback !== null) {
-            $onBatchCompletedCallback();
+            $onAllBatchesCompletedCallback();
         }
     }
 
