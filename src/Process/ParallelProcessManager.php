@@ -44,7 +44,7 @@ class ParallelProcessManager
     ): void {
 
         $allGroups = $this->processGroups;
-        $totalBatches = ceil(count($allGroups) / $this->maxParallel);
+        $totalBatches = (int) ceil(count($allGroups) / $this->maxParallel);
         $batchNumber = 0;
 
         // Process groups in batches
