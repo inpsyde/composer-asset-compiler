@@ -30,6 +30,7 @@ use Symfony\Component\Process\Process;
  */
 class Processor
 {
+    const MODE_DEPLOYMENT = 'deployment';
     /**
      * @var Io
      */
@@ -178,7 +179,9 @@ class Processor
             throw new \Error('Invalid root config.');
         }
 
-        $toWipe = [];
+        $globalWipeNodeModules = $this->isWipeNodeModulesEnabledGlobally();
+        $globalCleanPackageManagerCache = $this->isCleanPackageManagerCacheEnabledGlobally();
+
         $stopOnFailure = $rootConfig->stopOnFailure();
         $return = true;
         $processManager = $this->parallelManager;
@@ -195,7 +198,7 @@ class Processor
                 continue;
             }
 
-            if ($this->passedArguments->forceDeleteNodeModules()) {
+            if ($globalWipeNodeModules) {
                 $shouldWipe = true;
             }
 
@@ -335,9 +338,9 @@ class Processor
         $onBatchCompletedCallback = function (
             array $groups,
             int $batchNumber
-        ): void {
+        ) use ($globalCleanPackageManagerCache): void {
             $this->io->write(sprintf("Batch %d completed", $batchNumber));
-            if ($this->passedArguments->clearPackageManagerCache()) {
+            if ($globalCleanPackageManagerCache) {
                 $this->io->writeComment('Clearing package manager cache');
                 $result = $this->executor->execute(
                     'npm cache clear --force',
@@ -359,6 +362,18 @@ class Processor
         );
 
         return true;
+    }
+
+    private function isWipeNodeModulesEnabledGlobally(): bool
+    {
+        return $this->passedArguments->mode() === static::MODE_DEPLOYMENT
+            || $this->passedArguments->forceDeleteNodeModules();
+    }
+
+    private function isCleanPackageManagerCacheEnabledGlobally(): bool
+    {
+        return $this->passedArguments->mode() === static::MODE_DEPLOYMENT
+            || $this->passedArguments->clearPackageManagerCache();
     }
 
     /**
