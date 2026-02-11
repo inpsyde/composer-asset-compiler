@@ -49,6 +49,8 @@ jobs:
 
       - name: Adjust Composer dependencies
         run: |
+            # Disable Composer audit blocking in CI to allow installing composer/composer versions flagged by advisories.
+            composer config --global audit.block-insecure false
             composer remove --dev --no-update "inpsyde/php-coding-standards"
             composer remove --dev --no-update "vimeo/psalm"
             composer require --dev --no-update "composer/composer:${{ matrix.composer-ver }}"
