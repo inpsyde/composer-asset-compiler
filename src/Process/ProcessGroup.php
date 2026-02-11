@@ -8,14 +8,14 @@ use Symfony\Component\Process\Process;
 
 // phpcs:disable Inpsyde.CodeQuality.NoAccessors.NoGetter
 // phpcs:disable Inpsyde.CodeQuality.NoAccessors.NoSetter
-class ProcessGroup
+final class ProcessGroup
 {
     /**
      * @var Process
      */
     private $parentProcess;
     /**
-     * @var array
+     * @var Process[]
      */
     private $childProcesses = [];
     /**
@@ -30,27 +30,27 @@ class ProcessGroup
     /**
      * @var null|callable
      */
-    private $onParentStartCallback = null;
+    private $onParentStartCallback;
 
     /**
      * @var null|callable
      */
-    private $onChildStartCallback = null;
+    private $onChildStartCallback;
 
     /**
      * @var null|callable
      */
-    private $onGroupCompletedCallback = null;
+    private $onGroupCompletedCallback;
 
     /**
      * @var null|callable
      */
-    private $onParentProcessErroredCallback = null;
+    private $onParentProcessErroredCallback;
 
     /**
      * @var null|callable
      */
-    private $onChildProcessErroredCallback = null;
+    private $onChildProcessErroredCallback;
 
     public function __construct(
         Process $parentProcess,

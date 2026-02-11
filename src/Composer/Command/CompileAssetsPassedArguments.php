@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\Composer\Command;
 
-class CompileAssetsPassedArguments
+final class CompileAssetsPassedArguments
 {
     /** @var bool  */
     private $isDev;
@@ -12,12 +12,12 @@ class CompileAssetsPassedArguments
     private $mode;
     /** @var string  */
     private $ignoreLock;
-    /** @var null|true */
-    private $clearPackageManagerCache = null;
-    /** @var null|true */
-    private $forceDeleteNodeModules = null;
+    /** @var null|bool */
+    private $clearPackageManagerCache;
+    /** @var null|bool */
+    private $forceDeleteNodeModules;
     /** @var int|null  */
-    private $maxParallelProcesses = null;
+    private $maxParallelProcesses;
 
     public function __construct(
         bool $isDev,

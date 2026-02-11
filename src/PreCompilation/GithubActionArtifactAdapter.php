@@ -18,7 +18,7 @@ use Inpsyde\AssetsCompiler\Util\ArchiveDownloaderFactory;
 use Inpsyde\AssetsCompiler\Util\HttpClient;
 use Inpsyde\AssetsCompiler\Util\Io;
 
-class GithubActionArtifactAdapter implements Adapter
+final class GithubActionArtifactAdapter implements Adapter
 {
     /**
      * @var Io
@@ -69,6 +69,7 @@ class GithubActionArtifactAdapter implements Adapter
     /**
      * @return string
      */
+    #[\Override]
     public function id(): string
     {
         return 'gh-action-artifact';
@@ -83,6 +84,7 @@ class GithubActionArtifactAdapter implements Adapter
      * @param array $environment
      * @return bool
      */
+    #[\Override]
     public function tryPrecompiled(
         Asset $asset,
         string $hash,
@@ -147,8 +149,7 @@ class GithubActionArtifactAdapter implements Adapter
             return [null, null];
         }
 
-        $safe = filter_var($endpoint, FILTER_SANITIZE_URL);
-        $safe && is_string($safe) or $safe = null;
+        $safe = filter_var($endpoint, FILTER_SANITIZE_URL) ?: null;
 
         return $safe ? [$safe, reset($userRepo) ?: ''] : [null, null];
     }

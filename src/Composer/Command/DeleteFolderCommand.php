@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Usage: composer filesystem-delete-folder --path="some"
  */
-class DeleteFolderCommand extends BaseCommand
+final class DeleteFolderCommand extends BaseCommand
 {
     public const COMMAND_NAME = 'filesystem-delete-folder';
     public const OPTION_PATH = 'path';
@@ -21,6 +21,7 @@ class DeleteFolderCommand extends BaseCommand
     /**
      * @return void
      */
+    #[\Override]
     protected function configure(): void
     {
         $this
@@ -41,9 +42,10 @@ class DeleteFolderCommand extends BaseCommand
      *
      * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
      */
+    #[\Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $path = $input->getOption(static::OPTION_PATH);
+        $path = (string) $input->getOption(static::OPTION_PATH);
         $filesystem = new Filesystem();
         $output->writeln(sprintf('Deleting the directory in: %s', $path));
 

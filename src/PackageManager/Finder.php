@@ -18,7 +18,7 @@ use Inpsyde\AssetsCompiler\Asset\Config;
 use Inpsyde\AssetsCompiler\Util\ModeResolver;
 use Inpsyde\AssetsCompiler\Util\Io;
 
-class Finder
+final class Finder
 {
     /**
      * @var ProcessExecutor

@@ -18,7 +18,7 @@ use Composer\IO\ConsoleIO;
 use Composer\Util\Filesystem;
 use Composer\Util\SyncHelper;
 
-class ArchiveDownloaderFactory
+final class ArchiveDownloaderFactory
 {
     private const ARCHIVES = [
         ArchiveDownloader::ZIP,

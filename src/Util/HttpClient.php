@@ -15,7 +15,7 @@ use Composer\Composer;
 use Composer\Util\HttpDownloader;
 use Composer\Util\RemoteFilesystem;
 
-class HttpClient
+final class HttpClient
 {
     /**
      * @var Io

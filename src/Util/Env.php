@@ -11,13 +11,8 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\Util;
 
-class Env
+final class Env
 {
-    /**
-     * @var \ArrayAccess|null
-     */
-    private static $getenvWrap = null;
-
     /**
      * @return string|null
      */

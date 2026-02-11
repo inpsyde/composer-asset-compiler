@@ -15,10 +15,10 @@ use Inpsyde\AssetsCompiler\Util\Io;
 use Inpsyde\AssetsCompiler\Asset\Asset;
 use Symfony\Component\Process\Process;
 
-class ParallelManager
+final class ParallelManager
 {
     /**
-     * @var callable
+     * @var callable('out'|'err', string):void
      */
     private $outputHandler;
 
@@ -68,7 +68,7 @@ class ParallelManager
     private $commands;
 
     /**
-     * @param callable $outputHandler
+     * @param callable('out'|'err', string):void $outputHandler
      * @param Factory $factory
      * @param int $maxParallel
      * @param int $poll
@@ -87,7 +87,7 @@ class ParallelManager
     }
 
     /**
-     * @param callable $outputHandler
+     * @param callable('out'|'err', string):void $outputHandler
      * @param Factory $factory
      * @param int $maxParallel
      * @param int $poll
@@ -110,27 +110,6 @@ class ParallelManager
         $this->timeoutIncrement = min(max($timeoutIncrement, 30), 3600);
 
         $this->resetStatus();
-    }
-
-    /**
-     * @param Asset $asset
-     * @param array{path: string, command: string} $commands
-     * @return static
-     */
-    public function pushAssetToProcess(
-        Asset $asset,
-        array $commands
-    ): ParallelManager {
-
-        foreach ($commands as $command) {
-            $process = $this->factory->create($command['command'], $command['path']);
-            $this->stack->enqueue([$process, $asset]);
-            $this->total++;
-        }
-        $this->commands[$asset->name()] = json_encode($commands);
-        $this->timeout += ($this->timeoutIncrement * count($commands));
-
-        return $this;
     }
 
     /**

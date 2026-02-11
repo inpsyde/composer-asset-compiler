@@ -20,17 +20,15 @@ use Inpsyde\AssetsCompiler\PreCompilation;
 use Inpsyde\AssetsCompiler\PreCompilation\Handler;
 use Inpsyde\AssetsCompiler\Process\ParallelProcessManager;
 use Inpsyde\AssetsCompiler\Process\ProcessGroup;
-use Inpsyde\AssetsCompiler\Process\Results;
-use Inpsyde\AssetsCompiler\Process\ParallelManager;
 use Inpsyde\AssetsCompiler\Util\Io;
 use Symfony\Component\Process\Process;
 
 /*
  * phpcs:disable Inpsyde.CodeQuality.PropertyPerClassLimit
  */
-class Processor
+final class Processor
 {
-    const MODE_DEPLOYMENT = 'deployment';
+    private const MODE_DEPLOYMENT = 'deployment';
     /**
      * @var Io
      */
@@ -82,11 +80,6 @@ class Processor
     private $defaultPackageManager;
 
     /**
-     * @var array{bool, string|null}
-     */
-    private $tempDir = [false, null];
-
-    /**
      * @var CompileAssetsPassedArguments
      */
     private $passedArguments;
@@ -136,7 +129,7 @@ class Processor
      * @param Config $config
      * @param Finder $packageManagerFinder
      * @param ProcessExecutor $executor
-     * @param ParallelManager $parallelManager
+     * @param ParallelProcessManager $parallelManager
      * @param Locker $locker
      * @param PreCompilation\Handler $preCompiler
      * @param callable $outputHandler
@@ -171,7 +164,7 @@ class Processor
      * @param \Iterator $assets
      * @return bool
      */
-    // phpcs:ignore Inpsyde.CodeQuality.FunctionLength.TooLong, Generic.Metrics.CyclomaticComplexity.TooHigh
+    // phpcs:ignore Inpsyde.CodeQuality.FunctionLength.TooLong, Generic.Metrics.CyclomaticComplexity.TooHigh, Inpsyde.CodeQuality.NestingLevel.High
     public function process(\Iterator $assets): bool
     {
         $rootConfig = $this->config->rootConfig();
@@ -183,7 +176,6 @@ class Processor
         $globalCleanPackageManagerCache = $this->isCleanPackageManagerCacheEnabledGlobally();
 
         $stopOnFailure = $rootConfig->stopOnFailure();
-        $return = true;
         $processManager = $this->parallelManager;
 
         foreach ($assets as $asset) {
@@ -215,11 +207,12 @@ class Processor
                 return false;
             }
 
+            /** @var list<array{path: string, command: string}> $assetCommands */
             $assetCommands = [];
 
             $installCommand = $this->buildDependenciesCommand($asset, $commands);
 
-            if (is_string($installCommand) && $installCommand) {
+            if (is_string($installCommand) && $installCommand !== '') {
                 $assetCommands[] = [
                     'path' => $asset->path(),
                     'command' => $installCommand,
@@ -228,62 +221,76 @@ class Processor
 
             $commandStrings = $this->buildScriptCommands($asset, $commands);
 
-            foreach ($commandStrings as $commandString) {
-                $assetCommands[] = [
-                    'path' => $asset->path(),
-                    'command' => $commandString,
-                ];
+            if (is_array($commandStrings)) {
+                foreach ($commandStrings as $commandString) {
+                    if ($commandString !== '') {
+                        $assetCommands[] = [
+                            'path' => $asset->path(),
+                            'command' => $commandString,
+                        ];
+                    }
+                }
             }
 
             if ($shouldWipe) {
                 $deleteNodeModulesCommand = $this->wipeNodeModulesCommand($path);
-                $assetCommands[] = [
-                    'path' => $rootConfig->path(),
-                    'command' => $deleteNodeModulesCommand,
-                ];
+                if ($deleteNodeModulesCommand !== '') {
+                    $assetCommands[] = [
+                        'path' => $rootConfig->path(),
+                        'command' => $deleteNodeModulesCommand,
+                    ];
+                }
             }
 
+            /** @var array{path: string, command: string}|null $parentProcessArgs */
             $parentProcessArgs = array_shift($assetCommands);
+            /** @var list<array{path: string, command: string}> $childrenProcessesArgs */
             $childrenProcessesArgs = $assetCommands;
+
+            if ($parentProcessArgs === null) {
+                continue;
+            }
 
             $parentProcess = $processManager->createProcess(
                 $parentProcessArgs['command'],
                 $parentProcessArgs['path']
             );
 
-            $onGroupCompleted = function () use ($asset) {
+            $onGroupCompleted = function () use ($asset): void {
                 $this->io->writeComment(sprintf('Locking asset %s', $asset->name()));
                 $this->locker->lock($asset);
             };
 
-            $onParentErrored = static function (Process $parent) {
+            // phpcs:ignore Inpsyde.CodeQuality.ReturnTypeDeclaration.MissingReturn
+            $onParentErrored = static function (Process $parent): never {
                 throw new \RuntimeException(
                     "Parent process failed: " . $parent->getErrorOutput()
                 );
             };
 
-            $onChildErrored = static function (Process $parent) {
+            // phpcs:ignore Inpsyde.CodeQuality.ReturnTypeDeclaration.MissingReturn
+            $onChildErrored = static function (Process $parent): never {
                 throw new \RuntimeException(
                     "Child process failed: " . $parent->getErrorOutput()
                 );
             };
 
-            $onParentProcessStart = function (Process $process) {
+            $onParentProcessStart = function (Process $process): void {
                 $this->io->writeComment(
                     sprintf(
                         'Starting %s in %s',
                         $process->getCommandLine(),
-                        $process->getWorkingDirectory()
+                        $process->getWorkingDirectory() ?? ''
                     )
                 );
             };
 
-            $onChildProcessStart = function (Process $process) {
+            $onChildProcessStart = function (Process $process): void {
                 $this->io->writeComment(
                     sprintf(
                         'Starting %s in %s',
                         $process->getCommandLine(),
-                        $process->getWorkingDirectory()
+                        $process->getWorkingDirectory() ?? ''
                     )
                 );
             };
@@ -345,13 +352,13 @@ class Processor
                 $result = $this->executor->execute(
                     'npm cache clear --force',
                     $this->outputHandler,
-                    $this->config->rootConfig()->path()
+                    $this->config->rootConfig()?->path()
                 );
                 $this->io->writeComment(sprintf('Finish clearing cache with result: %d', $result));
             }
         };
 
-        $onAllBatchesCompletedCallback = function () {
+        $onAllBatchesCompletedCallback = function (): void {
             $this->io->writeInfo('All batches completed');
         };
 
@@ -391,15 +398,6 @@ class Processor
         }
 
         return [$name, $path, $root->isWipeAllowedFor($path)];
-    }
-
-    /**
-     * @param string $packageFolder
-     * @return bool
-     */
-    public function isWipePossible(string $packageFolder): bool
-    {
-        return true;
     }
 
     /**
@@ -505,155 +503,13 @@ class Processor
     }
 
     /**
-     * @param Asset $asset
-     * @param PackageManager $packageManager
-     * @param RootConfig $rootConfig
-     * @return bool
-     * @deprecated
-     */
-    private function doDependencies(
-        Asset $asset,
-        PackageManager $packageManager,
-        RootConfig $rootConfig
-    ): bool {
-
-        $isUpdate = $asset->isUpdate();
-        $isInstall = $asset->isInstall();
-
-        if (!$isUpdate && !$isInstall) {
-            return true;
-        }
-
-        $cwd = $asset->path();
-        if (!$cwd || !is_dir($cwd)) {
-            return false;
-        }
-
-        $command = $isUpdate
-            ? $packageManager->updateCmd($this->io)
-            : $packageManager->installCmd($this->io);
-
-        if (!$command) {
-            return false;
-        }
-
-        $action = $isUpdate ? 'Updating' : 'Installing';
-        $name = $asset->name();
-        $cmdName = $packageManager->name();
-        $this->io->writeComment("{$action} dependencies for '{$name}' using {$cmdName}...");
-
-        $command = $this->handleIsolatedCache(
-            $packageManager,
-            $asset,
-            $rootConfig,
-            $command,
-            $cwd,
-            $name
-        );
-
-        $exitCode = $this->executor->execute($command, $this->outputHandler, $cwd);
-
-        return $exitCode === 0;
-    }
-
-    /**
-     * @param PackageManager $packageManager
-     * @param Asset $asset
-     * @param RootConfig $rootConfig
-     * @param string $command
-     * @param string $cwd
-     * @param string $assetName
-     * @return string
-     */
-    private function handleIsolatedCache(
-        PackageManager $packageManager,
-        Asset $asset,
-        RootConfig $rootConfig,
-        string $command,
-        string $cwd,
-        string $assetName
-    ): string {
-
-        $isolated = $asset->isolatedCache() ?? $rootConfig->config()->isolatedCache() ?? false;
-        if (!$isolated) {
-            return $command;
-        }
-
-        $isYarn = $packageManager->isYarn();
-        $cmdName = $packageManager->name();
-        $cacheParam = $isYarn ? 'cache-folder' : 'cache';
-        if (strpos($command, " --{$cacheParam}") !== false) {
-            return $command;
-        }
-
-        $tempDir = $this->tempDir();
-        $flushCache = $tempDir === null;
-        $fullPath = $flushCache ? '' : "{$tempDir}/composer-asset-compiler/{$cmdName}/{$assetName}";
-
-        try {
-            $fullPath and $this->filesystem->ensureDirectoryExists($fullPath);
-        } catch (\Throwable $throwable) {
-            $flushCache = true;
-        }
-
-        if ($flushCache) {
-            $this->flushCache($packageManager, $assetName, $cwd);
-
-            return $command;
-        }
-
-        $this->io->writeVerbose("Will use isolated cache path '{$fullPath}' for '{$assetName}'.");
-
-        /** @var string $tempDir */
-
-        return "{$command} --{$cacheParam} {$fullPath}";
-    }
-
-    /**
      * @param string $baseDir
-     * @return bool|null
+     * @return string
      */
     private function wipeNodeModulesCommand(string $baseDir): string
     {
         $dir = rtrim($this->filesystem->normalizePath($baseDir), '/') . "/node_modules";
         return sprintf('composer filesystem-delete-folder --path="%s"', $dir);
-    }
-
-    /**
-     * @param Results $results
-     * @param array<string, bool> $toWipe
-     * @return bool
-     */
-    private function handleResults(Results $results, array $toWipe): bool
-    {
-        if ($results->isEmpty()) {
-            $this->io->write('Nothing else to process.');
-
-            return true;
-        }
-
-        if ($results->timedOut()) {
-            $this->io->writeError(
-                'Could not complete processing of assets because timeout of reached.'
-            );
-        }
-
-        $notExecuted = $results->notExecutedCount();
-        if ($notExecuted > 0) {
-            $total = $results->total();
-            $this->io->writeError(
-                "Processing for {$notExecuted} assets out of {$total} did NOT completed."
-            );
-        }
-
-        $successes = $results->successes();
-        while ($successes && !$successes->isEmpty()) {
-            $success = $successes->dequeue();
-            [, $asset] = $success;
-            $this->locker->lock($asset);
-        }
-
-        return $results->isSuccessful();
     }
 
     /**
@@ -679,59 +535,5 @@ class Processor
         $this->io->writeVerboseComment("Will compile '{$name}' using '{$commandsStr}'.");
 
         return $assetCommands;
-    }
-
-    /**
-     * @param PackageManager $manager
-     * @param string $asset
-     * @param string $cwd
-     * @return void
-     */
-    private function flushCache(PackageManager $manager, string $asset, string $cwd): void
-    {
-        $cmdName = $manager->name();
-        $flushCmd = $manager->cleanCacheCmd();
-
-        if (!$flushCmd) {
-            $this->io->writeVerboseError(
-                "Cache cleanup command not configured for {$cmdName}.",
-                "Isolated cache not applicable for '{$asset}'."
-            );
-
-            return;
-        }
-
-        $this->io->writeVerbose(
-            "Failed creating asset temporary directory.",
-            "Will now clean cache executing '{$flushCmd}' "
-            . "to ensure isolated cache for '{$asset}'."
-        );
-
-        $this->io->writeVerboseComment("Forcing {$cmdName} cache cleanup...");
-        $out = null;
-        if ($this->executor->execute($flushCmd, $out, $cwd) !== 0) {
-            $this->io->writeVerboseError(
-                "  {$cmdName} cache cleanup failed!",
-                "  Isolated cache not applicable for '{$asset}'."
-            );
-        }
-    }
-
-    /**
-     * @return string|null
-     */
-    private function tempDir(): ?string
-    {
-        if ($this->tempDir[0]) {
-            return $this->tempDir[1];
-        }
-
-        $this->tempDir[0] = true;
-        $sysDir = sys_get_temp_dir();
-        $this->tempDir[1] = (is_dir($sysDir) && is_writable($sysDir))
-            ? $this->filesystem->normalizePath($sysDir)
-            : null;
-
-        return $this->tempDir[1];
     }
 }

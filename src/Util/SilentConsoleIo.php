@@ -19,7 +19,7 @@ use Composer\IO\ConsoleIO;
  * phpcs:disable Inpsyde.CodeQuality.ArgumentTypeDeclaration
  * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
  */
-class SilentConsoleIo extends ConsoleIO
+final class SilentConsoleIo extends ConsoleIO
 {
     /**
      * @param ConsoleIO $io
@@ -41,6 +41,7 @@ class SilentConsoleIo extends ConsoleIO
     /**
      * @return bool
      */
+    #[\Override]
     public function isVerbose()
     {
         return false;
@@ -49,6 +50,7 @@ class SilentConsoleIo extends ConsoleIO
     /**
      * @return bool
      */
+    #[\Override]
     public function isVeryVerbose()
     {
         return false;
@@ -57,6 +59,7 @@ class SilentConsoleIo extends ConsoleIO
     /**
      * @return bool
      */
+    #[\Override]
     public function isDebug()
     {
         return false;
@@ -68,6 +71,7 @@ class SilentConsoleIo extends ConsoleIO
      * @param int $verbosity
      * @return void
      */
+    #[\Override]
     public function write($messages, $newline = true, $verbosity = self::NORMAL)
     {
     }
@@ -78,6 +82,7 @@ class SilentConsoleIo extends ConsoleIO
      * @param int $verbosity
      * @return void
      */
+    #[\Override]
     public function writeError($messages, $newline = true, $verbosity = self::NORMAL)
     {
     }
@@ -88,6 +93,7 @@ class SilentConsoleIo extends ConsoleIO
      * @param int $verbosity
      * @return void
      */
+    #[\Override]
     public function writeRaw($messages, $newline = true, $verbosity = self::NORMAL)
     {
     }
@@ -98,6 +104,7 @@ class SilentConsoleIo extends ConsoleIO
      * @param int $verbosity
      * @return void
      */
+    #[\Override]
     public function writeErrorRaw($messages, $newline = true, $verbosity = self::NORMAL)
     {
     }

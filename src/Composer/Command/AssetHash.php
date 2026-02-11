@@ -26,7 +26,8 @@ final class AssetHash extends BaseCommand
     /**
      * @return void
      */
-    protected function configure()
+    #[\Override]
+    protected function configure(): void
     {
         $this
             ->setName('assets-hash')
@@ -59,17 +60,22 @@ final class AssetHash extends BaseCommand
      *
      * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    #[\Override]
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // phpcs:enable
 
         try {
             $composer = $this->obtainComposer();
             $io = $this->getIO();
-            $noDev = $input->hasOption('no-dev');
+            $isDev = !$input->hasOption('no-dev');
             $mode = $this->determineMode($input, $output);
-
-            $factory = Factory::new($composer, $io, $mode, !$noDev);
+            $arguments = new CompileAssetsPassedArguments(
+                $isDev,
+                '',
+                $mode,
+            );
+            $factory = Factory::new($composer, $io, $arguments);
             $package = $composer->getPackage();
             $defaults = $factory->defaults();
             $asset = $factory->assetFactory()->attemptFactory($package, null, $defaults);

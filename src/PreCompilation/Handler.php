@@ -17,7 +17,7 @@ use Inpsyde\AssetsCompiler\Asset\HashBuilder;
 use Inpsyde\AssetsCompiler\Util\ModeResolver;
 use Inpsyde\AssetsCompiler\Util\Io;
 
-class Handler
+final class Handler
 {
     /**
      * @var HashBuilder

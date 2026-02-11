@@ -18,7 +18,7 @@ use Composer\Util\Loop;
 use Composer\Util\SyncHelper;
 use Symfony\Component\Finder\Finder;
 
-class ArchiveDownloader
+final class ArchiveDownloader
 {
     public const ZIP = 'zip';
     public const RAR = 'rar';

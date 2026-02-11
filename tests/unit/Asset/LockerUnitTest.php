@@ -40,14 +40,16 @@ class LockerUnitTest extends UnitTestCase
      */
     public function testIsLockedIsFalseForEmptyFileAndErrorWritten(): void
     {
-        $io = \Mockery::mock(Io::class);
-        $io
-            ->expects('writeVerboseError')
+        $ioInterface = \Mockery::mock(IOInterface::class);
+        $ioInterface
+            ->shouldReceive('writeError')
             ->andReturnUsing(
                 static function (string $arg) {
                     static::assertStringContainsString('lock file', $arg);
                 }
             );
+
+        $io = Io::new($ioInterface);
         $locker = $this->factoryLocker($io);
 
         $file = (new vfsStreamFile(Locker::LOCK_FILE, 0777))->withContent('');
@@ -130,15 +132,17 @@ class LockerUnitTest extends UnitTestCase
             'two' => [],
         ]);
 
-        $io = \Mockery::mock(Io::class);
-        $io
-            ->expects('writeVerboseComment')
+        $ioInterface = \Mockery::mock(IOInterface::class);
+        $ioInterface
+            ->shouldReceive('write')
             ->andReturnUsing(
                 static function (string $arg) {
                     static::assertStringContainsString('ignoring', strtolower($arg));
                     static::assertStringContainsString('test/x-y', $arg);
                 }
             );
+
+        $io = Io::new($ioInterface);
 
         $lockerIgnored = $this->factoryLocker($io, 'test/x-*');
         $lockerNotIgnored = $this->factoryLocker();

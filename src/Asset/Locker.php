@@ -13,7 +13,7 @@ namespace Inpsyde\AssetsCompiler\Asset;
 
 use Inpsyde\AssetsCompiler\Util\Io;
 
-class Locker
+final class Locker
 {
     public const LOCK_FILE = '.composer_compiled_assets';
     public const IGNORE_ALL = '*';

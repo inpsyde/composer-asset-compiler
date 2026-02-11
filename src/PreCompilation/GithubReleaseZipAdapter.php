@@ -18,7 +18,7 @@ use Inpsyde\AssetsCompiler\Util\ArchiveDownloaderFactory;
 use Inpsyde\AssetsCompiler\Util\HttpClient;
 use Inpsyde\AssetsCompiler\Util\Io;
 
-class GithubReleaseZipAdapter implements Adapter
+final class GithubReleaseZipAdapter implements Adapter
 {
     /**
      * @var Io
@@ -69,6 +69,7 @@ class GithubReleaseZipAdapter implements Adapter
     /**
      * @return string
      */
+    #[\Override]
     public function id(): string
     {
         return 'gh-release-zip';
@@ -83,6 +84,7 @@ class GithubReleaseZipAdapter implements Adapter
      * @param array $environment
      * @return bool
      */
+    #[\Override]
     public function tryPrecompiled(
         Asset $asset,
         string $hash,
@@ -158,8 +160,7 @@ class GithubReleaseZipAdapter implements Adapter
             return [null, null];
         }
 
-        $safe = filter_var($endpoint, FILTER_SANITIZE_URL);
-        $safe && is_string($safe) or $safe = null;
+        $safe = filter_var($endpoint, FILTER_SANITIZE_URL) ?: null;
 
         return $safe ? [$safe, reset($userRepo) ?: ''] : [null, null];
     }

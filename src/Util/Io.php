@@ -15,7 +15,7 @@ use Composer\IO\ConsoleIO;
 use Composer\IO\IOInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class Io
+final class Io
 {
     private const SPACER = '    ';
 
@@ -94,6 +94,7 @@ class Io
         }
 
         $isQuietChecker = \Closure::bind(
+            /** @psalm-suppress UndefinedThisPropertyFetch */
             function (): bool {
                 $output = $this->output ?? null;
                 if ($output instanceof OutputInterface) {

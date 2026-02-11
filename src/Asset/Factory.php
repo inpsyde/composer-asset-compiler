@@ -17,7 +17,7 @@ use Composer\Package\RootPackageInterface;
 use Composer\Util\Filesystem;
 use Inpsyde\AssetsCompiler\Util\ModeResolver;
 
-class Factory
+final class Factory
 {
     /**
      * @var ModeResolver

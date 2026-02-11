@@ -154,7 +154,7 @@ final class RootConfig
     {
         $config = $this->resolveByMode(self::AUTO_DISCOVER, false, true);
 
-        return (bool)filter_var($config, FILTER_VALIDATE_BOOLEAN);
+        return filter_var($config, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
@@ -164,7 +164,7 @@ final class RootConfig
     {
         $config = $this->resolveByMode(self::AUTO_RUN, false, false);
 
-        return (bool)filter_var($config, FILTER_VALIDATE_BOOLEAN);
+        return filter_var($config, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
@@ -185,7 +185,7 @@ final class RootConfig
     {
         $config = $this->resolveByMode(self::STOP_ON_FAILURE, false, true);
 
-        return (bool)filter_var($config, FILTER_VALIDATE_BOOLEAN);
+        return filter_var($config, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**

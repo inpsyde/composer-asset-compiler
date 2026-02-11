@@ -6,7 +6,7 @@ namespace Inpsyde\AssetsCompiler\Process;
 
 use Symfony\Component\Process\Process;
 
-class ParallelProcessManager
+final class ParallelProcessManager
 {
     /**
      * @var ProcessGroup[]
@@ -61,6 +61,7 @@ class ParallelProcessManager
 
             $this->runBatch($currentBatch);
 
+            /** @psalm-suppress RedundantCondition */
             if (!empty($allGroups) && $onBatchCompletedCallback !== null) {
                 $onBatchCompletedCallback($currentBatch, $batchNumber, $totalBatches, $groupsCount);
             }
@@ -115,7 +116,7 @@ class ParallelProcessManager
                             if ($group->getOnChildStartCallback()) {
                                 ($group->getOnChildStartCallback())($currentChild);
                             }
-                            $currentChild->start();
+                            $currentChild?->start();
                         }
                     }
                     // phpcs:ignore Inpsyde.CodeQuality.NoElse.ElseFound
@@ -124,23 +125,25 @@ class ParallelProcessManager
                     if ($group->hasMoreChildren()) {
                         $currentChild = $group->getCurrentChild();
 
-                        if (!$currentChild->isRunning()) {
-                            if (!$currentChild->isSuccessful()) {
-                                throw new \RuntimeException(
-                                    "Child process failed: " . $currentChild->getErrorOutput()
-                                );
-                            }
-
-                            // Move to next child
-                            $group->moveToNextChild();
-
-                            // Start next child if exists
-                            if ($group->hasMoreChildren()) {
-                                $currentChild = $group->getCurrentChild();
-                                if ($group->getOnChildStartCallback()) {
-                                    ($group->getOnChildStartCallback())($currentChild);
+                        if ($currentChild !== null) {
+                            if (!$currentChild->isRunning()) {
+                                if (!$currentChild->isSuccessful()) {
+                                    throw new \RuntimeException(
+                                        "Child process failed: " . $currentChild->getErrorOutput()
+                                    );
                                 }
-                                $currentChild->start();
+
+                                // Move to next child
+                                $group->moveToNextChild();
+
+                                // Start next child if exists
+                                if ($group->hasMoreChildren()) {
+                                    $currentChild = $group->getCurrentChild();
+                                    if ($group->getOnChildStartCallback()) {
+                                        ($group->getOnChildStartCallback())($currentChild);
+                                    }
+                                    $currentChild?->start();
+                                }
                             }
                         }
                     }

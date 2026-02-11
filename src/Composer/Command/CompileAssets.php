@@ -32,7 +32,8 @@ final class CompileAssets extends BaseCommand
     /**
      * @return void
      */
-    protected function configure()
+    #[\Override]
+    protected function configure(): void
     {
         $this
             ->setName('compile-assets')
@@ -91,6 +92,7 @@ final class CompileAssets extends BaseCommand
      *
      * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
      */
+    #[\Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
@@ -118,8 +120,8 @@ final class CompileAssets extends BaseCommand
                 $isDev,
                 $ignoreLock,
                 is_string($mode) ? $mode : null,
-                $input->hasParameterOption('--' . self::OPTION_CLEAR_PACKAGE_MANAGER_CACHE) ?? null,
-                $input->hasParameterOption('--' . self::OPTION_FORCE_DELETE_NODE_MODULES) ?? null,
+                $input->hasParameterOption('--' . self::OPTION_CLEAR_PACKAGE_MANAGER_CACHE),
+                $input->hasParameterOption('--' . self::OPTION_FORCE_DELETE_NODE_MODULES),
                 $maxProcesses
             );
 

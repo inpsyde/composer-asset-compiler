@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 namespace Inpsyde\AssetsCompiler\Util;
 
-class ModeResolver
+final class ModeResolver
 {
     public const MODE_DEFAULT = '$default';
     public const MODE_DEFAULT_NO_DEV = '$default-no-dev';

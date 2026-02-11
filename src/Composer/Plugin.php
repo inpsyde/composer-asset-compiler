@@ -60,6 +60,7 @@ final class Plugin implements
      * @see Plugin::onAutorunBecauseInstall()
      * @see Plugin::onAutorunBecauseUpdate()
      */
+    #[\Override]
     public static function getSubscribedEvents(): array
     {
         return [
@@ -75,6 +76,7 @@ final class Plugin implements
     /**
      * @return array<string, string>
      */
+    #[\Override]
     public function getCapabilities(): array
     {
         return [CommandProvider::class => __CLASS__];
@@ -83,6 +85,7 @@ final class Plugin implements
     /**
      * @return array<BaseCommand>
      */
+    #[\Override]
     public function getCommands(): array
     {
         return [
@@ -96,6 +99,7 @@ final class Plugin implements
      * @param Composer $composer
      * @param IOInterface $io
      */
+    #[\Override]
     public function activate(Composer $composer, IOInterface $io)
     {
         $this->composer = $composer;
@@ -239,6 +243,7 @@ final class Plugin implements
      * @param IOInterface $io
      * @return void
      */
+    #[\Override]
     public function deactivate(Composer $composer, IOInterface $io)
     {
         // noop
@@ -249,6 +254,7 @@ final class Plugin implements
      * @param IOInterface $io
      * @return void
      */
+    #[\Override]
     public function uninstall(Composer $composer, IOInterface $io)
     {
         // noop

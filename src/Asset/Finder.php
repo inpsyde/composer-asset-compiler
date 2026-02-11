@@ -16,7 +16,7 @@ use Composer\Repository\RepositoryInterface;
 use Composer\Util\Filesystem;
 use Inpsyde\AssetsCompiler\Util\ModeResolver;
 
-class Finder
+final class Finder
 {
     /**
      * @var array

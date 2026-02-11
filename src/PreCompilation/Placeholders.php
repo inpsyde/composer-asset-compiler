@@ -15,7 +15,7 @@ use Composer\Semver\VersionParser;
 use Inpsyde\AssetsCompiler\Asset\Asset;
 use Inpsyde\AssetsCompiler\Util\Env;
 
-class Placeholders
+final class Placeholders
 {
     public const MODE = 'mode';
     public const HASH = 'hash';

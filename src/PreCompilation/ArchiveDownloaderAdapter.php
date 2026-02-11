@@ -17,7 +17,7 @@ use Inpsyde\AssetsCompiler\Util\ArchiveDownloader;
 use Inpsyde\AssetsCompiler\Util\ArchiveDownloaderFactory;
 use Inpsyde\AssetsCompiler\Util\Io;
 
-class ArchiveDownloaderAdapter implements Adapter
+final class ArchiveDownloaderAdapter implements Adapter
 {
     /**
      * @var Io
@@ -58,6 +58,7 @@ class ArchiveDownloaderAdapter implements Adapter
     /**
      * @return string
      */
+    #[\Override]
     public function id(): string
     {
         return 'archive';
@@ -72,6 +73,7 @@ class ArchiveDownloaderAdapter implements Adapter
      * @param array $environment
      * @return bool
      */
+    #[\Override]
     public function tryPrecompiled(
         Asset $asset,
         string $hash,
@@ -152,13 +154,13 @@ class ArchiveDownloaderAdapter implements Adapter
             ? filter_var($source, FILTER_SANITIZE_URL)
             : false;
 
-        if (!$safeSource || !is_string($safeSource)) {
+        if (!is_string($safeSource)) {
             $this->io->writeError("  '{$source}' is not a valid URL.");
 
             return null;
         }
 
-        return $source;
+        return $safeSource;
     }
 
     /**

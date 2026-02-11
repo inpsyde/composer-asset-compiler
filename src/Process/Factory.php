@@ -13,7 +13,7 @@ namespace Inpsyde\AssetsCompiler\Process;
 
 use Symfony\Component\Process\Process;
 
-class Factory
+final class Factory
 {
     /**
      * @var bool
@@ -31,18 +31,18 @@ class Factory
     private $factory;
 
     /**
-     * @param callable(string, ?string=):?Process|null $factory
+     * @param callable(string, ?string=): ?Process|null $factory
      * @return Factory
      */
-    public static function new(callable $factory = null): Factory
+    public static function new(?callable $factory = null): Factory
     {
         return new self($factory);
     }
 
     /**
-     * @param callable(string, ?string=):?Process $factory
+     * @param callable(string, ?string=): ?Process|null $factory
      */
-    private function __construct(callable $factory = null)
+    private function __construct(?callable $factory = null)
     {
         $this->newMethod = !$factory && method_exists(Process::class, 'fromShellCommandline');
         $this->timeout = 86400.0;

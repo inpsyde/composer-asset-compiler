@@ -20,7 +20,7 @@ use Inpsyde\AssetsCompiler\Util\Env;
 use Inpsyde\AssetsCompiler\Util\ModeResolver;
 use Inpsyde\AssetsCompiler\PreCompilation;
 
-class Config
+final class Config
 {
     public const EXTRA_KEY = 'composer-asset-compiler';
     public const DEF_ENV = 'default-env';

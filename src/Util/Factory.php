@@ -33,7 +33,6 @@ use Inpsyde\AssetsCompiler\PreCompilation\GithubActionArtifactAdapter;
 use Inpsyde\AssetsCompiler\PreCompilation\GithubReleaseZipAdapter;
 use Inpsyde\AssetsCompiler\PreCompilation\Handler;
 use Inpsyde\AssetsCompiler\Process\Factory as ProcessFactory;
-use Inpsyde\AssetsCompiler\Process\ParallelManager;
 use Inpsyde\AssetsCompiler\Process\ParallelProcessManager;
 use Symfony\Component\Process\Process;
 
@@ -77,9 +76,7 @@ final class Factory
     /**
      * @param Composer $composer
      * @param IOInterface $io
-     * @param string|null $mode
-     * @param bool $isDev
-     * @param string $ignoreLock
+     * @param CompileAssetsPassedArguments $arguments
      * @return Factory
      */
     public static function new(
@@ -94,9 +91,7 @@ final class Factory
     /**
      * @param Composer $composer
      * @param IOInterface $io
-     * @param string|null $mode
-     * @param bool $isDev
-     * @param string $ignoreLock
+     * @param CompileAssetsPassedArguments $arguments
      */
     private function __construct(
         Composer $composer,
@@ -108,7 +103,7 @@ final class Factory
         $this->io = $io;
         $this->mode = $arguments->mode() ?? Env::assetsCompilerMode();
         $this->isDev = $arguments->isDev();
-        $this->ignoreLock = $arguments->ignoreLock() ?? '';
+        $this->ignoreLock = $arguments->ignoreLock();
         $this->passedArguments = $arguments;
     }
 
@@ -578,7 +573,7 @@ final class Factory
     }
 
     /**
-     * @return ParallelManager
+     * @return ParallelProcessManager
      */
     public function processManager(): ParallelProcessManager
     {
@@ -593,7 +588,7 @@ final class Factory
             );
         }
 
-        /** @var ParallelManager $parallelManager */
+        /** @var ParallelProcessManager $parallelManager */
         $parallelManager = $this->objects[__FUNCTION__];
 
         return $parallelManager;

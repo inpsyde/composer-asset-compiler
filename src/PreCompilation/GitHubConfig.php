@@ -13,7 +13,7 @@ namespace Inpsyde\AssetsCompiler\PreCompilation;
 
 use Inpsyde\AssetsCompiler\Util\Env;
 
-class GitHubConfig
+final class GitHubConfig
 {
     private const REPO = 'repository';
     private const REF = 'reference';
