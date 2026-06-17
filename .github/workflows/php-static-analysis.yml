@@ -37,7 +37,7 @@ jobs:
     uses: inpsyde/reusable-workflows/.github/workflows/lint-php.yml@main
     strategy:
       matrix:
-        php: ["7.2", "7.3", "7.4", "8.0", "8.1", "8.2"]
+        php: ["7.2", "7.3", "7.4", "8.0", "8.1", "8.2", "8.3", "8.4"]
     if: ${{ (github.event_name != 'workflow_dispatch') || ((github.event.inputs.jobs == 'Run all') || (github.event.inputs.jobs == 'Run lint only')) }}
     with:
       PHP_VERSION: ${{ matrix.php }}

@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-ver: [ '7.2', '7.3', '7.4', '8.0', '8.1', '8.2' ]
+        php-ver: [ '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4' ]
         composer-ver: [ '^1', '~2.0.0', '~2.1.0', '~2.2.0', '~2.3.0', '~2.4.0', '~2.5.0' ]
         exclude:
           - php-ver: '8.1'
@@ -40,6 +40,10 @@ jobs:
           - php-ver: '8.2'
             composer-ver: '~2.0.0'
           - php-ver: '8.2'
+            composer-ver: '~2.1.0'
+          - php-ver: '8.3'
+            composer-ver: '~2.1.0'
+          - php-ver: '8.4'
             composer-ver: '~2.1.0'
 
     steps:
