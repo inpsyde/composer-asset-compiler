@@ -114,23 +114,20 @@ class ParallelManager
 
     /**
      * @param Asset $asset
-     * @param string $command
-     * @param string ...$commands
+     * @param array{path: string, command: string} $commands
      * @return static
      */
     public function pushAssetToProcess(
         Asset $asset,
-        string $command,
-        string ...$commands
+        array $commands
     ): ParallelManager {
 
-        array_unshift($commands, $command);
-        $command = implode(' && ', $commands);
-
-        $process = $this->factory->create($command, (string)$asset->path());
-        $this->commands[$asset->name()] = $command;
-        $this->stack->enqueue([$process, $asset]);
-        $this->total++;
+        foreach ($commands as $command) {
+            $process = $this->factory->create($command['command'], $command['path']);
+            $this->stack->enqueue([$process, $asset]);
+            $this->total++;
+        }
+        $this->commands[$asset->name()] = json_encode($commands);
         $this->timeout += ($this->timeoutIncrement * count($commands));
 
         return $this;
@@ -257,8 +254,9 @@ class ParallelManager
             [$process, $asset] = $current;
 
             $name = $asset->name();
-            $command = $this->commands[$name] ?? '';
-            $io->writeComment("Starting process of '{$name}' using: `{$command}`...");
+            $command = $process->getCommandLine();
+
+            $io->writeComment("Starting '{$command}' for asset: `{$name}`...");
 
             $process->start($this->outputHandler);
             $running->enqueue([$process, $asset]);
@@ -310,17 +308,19 @@ class ParallelManager
                 continue;
             }
 
+            $command = $process->getCommandLine();
+
             if (!$process->isSuccessful()) {
                 $veryVerbose = $io->isVeryVerbose();
                 $prefix = $veryVerbose ? '' : "\n";
-                $io->writeError("{$prefix}Failed processing {$name}.");
+                $io->writeError("{$prefix}Failed processing of {$command} for {$name}.");
                 $veryVerbose and $this->writeProcessError($process, $io);
                 $erroneous->enqueue([$process, $asset]);
                 $stopAnyRunning or $stopAnyRunning = $stopOnFailure;
                 continue;
             }
 
-            $io->writeInfo("Processing of {$name} done successfully.");
+            $io->writeInfo("Processing of {$command} for {$name} done successfully.");
             $successful->enqueue([$process, $asset]);
         }
 

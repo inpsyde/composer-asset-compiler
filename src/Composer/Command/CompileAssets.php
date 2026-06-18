@@ -25,6 +25,10 @@ final class CompileAssets extends BaseCommand
     use ModeOptionTrait;
     use ObtainComposerTrait;
 
+    public const OPTION_CLEAR_PACKAGE_MANAGER_CACHE = 'clear-cache-between-batches';
+    public const OPTION_FORCE_DELETE_NODE_MODULES = 'force-delete-node-modules';
+    public const OPTION_MAX_PARALLEL_PROCESSES = 'max-parallel-processes';
+
     /**
      * @return void
      */
@@ -58,7 +62,26 @@ final class CompileAssets extends BaseCommand
                 InputOption::VALUE_OPTIONAL,
                 'Ignore lock for either all or specific packages.',
                 Locker::IGNORE_ALL
-            );
+            )
+            ->addOption(
+                self::OPTION_CLEAR_PACKAGE_MANAGER_CACHE,
+                null,
+                InputOption::VALUE_NONE,
+                'Should the cache be cleared after processing a batch of groups?.'
+            )
+            ->addOption(
+                self::OPTION_FORCE_DELETE_NODE_MODULES,
+                null,
+                InputOption::VALUE_NONE,
+                'Should the process force delete node_modules folder?'
+            )
+            ->addOption(
+                self::OPTION_MAX_PARALLEL_PROCESSES,
+                null,
+                InputOption::VALUE_REQUIRED,
+                'The amount of parallel processes that can be ran in parallel'
+            )
+        ;
     }
 
     /**
@@ -68,7 +91,7 @@ final class CompileAssets extends BaseCommand
      *
      * phpcs:disable Inpsyde.CodeQuality.ReturnTypeDeclaration
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // phpcs:enable Inpsyde.CodeQuality.ReturnTypeDeclaration
 
@@ -79,7 +102,7 @@ final class CompileAssets extends BaseCommand
             $plugin = new Plugin();
             $plugin->activate($composer, $io);
 
-            $noDev = $input->hasOption('no-dev');
+            $isDev = !$input->hasOption('no-dev');
             $mode = $this->determineMode($input, $output);
 
             $ignoreLockRaw = $input->hasParameterOption('--ignore-lock', true)
@@ -87,11 +110,21 @@ final class CompileAssets extends BaseCommand
                 : null;
             $ignoreLock = ($ignoreLockRaw && is_string($ignoreLockRaw)) ? $ignoreLockRaw : '';
             ($ignoreLock === '*/*') and $ignoreLock = Locker::IGNORE_ALL;
+            $maxProcesses = $input->hasParameterOption('--' . self::OPTION_MAX_PARALLEL_PROCESSES)
+                ? (int) $input->getOption(self::OPTION_MAX_PARALLEL_PROCESSES)
+                : null;
+
+            $commandPassedArguments = new CompileAssetsPassedArguments(
+                $isDev,
+                $ignoreLock,
+                is_string($mode) ? $mode : null,
+                $input->hasParameterOption('--' . self::OPTION_CLEAR_PACKAGE_MANAGER_CACHE) ?? null,
+                $input->hasParameterOption('--' . self::OPTION_FORCE_DELETE_NODE_MODULES) ?? null,
+                $maxProcesses
+            );
 
             $plugin->runByCommand(
-                is_string($mode) ? $mode : null,
-                !$noDev,
-                $ignoreLock
+                $commandPassedArguments
             );
 
             return 0;

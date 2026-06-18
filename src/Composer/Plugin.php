@@ -19,6 +19,7 @@ use Composer\Plugin\Capability\CommandProvider;
 use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
+use Inpsyde\AssetsCompiler\Composer\Command\CompileAssetsPassedArguments;
 use Inpsyde\AssetsCompiler\Util\Factory;
 use Inpsyde\AssetsCompiler\Util\Io;
 
@@ -84,7 +85,11 @@ final class Plugin implements
      */
     public function getCommands(): array
     {
-        return [new Command\CompileAssets(), new Command\AssetHash()];
+        return [
+            new Command\CompileAssets(),
+            new Command\AssetHash(),
+            new Command\DeleteFolderCommand(),
+        ];
     }
 
     /**
@@ -103,7 +108,15 @@ final class Plugin implements
      */
     public function onAutorunBecauseInstall(Event $event): void
     {
-        $factory = Factory::new($this->composer, $this->io, null, $event->isDevMode());
+        $arguments = new CompileAssetsPassedArguments(
+            $event->isDevMode(),
+            ''
+        );
+        $factory = Factory::new(
+            $this->composer,
+            $this->io,
+            $arguments
+        );
         if ($factory->rootConfig()->autoRun()) {
             $this->mode or $this->mode = self::MODE_COMPOSER_INSTALL;
             $this->run($factory);
@@ -126,13 +139,15 @@ final class Plugin implements
      * @return void
      */
     public function runByCommand(
-        ?string $env,
-        bool $isDev,
-        string $ignoreLock = ''
+        CompileAssetsPassedArguments $arguments
     ): void {
 
         $this->mode = self::MODE_COMMAND;
-        $this->run(Factory::new($this->composer, $this->io, $env, $isDev, $ignoreLock));
+        $this->run(Factory::new(
+            $this->composer,
+            $this->io,
+            $arguments
+        ));
     }
 
     /**

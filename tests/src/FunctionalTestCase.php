@@ -16,6 +16,7 @@ use Composer\Factory as ComposerFactory;
 use Composer\IO\IOInterface;
 use Composer\IO\NullIO;
 use Composer\Util\Filesystem;
+use Inpsyde\AssetsCompiler\Composer\Command\CompileAssetsPassedArguments;
 use Inpsyde\AssetsCompiler\Process\Factory as ProcessFactory;
 use Inpsyde\AssetsCompiler\Util\Factory;
 
@@ -113,7 +114,13 @@ abstract class FunctionalTestCase extends \PHPUnit\Framework\TestCase
         $io = $this->factoryComposerIo($verbosity);
         $composer = $this->factoryComposer($io);
 
-        return Factory::new($composer, $io, $mode, $isDev, $ignoreLock);
+        $arguments = new CompileAssetsPassedArguments(
+            $isDev,
+            $ignoreLock,
+            $mode
+        );
+
+        return Factory::new($composer, $io, $arguments);
     }
 
     /**
