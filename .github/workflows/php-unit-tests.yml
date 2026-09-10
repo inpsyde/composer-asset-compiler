@@ -29,12 +29,6 @@ jobs:
       fail-fast: false
       matrix:
         php-ver: [ '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4' ]
-        composer-ver: [ '^1', '^2' ]
-        exclude:
-          # PHP 8.4 fails with composer/composer v1 due deprecated messages.
-          - php-ver: '8.4'
-            composer-ver: '^1'
-
 
     steps:
       - name: Update "USE_COVERAGE" env var based on matrix
@@ -56,7 +50,6 @@ jobs:
         run: |
             composer remove --dev --no-update "inpsyde/php-coding-standards"
             composer remove --dev --no-update "vimeo/psalm"
-            composer require --dev --no-update "composer/composer:${{ matrix.composer-ver }}"
 
       - name: Install dependencies
         uses: ramsey/composer-install@1919f6c305aea6ab10e6181a8ddf72317ad77e0e # v2.3.1
